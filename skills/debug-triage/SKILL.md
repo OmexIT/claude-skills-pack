@@ -1,0 +1,44 @@
+---
+name: debug-triage
+description: Triage a bug or production issue into a clear investigation plan: reproduction, hypotheses, logs/metrics to check, bisection strategy, and a minimal safe fix. Triggers: "bug triage", "debug this", "investigate issue", "production bug".
+argument-hint: "[bug report / error message]"
+---
+
+# Debug triage
+
+## Inputs
+- Bug report / user steps / screenshots (if any)
+- Error messages or stack traces
+- Environment (prod/staging/local), version, feature flags
+- Recent changes (deploy, config change, migration)
+
+## How I'll think about this
+1. **Reproduce before hypothesizing**: If you can't reproduce it, you can't confirm a fix. Establish exact reproduction steps first.
+2. **Correlate with recent changes**: Most bugs follow a deploy, config change, or migration. Check the timeline — what changed right before the bug appeared?
+3. **Rank hypotheses by likelihood**: Start with the simplest explanation. Database issues, config errors, and missing null checks cause more bugs than race conditions.
+4. **Fastest checks first**: For each hypothesis, identify the single fastest check to confirm or eliminate it. Don't build a fix until you've confirmed the root cause.
+5. **Minimal safe fix**: Fix the bug with the smallest possible change. A larger refactor can follow — the priority is stopping the bleeding.
+6. **Prevent recurrence**: Every fix should include a regression test and, if applicable, a monitoring improvement so the same failure is caught automatically next time.
+
+## Anti-patterns to flag
+- Guessing and deploying fixes without confirming the root cause
+- "Shotgun debugging" — changing multiple things at once
+- Fixing the symptom instead of the cause (e.g., catching and swallowing the exception)
+- Not adding a regression test after the fix
+- Not checking if the same bug exists in similar code paths
+
+## Quality bar
+- Reproduction steps are specific enough that anyone can follow them
+- Hypotheses are ranked with reasoning (not just listed)
+- Each hypothesis has a concrete check to confirm or eliminate it
+- Fix strategy is minimal and safe, with rollback plan
+- Regression test idea is included
+- Rollout/verification plan confirms the fix works in production
+
+## Workflow context
+- Typically follows: `/incident-response` (during incident), bug reports
+- Feeds into: `/postmortem` (if severe), `/test-plan` (regression tests)
+- Related: `/pr-review` (review the fix)
+
+## Output
+Use `templates/triage-report.md`.
