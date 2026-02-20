@@ -38,6 +38,9 @@
 - **/sprint-retro** — Sprint retrospective facilitation (**manual-only**)
 - **/onboarding-doc** — New team member onboarding guide
 
+## Project Setup
+- **/claude-md** — Generate a CLAUDE.md project configuration file for Claude Code
+
 ## Auto-guidance
 - **repo-conventions** — Repo-specific conventions (**auto guidance; not a slash command**)
 
