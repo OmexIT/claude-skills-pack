@@ -88,14 +88,14 @@ When you invoke a skill, Claude loads the methodology, applies structured thinki
 
 **macOS / Linux:**
 ```bash
-git clone https://github.com/anthropics/claude-skills-pack.git
+git clone https://github.com/OmexIT/claude-skills-pack.git
 mkdir -p ~/.claude/skills
 cp -R claude-skills-pack/skills/* ~/.claude/skills/
 ```
 
 **Windows (WSL 2):**
 ```bash
-git clone https://github.com/anthropics/claude-skills-pack.git
+git clone https://github.com/OmexIT/claude-skills-pack.git
 mkdir -p ~/.claude/skills
 cp -R claude-skills-pack/skills/* ~/.claude/skills/
 ```
@@ -110,7 +110,7 @@ Add skills to your project so every team member gets the same workflows:
 
 ```bash
 # From your project root
-git clone https://github.com/anthropics/claude-skills-pack.git /tmp/skills-pack
+git clone https://github.com/OmexIT/claude-skills-pack.git /tmp/skills-pack
 mkdir -p .claude/skills
 cp -R /tmp/skills-pack/skills/* .claude/skills/
 rm -rf /tmp/skills-pack
