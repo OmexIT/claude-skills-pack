@@ -51,3 +51,11 @@ Before generating, always:
 - Scan 3-5 source files to observe actual conventions
 - Check for existing `README.md`, `CONTRIBUTING.md`, `.editorconfig`, linter configs
 - Look at test files to understand the testing approach
+
+## Always-included sections
+The following sections from the template are **not project-specific** — they must be included verbatim in every generated CLAUDE.md:
+- **Workflow Orchestration** (Plan Mode Default, Subagent Strategy, Self-Improvement Loop, Verification Before Done, Demand Elegance, Autonomous Bug Fixing)
+- **Task Management** (plan-first workflow with `tasks/todo.md` and `tasks/lessons.md`)
+- **Core Principles** (Simplicity First, No Laziness, Minimal Impact)
+
+These sections define standard Claude Code working behavior and should never be omitted or modified during generation.
