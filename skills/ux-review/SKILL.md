@@ -78,3 +78,12 @@ Evaluate a design or implementation for usability, accessibility, and user exper
 
 ## Output
 Fill `templates/ux-review.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "review"
+    format: "markdown"
+    path: "claudedocs/<feature>-ux-review.md"
+    sections: [heuristics, accessibility, cognitive_walkthrough, recommendations]
+```

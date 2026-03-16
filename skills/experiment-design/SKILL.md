@@ -46,3 +46,12 @@ An experiment plan that's implementable by engineering and interpretable by prod
 
 ## Output
 Fill `templates/experiment-plan.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "experiment-plan"
+    format: "markdown"
+    path: "claudedocs/<feature>-experiment-design.md"
+    sections: [hypothesis, metrics, segments, duration, decision_rule]
+```

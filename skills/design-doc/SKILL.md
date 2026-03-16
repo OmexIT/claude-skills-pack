@@ -49,3 +49,12 @@ The doc should be review-ready:
 1. The filled-out design doc
 2. A short "Open questions" section (bullet list)
 3. A "Review checklist" with 5-10 items reviewers can quickly verify
+
+## Output contract
+```yaml
+produces:
+  - type: "design-doc"
+    format: "markdown"
+    path: "claudedocs/<feature>-design-doc.md"
+    sections: [requirements, architecture, data_model, apis, rollout, risks]
+```

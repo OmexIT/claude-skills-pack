@@ -80,3 +80,12 @@ Return feedback in this structure:
 
 ## Questions
 - ...
+
+## Output contract
+```yaml
+produces:
+  - type: "review"
+    format: "markdown"
+    path: "claudedocs/<feature>-pr-review.md"
+    sections: [correctness, security, performance, tests, maintainability]
+```

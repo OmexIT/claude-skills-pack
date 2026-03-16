@@ -42,3 +42,12 @@ disable-model-invocation: true
 
 ## Output
 Fill `templates/postmortem.md` and ensure action items meet the quality bar above.
+
+## Output contract
+```yaml
+produces:
+  - type: "postmortem"
+    format: "markdown"
+    path: "claudedocs/<feature>-postmortem.md"
+    sections: [timeline, root_causes, contributing_factors, action_items]
+```

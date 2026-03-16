@@ -44,3 +44,12 @@ Produce an onboarding guide that gets a new team member productive in the shorte
 
 ## Output
 Fill `templates/onboarding-doc.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "onboarding"
+    format: "markdown"
+    path: "claudedocs/<feature>-onboarding-doc.md"
+    sections: [architecture, workflows, local_setup, tribal_knowledge]
+```

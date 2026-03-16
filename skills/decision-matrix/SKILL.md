@@ -47,3 +47,12 @@ Structure a complex decision into a weighted evaluation framework that makes tra
 
 ## Output
 Fill `templates/decision-matrix.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "decision"
+    format: "markdown"
+    path: "claudedocs/<feature>-decision-matrix.md"
+    sections: [criteria, weights, options, scores, recommendation]
+```

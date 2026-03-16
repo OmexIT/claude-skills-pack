@@ -59,3 +59,12 @@ Use `templates/security-review.md` and return findings as:
 - **Must-fix** (exploitable now, high impact)
 - **Should-fix** (exploitable with effort, moderate impact)
 - **Nice-to-have** (defense-in-depth, low probability)
+
+## Output contract
+```yaml
+produces:
+  - type: "review"
+    format: "markdown"
+    path: "claudedocs/<feature>-security-review.md"
+    sections: [threat_model, findings, owasp_checklist, remediation]
+```

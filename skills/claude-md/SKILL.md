@@ -59,3 +59,12 @@ The following sections from the template are **not project-specific** — they m
 - **Core Principles** (Simplicity First, No Laziness, Minimal Impact)
 
 These sections define standard Claude Code working behavior and should never be omitted or modified during generation.
+
+## Output contract
+```yaml
+produces:
+  - type: "config"
+    format: "markdown"
+    path: "CLAUDE.md"
+    sections: [build_commands, conventions, architecture, workflow]
+```

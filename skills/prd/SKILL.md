@@ -51,3 +51,12 @@ Also include:
 - **Risks & mitigations**
 - **Instrumentation plan** (events + metrics)
 - **Rollout plan** (flags, staged release, fallback)
+
+## Output contract
+```yaml
+produces:
+  - type: "prd"
+    format: "markdown"
+    path: "claudedocs/<feature>-prd.md"
+    sections: [problem, goals, users, requirements, metrics, scope]
+```

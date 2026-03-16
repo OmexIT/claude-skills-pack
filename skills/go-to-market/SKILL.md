@@ -47,3 +47,12 @@ Produce a launch plan that coordinates messaging, channels, enablement, and meas
 
 ## Output
 Fill `templates/go-to-market.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "launch-plan"
+    format: "markdown"
+    path: "claudedocs/<feature>-go-to-market.md"
+    sections: [messaging, channels, enablement, success_criteria, timeline]
+```

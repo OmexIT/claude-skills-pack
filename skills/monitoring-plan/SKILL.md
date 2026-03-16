@@ -48,3 +48,12 @@ Design a comprehensive observability strategy that ensures you know when somethi
 
 ## Output
 Fill `templates/monitoring-plan.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "monitoring-plan"
+    format: "markdown"
+    path: "claudedocs/<feature>-monitoring-plan.md"
+    sections: [golden_signals, slos, alerts, dashboards, logging]
+```

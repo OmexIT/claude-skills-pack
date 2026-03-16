@@ -58,3 +58,12 @@ Use `templates/incident-update.md` for updates, and keep a running list of:
 - mitigations tried
 - current status
 - next steps
+
+## Output contract
+```yaml
+produces:
+  - type: "incident-plan"
+    format: "markdown"
+    path: "claudedocs/<feature>-incident-response.md"
+    sections: [severity, roles, stabilization, communication]
+```

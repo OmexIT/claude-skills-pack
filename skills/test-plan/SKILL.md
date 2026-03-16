@@ -42,3 +42,12 @@ argument-hint: "[feature / PR / release]"
 
 ## Output
 Fill `templates/test-plan.md` and tailor it to the change.
+
+## Output contract
+```yaml
+produces:
+  - type: "test-plan"
+    format: "markdown"
+    path: "claudedocs/<feature>-test-plan.md"
+    sections: [strategy, coverage_matrix, edge_cases, release_checklist]
+```

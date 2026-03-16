@@ -46,3 +46,12 @@ Map the complete user journey for a feature — from entry point through complet
 
 ## Output
 Fill `templates/user-flow.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "flow-map"
+    format: "markdown"
+    path: "claudedocs/<feature>-user-flow.md"
+    sections: [journeys, decision_points, error_states, edge_cases]
+```

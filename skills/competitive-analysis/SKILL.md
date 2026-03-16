@@ -45,3 +45,12 @@ Produce a structured competitive landscape analysis that identifies key players,
 
 ## Output
 Fill `templates/competitive-analysis.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "analysis"
+    format: "markdown"
+    path: "claudedocs/<feature>-competitive-analysis.md"
+    sections: [landscape, feature_comparison, strengths_weaknesses, differentiation]
+```

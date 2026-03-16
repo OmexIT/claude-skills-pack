@@ -40,3 +40,12 @@ disable-model-invocation: true
 
 ## Output
 Fill `templates/release-notes.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "release-notes"
+    format: "markdown"
+    path: "claudedocs/<feature>-release-notes.md"
+    sections: [highlights, breaking_changes, migration, rollback]
+```

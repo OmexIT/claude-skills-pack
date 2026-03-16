@@ -41,3 +41,12 @@ Capture an architectural decision so future readers understand *why* the choice 
 
 ## Output
 Create an ADR using `templates/adr.md`. Keep it short and specific.
+
+## Output contract
+```yaml
+produces:
+  - type: "adr"
+    format: "markdown"
+    path: "claudedocs/<feature>-adr.md"
+    sections: [context, decision, alternatives, consequences]
+```

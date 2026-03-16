@@ -42,3 +42,12 @@ argument-hint: "[bug report / error message]"
 
 ## Output
 Use `templates/triage-report.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "triage"
+    format: "markdown"
+    path: "claudedocs/<feature>-debug-triage.md"
+    sections: [reproduction, hypotheses, investigation_plan, fix_strategy]
+```

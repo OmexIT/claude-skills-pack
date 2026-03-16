@@ -46,3 +46,12 @@ Produce a structured assessment of whether an opportunity is worth pursuing, how
 
 ## Output
 Fill `templates/opportunity-assessment.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "assessment"
+    format: "markdown"
+    path: "claudedocs/<feature>-opportunity-assessment.md"
+    sections: [cost_benefit, risk_analysis, strategic_alignment, recommendation]
+```

@@ -48,3 +48,12 @@ Produce a concise, structured status update that gives stakeholders what they ne
 
 ## Output
 Fill `templates/stakeholder-update.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "status-update"
+    format: "markdown"
+    path: "claudedocs/<feature>-stakeholder-update.md"
+    sections: [progress, blockers, decisions_needed, next_steps]
+```

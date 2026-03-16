@@ -47,3 +47,12 @@ Audit the analytics instrumentation for a feature to ensure data is accurate, co
 
 ## Output
 Fill `templates/metrics-review.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "review"
+    format: "markdown"
+    path: "claudedocs/<feature>-metrics-review.md"
+    sections: [event_taxonomy, instrumentation, data_quality, dashboards]
+```

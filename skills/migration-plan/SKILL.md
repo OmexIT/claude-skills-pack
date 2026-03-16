@@ -49,3 +49,12 @@ Produce a detailed migration plan that moves data, schemas, or systems from stat
 
 ## Output
 Fill `templates/migration-plan.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "migration-plan"
+    format: "markdown"
+    path: "claudedocs/<feature>-migration-plan.md"
+    sections: [strategy, steps, rollback, validation, timeline]
+```

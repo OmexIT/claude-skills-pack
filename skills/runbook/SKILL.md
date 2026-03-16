@@ -45,3 +45,12 @@ Produce an operational runbook that an on-call engineer can follow at 3am to dep
 
 ## Output
 Fill `templates/runbook.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "runbook"
+    format: "markdown"
+    path: "claudedocs/<feature>-runbook.md"
+    sections: [deployment, scaling, failure_recovery, common_operations]
+```

@@ -50,3 +50,12 @@ Design a clear, consistent API (or review an existing one) that's easy for consu
 
 ## Output
 Fill `templates/api-design.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "api-design"
+    format: "markdown"
+    path: "claudedocs/<feature>-api-design.md"
+    sections: [endpoints, contracts, error_handling, pagination, versioning]
+```

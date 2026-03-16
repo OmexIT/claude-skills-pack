@@ -53,3 +53,12 @@ Use `references/style-guide.md` as the default style guide unless the repo has i
 2. **Suggested edits** (grouped by section, concrete rewrite snippets)
 3. **Gaps / missing info** (what's not answered but should be)
 4. **Final checklist** (yes/no items)
+
+## Output contract
+```yaml
+produces:
+  - type: "review"
+    format: "markdown"
+    path: "claudedocs/<feature>-docs-review.md"
+    sections: [clarity, correctness, structure, consistency, edits]
+```

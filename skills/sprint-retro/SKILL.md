@@ -46,3 +46,12 @@ Facilitate a structured retrospective that surfaces what worked, what didn't, an
 
 ## Output
 Fill `templates/sprint-retro.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "retrospective"
+    format: "markdown"
+    path: "claudedocs/<feature>-sprint-retro.md"
+    sections: [wins, improvements, patterns, action_items]
+```

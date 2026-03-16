@@ -46,3 +46,12 @@ Inventory technical debt in a codebase or system, categorize it by type and seve
 
 ## Output
 Fill `templates/tech-debt-assessment.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "assessment"
+    format: "markdown"
+    path: "claudedocs/<feature>-tech-debt-assessment.md"
+    sections: [inventory, prioritization, cost_of_delay, roadmap]
+```

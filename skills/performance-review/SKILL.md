@@ -45,3 +45,12 @@ Produce a practical performance assessment with concrete measurements, identifie
 
 ## Output
 Fill `templates/perf-review.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "review"
+    format: "markdown"
+    path: "claudedocs/<feature>-performance-review.md"
+    sections: [hot_paths, query_patterns, caching, load_test_plan]
+```

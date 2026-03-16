@@ -46,3 +46,12 @@ Turn a spec into implementable work items that can be assigned, tracked, and shi
 
 ## Output
 Use `templates/ticket-breakdown.md`.
+
+## Output contract
+```yaml
+produces:
+  - type: "tickets"
+    format: "markdown"
+    path: "claudedocs/<feature>-ticket-breakdown.md"
+    sections: [epics, tickets, acceptance_criteria, dependencies, sequencing]
+```
