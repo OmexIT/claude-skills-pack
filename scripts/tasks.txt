@@ -1,0 +1,34 @@
+# Overnight Task Queue
+# One task per line. Lines starting with # are comments.
+# Each line is passed as a prompt to: claude -p "<line>" --allowedTools ...
+#
+# Tips:
+#   - Reference files with full paths relative to project root
+#   - Use skill slash commands in prompts
+#   - Chain skills: "Run /prd then /design-doc for feature X"
+#   - Be specific — the agent can't ask clarifying questions
+#
+# Examples:
+
+# ── Implementation from spec ──────────────────────────────────────────
+# /spec-to-impl docs/PRD-payment-links.md
+
+# ── Verification ──────────────────────────────────────────────────────
+# /verify-impl --api --db
+
+# ── Quality gates ─────────────────────────────────────────────────────
+# /evidence-review
+
+# ── Finalize and ship ─────────────────────────────────────────────────
+# /finalize
+
+# ── Code review ───────────────────────────────────────────────────────
+# /security-review src/main/java/com/example/auth/
+# /performance-review src/main/java/com/example/payments/
+
+# ── Documentation ─────────────────────────────────────────────────────
+# /design-doc Payment processing service architecture
+# /test-plan Payment links feature
+
+# ── Multi-step chain (one prompt, agent handles sequencing) ───────────
+# Read docs/PRD-notifications.md, then run /flow-map for all notification flows, then run /spec-to-impl to implement it. After implementation, run /verify-impl and /finalize.
