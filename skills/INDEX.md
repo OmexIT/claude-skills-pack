@@ -30,6 +30,8 @@
 ## Quality & Review
 - **/pr-review** — Structured PR review (**manual-only**)
 - **/evidence-review** — Default-to-rejection quality gate requiring proof, not claims
+- **/spec-panel** — Multi-expert spec analysis: IEEE 830 audit, spec smells scanner, cross-cutting concerns checklist, expert panel with devil's advocate, quality scoring
+- **/code-audit** — Multi-agent code review: 10-dimension analysis (smells, SOLID, duplication, algorithms, security, performance, patterns, architecture, tech fitness, devil's advocate) with quality scoring
 - **/test-plan** — Risk-based test plan (templates/test-plan.md)
 - **/security-review** — Threat-model-lite with OWASP-aligned checks
 - **/performance-review** — Performance analysis and optimization plan
@@ -70,18 +72,20 @@ SKILL              PRODUCES (type)           CONSUMED BY
 ─────              ───────────────           ───────────
 /opportunity    →  assessment             →  /prd, /decision-matrix
 /competitive    →  analysis               →  /prd, /go-to-market
-/prd            →  prd                    →  /design-doc, /ticket-breakdown, /spec-to-impl
-/design-doc     →  design-doc             →  /spec-to-impl, /test-plan, /security-review, /infra-design
+/prd            →  prd                    →  /design-doc, /ticket-breakdown, /spec-to-impl, /spec-panel
+/design-doc     →  design-doc             →  /spec-to-impl, /test-plan, /security-review, /infra-design, /spec-panel
 /adr            →  adr                    →  /design-doc
 /flow-map       →  flow-map              →  /spec-to-impl, /test-plan
 /data-design    →  data-design           →  /spec-to-impl (DBA), /migration-plan
 /search-design  →  search-design         →  /spec-to-impl, /data-design
 /infra-design   →  infra-design          →  /spec-to-impl (DEVOPS), /monitoring-plan
 /ui-design      →  ui-design + testids   →  /spec-to-impl (FE), /verify-impl (testIDs)
-/api-design     →  api-design            →  /spec-to-impl, /test-plan
+/api-design     →  api-design            →  /spec-to-impl, /test-plan, /spec-panel
 /mobile-dev     →  mobile-guidance       →  /spec-to-impl (FLUTTER/RN/ANDROID)
 /ticket-break.. →  tickets               →  /spec-to-impl
-/spec-to-impl   →  code + test-plan      →  /verify-impl, /finalize, /pr-review
+/spec-panel     →  panel-analysis        →  /spec-to-impl, /ticket-breakdown, /test-plan
+/code-audit     →  code-audit            →  /finalize, /tech-debt-assessment, /test-plan
+/spec-to-impl   →  code + test-plan      →  /verify-impl, /finalize, /pr-review, /code-audit
 /verify-impl    →  verification          →  /finalize, /evidence-review
 /evidence-rev.. →  review (rated)        →  /finalize
 /finalize       →  commit + PR           →  /pr-review, /release-notes
@@ -101,14 +105,15 @@ Discover         Plan              Build              Quality            Complet
 /competitive  →  /adr             /spec-to-impl      /pr-review     →  /release-     →  /runbook
 -analysis        /flow-map        /mobile-dev        /test-plan        notes         →  /incident-
                  /ui-design       /verify-impl
-                 /api-design                         /security-     →  /go-to-          response
-                 /data-design                        review            market        →  /postmortem
-                 /search-design                      /performance-
+                 /api-design                         /spec-panel    →  /go-to-          response
+                 /data-design                        /code-audit       market        →  /postmortem
+                 /search-design                      /security-
                  /infra-design                       review
-                 /ticket-                            /ux-review
-                 breakdown                           /metrics-
-                 /decision-                          review
-                 matrix                              /tech-debt-
-                 /migration-                         assessment
-                 plan
+                 /ticket-                            /performance-
+                 breakdown                           review
+                 /decision-                          /ux-review
+                 matrix                              /metrics-
+                 /migration-                         review
+                 plan                                /tech-debt-
+                                                    assessment
 ```
