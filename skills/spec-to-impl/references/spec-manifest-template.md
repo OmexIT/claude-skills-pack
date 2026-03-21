@@ -56,6 +56,34 @@ NFR-001: <performance | scalability | security | compliance>
 - TS-001: <scenario name> (Happy path | Edge case | Error case)
 - ...
 
+── OBSERVABILITY REQUIREMENTS ──────────────────────────────
+Business Events to Log:
+  - <entity>.<action>: <description, context fields>
+  - ...
+Custom Metrics:
+  - <metric.name> (<Counter|Timer|Gauge>): <what it measures>
+  - ...
+SLOs:
+  - <endpoint or operation>: p99 < <Xms>, error rate < <Y%>
+  - ...
+Dashboard Needs:
+  - <panel description>: <what stakeholders want to see>
+  - ...
+
+── DESIGN PATTERN CANDIDATES ──────────────────────────────
+- <Component>: <Pattern> — driven by <FR/NFR-XXX>
+  Justification: <why this pattern fits>
+- ...
+
+── API STYLE & STANDARDS ──────────────────────────────────
+Style:      <REST (OpenAPI 3.1) | GraphQL | gRPC | Async>
+Detection:  <from existing codebase | spec signals | user specified>
+Versioning: <URL path /api/v1/ | header | additive-only>
+Envelope:   <standardized response wrapper format>
+Errors:     <RFC 9457 | UserError payload | gRPC Status>
+Pagination: <cursor-based | offset-based>
+Rationale:  <why this style was chosen over alternatives>
+
 ── AMBIGUITIES [CRITICAL / NON-CRITICAL] ────────────────────
 - [CRITICAL] AMB-001: <description of ambiguity> — needs user input
 - [NON-CRITICAL] AMB-002: <description> — assumed: <assumption>

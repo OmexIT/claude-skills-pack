@@ -85,7 +85,8 @@ SKILL              PRODUCES (type)           CONSUMED BY
 /ticket-break.. →  tickets               →  /spec-to-impl
 /spec-panel     →  panel-analysis        →  /spec-to-impl, /ticket-breakdown, /test-plan
 /code-audit     →  code-audit            →  /finalize, /tech-debt-assessment, /test-plan
-/spec-to-impl   →  code + test-plan      →  /verify-impl, /finalize, /pr-review, /code-audit
+/spec-to-impl   →  code + test-plan      →  /verify-impl, /finalize, /pr-review, /code-audit, /monitoring-plan
+                    + obs-contract
 /verify-impl    →  verification          →  /finalize, /evidence-review
 /evidence-rev.. →  review (rated)        →  /finalize
 /finalize       →  commit + PR           →  /pr-review, /release-notes

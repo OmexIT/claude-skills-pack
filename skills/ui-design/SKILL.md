@@ -27,12 +27,16 @@ Transforms a spec or panel analysis document into a complete set of UI/UX design
 **Step 1 — Parse** `$ARGUMENTS` for file paths and flags:
 ```
 flags:
-  --tokens-only      → run only the TOKENS agent (Section 4)
-  --no-wireframes    → skip wireframe generation
-  --no-a11y          → skip accessibility review
-  --mobile-first     → prioritize mobile wireframes (375px primary viewport)
-  --platform <p>     → target platform: react (default) | flutter | react-native | angular
-  --output-dir <dir> → save artifacts to <dir> (default: design/)
+  --tokens-only      -> run only the TOKENS agent (Section 4)
+  --no-wireframes    -> skip wireframe generation
+  --no-a11y          -> skip accessibility review
+  --mobile-first     -> prioritize mobile wireframes (375px primary viewport)
+  --platform <p>     -> target platform: react (default) | flutter | react-native | angular
+  --output-dir <dir> -> save artifacts to <dir> (default: design/)
+  --stitch           -> force Stitch MCP generation (skip auto-detection)
+  --figma <url|key>  -> import from Figma file via MCP (skip auto-detection)
+  --manual           -> force manual generation (no external tools)
+  --design-md <path> -> import an existing DESIGN.md as design system base
 ```
 
 **Step 2 — Check for handoff artifacts** from upstream skills:
@@ -40,6 +44,26 @@ flags:
 ls -t claudedocs/handoff-*.yaml 2>/dev/null | head -5
 ```
 If upstream handoff artifacts exist (from /prd, /design-doc, /flow-map), consume them to pre-fill context and skip redundant questions.
+
+**Step 2.1 — Detect available design tools** (unless `--stitch`, `--figma`, or `--manual` flag is set):
+```
+DESIGN TOOL DETECTION
+=====================
+1. Check for Stitch MCP:  look for "stitch" or "build_site" in available MCP tools
+2. Check for Figma MCP:   look for "figma" or "get_file" in available MCP tools
+3. Check for DESIGN.md:   [ -f "DESIGN.md" ] || [ -f "design/DESIGN.md" ]
+4. Check for Figma config: [ -f "figma.config.json" ] || [ -f ".figmarc" ]
+5. Default:                manual generation (no external tools needed)
+
+Result:
+  design_mode: stitch | figma | design-md | manual
+  Report to user:
+    "Design tool: Stitch MCP detected -- will generate screens from spec"
+    "Design tool: Figma MCP detected -- will extract from Figma file"
+    "Design tool: DESIGN.md found -- will use as design system base"
+    "Design tool: manual -- will generate ASCII wireframes + token specs"
+```
+See `references/design-tool-integration.md` for full setup and workflow per tool.
 
 **Step 3 — Read each file** sequentially. For each:
 - Identify: screens / panels / flows described
@@ -62,16 +86,17 @@ If existing design patterns are found, the design MUST extend them — not creat
 
 **Step 6 — Confirm:**
 ```
-📐 UI-DESIGN LOADED
+UI-DESIGN LOADED
   Files: <n>
-    ✅ <file1> — <panel name> (<n> screens, <n> flows)
-    ✅ <file2> — <panel name> (<n> screens, <n> flows)
+    <file1> -- <panel name> (<n> screens, <n> flows)
+    <file2> -- <panel name> (<n> screens, <n> flows)
 
   Detected:
-    Screens:    <n> total
-    Components: ~<n> estimated
-    User flows: <n>
-    Tech stack: <React + Tailwind | Flutter | React Native | AngularJS> (inferred / confirmed)
+    Screens:      <n> total
+    Components:   ~<n> estimated
+    User flows:   <n>
+    Tech stack:   <React + Tailwind | Flutter | React Native | AngularJS> (inferred / confirmed)
+    Design tool:  <Stitch MCP | Figma MCP | DESIGN.md import | manual>
     Existing design system: <found / not found>
 
   Agents activating: UX_LEAD, UI_DESIGNER, COMP_ARCH, A11Y
@@ -184,9 +209,101 @@ App Root
 
 ---
 
+## 2.5 Phase 1.5 — GENERATE / IMPORT (conditional)
+
+**Runs after Phase 1 ANALYSE, before Phase 2 DESIGN. Skipped in `--manual` mode.**
+
+This phase uses external design tools when available to accelerate screen generation. The UX inventory from Phase 1 drives the prompts/imports — the tool generates, the agents refine.
+
+### Mode A: Stitch MCP (design_mode = stitch)
+
+```
+For each screen group (max 5 screens per Stitch call):
+
+1. CONSTRUCT PROMPT from UX inventory:
+   "Design a [screen type] for [app name].
+    Layout: [from SCR-XXX entry points, actions, exit points]
+    Data fields: [from data fields inventory]
+    Actions: [from UX inventory actions list]
+    Style: [from DESIGN.md if exists, or 'modern clean professional']
+    Platform: [web | mobile based on --platform flag]"
+
+2. CALL Stitch MCP:
+   build_site(prompt) -> generates screens on Stitch canvas
+
+3. EXPORT per screen:
+   get_screen_code(format="react")   -> design/stitch-export/SCR-XXX.tsx
+   get_screen_image(format="png")    -> design/wireframes/SCR-XXX-stitch.png
+
+4. EXTRACT TOKENS from generated Tailwind classes:
+   Parse exported code for color, spacing, typography values
+   Map to ui-design token schema (design/visual-spec/tokens.md)
+```
+
+**What Stitch provides:** Rapid visual exploration, runnable React/Tailwind scaffolding, layout inspiration.
+**What Stitch does NOT provide:** State variants (empty/loading/error), accessibility, proper component hierarchy, design system compliance, spec-accurate copy. The agents in Phase 2-4 fill these gaps.
+
+### Mode B: Figma MCP (design_mode = figma)
+
+```
+1. EXTRACT file structure:
+   get_file(file_key) -> page/frame hierarchy -> map to screen inventory
+
+2. EXTRACT styles:
+   get_file_styles(file_key) -> colors, typography, spacing, effects
+   Map to design/visual-spec/tokens.md
+
+3. EXTRACT components:
+   get_file_components(file_key) -> component names, variants, properties
+   Feed to COMP_ARCH as input (Phase 3)
+
+4. EXPORT visual references:
+   get_images(node_ids, format="png") -> design/wireframes/SCR-XXX-figma.png
+
+5. EXTRACT code hints:
+   get_code(node_id, format="css") -> CSS snippets for accurate spacing/styling
+```
+
+**What Figma provides:** Precise design specifications, design system tokens, component variants, pixel-perfect visual reference.
+**What Figma does NOT provide:** Runnable code, auto-generated layouts, rapid exploration.
+
+### Mode C: DESIGN.md Import (design_mode = design-md)
+
+```
+1. READ DESIGN.md from project root or design/ directory
+2. PARSE: extract colors, typography, spacing, component patterns
+3. MAP to ui-design token schema (design/visual-spec/tokens.md)
+4. FEED to UI_DESIGNER and COMP_ARCH as constraints
+```
+
+### Mode D: Manual (design_mode = manual)
+
+Skip this phase entirely. Proceed to Phase 2 where UI_DESIGNER generates ASCII wireframes and tokens from the spec alone.
+
+### Post-Generation Checkpoint
+
+After any generation/import mode:
+```
+GENERATION COMPLETE
+  Source:       <Stitch MCP | Figma MCP | DESIGN.md | manual>
+  Screens:      <n> generated/imported
+  Tokens:       <n> extracted
+  Code export:  <n> files (React/Tailwind) [Stitch only]
+
+  Next: Phase 2 agents will REFINE these outputs:
+    - UI_DESIGNER: validate layout, add state variants, enforce tokens
+    - COMP_ARCH: restructure into proper component hierarchy
+    - A11Y: audit and annotate accessibility
+    - COPY: replace placeholder text with spec-accurate copy
+```
+
+---
+
 ## 3. Phase 2 — DESIGN
 
-**Parallel wave — UI_DESIGNER + COPY run concurrently after UX_LEAD completes.**
+**Parallel wave — UI_DESIGNER + COPY run concurrently after Phase 1.5 completes (or Phase 1 if manual mode).**
+
+When Stitch or Figma outputs exist from Phase 1.5, UI_DESIGNER **validates and refines** them rather than generating from scratch. When in manual mode, UI_DESIGNER **generates** wireframes.
 
 ### 3.1 UI_DESIGNER: Wireframes
 
@@ -479,30 +596,37 @@ When user says "revise SCR-001" or "change the status badge design":
 When all phases complete, produce a **handoff summary** and **handoff artifact** for downstream skills:
 
 ```
-🎨 UI-DESIGN COMPLETE — HANDOFF SUMMARY
+UI-DESIGN COMPLETE -- HANDOFF SUMMARY
 ========================================
 Project: <name>
 Screens: <n> | Components: <n> | Test IDs: <n>
+Design source: <Stitch MCP | Figma MCP | DESIGN.md | manual>
 
 FOR THE FE AGENT (spec-to-impl):
   Read these files in order:
-  1. design/visual-spec/tokens.md        ← implement as CSS vars / Tailwind config / ThemeExtension
-  2. design/components/component-tree.md ← file structure to create
-  3. design/components/component-specs.md← props, state, classes per component
-  4. design/copy/copy-spec.md            ← all strings — do not invent copy
-  5. design/wireframes/                  ← visual reference per screen
+  1. design/visual-spec/tokens.md        -- implement as CSS vars / Tailwind config / ThemeExtension
+  2. design/components/component-tree.md -- file structure to create
+  3. design/components/component-specs.md-- props, state, classes per component
+  4. design/copy/copy-spec.md            -- all strings -- do not invent copy
+  5. design/wireframes/                  -- visual reference per screen (PNG from Stitch/Figma if available)
+  6. design/stitch-export/               -- React/Tailwind scaffolding (Stitch mode only -- use as starting point)
+  7. design/DESIGN.md                    -- portable design system spec (for Stitch round-tripping)
 
 FOR VERIFY-IMPL:
-  design/components/testid-registry.md  ← use these as Playwright selectors
+  design/components/testid-registry.md  -- use these as Playwright selectors
+
+FOR STITCH ROUND-TRIPPING:
+  design/DESIGN.md                      -- import back into Stitch for further exploration
 
 OPEN ISSUES TO RESOLVE BEFORE IMPLEMENTATION:
-  ⚠️  [HIGH A11Y] Primary colour contrast — darken before coding
+  [HIGH A11Y] Primary colour contrast -- darken before coding
 ```
 
 Write handoff artifact:
 ```yaml
 # claudedocs/handoff-ui-design-<timestamp>.yaml
 source_skill: "ui-design"
+design_source: "<stitch | figma | design-md | manual>"
 artifacts:
   - path: "design/components/component-tree.md"
     type: "component-tree"
@@ -512,10 +636,17 @@ artifacts:
     type: "design-tokens"
   - path: "design/a11y/a11y-spec.md"
     type: "a11y-spec"
+  - path: "design/DESIGN.md"
+    type: "design-md"
+    note: "Portable design system spec -- importable by Stitch and other tools"
+  - path: "design/stitch-export/"
+    type: "code-scaffolding"
+    note: "React/Tailwind starter code (Stitch mode only)"
+    conditional: "only if design_source == stitch"
 quality_assessment: "Complete, <n> a11y issues to resolve"
 suggested_next:
   - skill: "spec-to-impl"
-    context: "Design artifacts ready, <n> components, <n> test IDs"
+    context: "Design artifacts ready, <n> components, <n> test IDs. FE agents can use stitch-export/ as scaffolding."
   - skill: "verify-impl"
     context: "testid-registry.md has <n> selectors for Playwright"
 ```
@@ -527,25 +658,32 @@ suggested_next:
 ```
 design/
 ├── ux/
-│   ├── ia-map.md               ← UX_LEAD: information architecture
-│   ├── flows.md                ← UX_LEAD: user flow diagrams
-│   └── ux-inventory.md         ← UX_LEAD: screen + field inventory
+│   ├── ia-map.md               -- UX_LEAD: information architecture
+│   ├── flows.md                -- UX_LEAD: user flow diagrams
+│   └── ux-inventory.md         -- UX_LEAD: screen + field inventory
 ├── wireframes/
-│   ├── SCR-001-list.md         ← UI_DESIGNER: ASCII wireframes per screen
+│   ├── SCR-001-list.md         -- UI_DESIGNER: ASCII wireframes per screen
+│   ├── SCR-001-stitch.png      -- Stitch-generated screenshot (if Stitch mode)
+│   ├── SCR-001-figma.png       -- Figma-exported screenshot (if Figma mode)
 │   ├── SCR-002-create.md
 │   └── SCR-003-detail.md
 ├── visual-spec/
-│   ├── tokens.md               ← design tokens (colours, type, spacing)
-│   └── visual-spec.md          ← spacing, elevation, motion rules
+│   ├── tokens.md               -- design tokens (colours, type, spacing)
+│   └── visual-spec.md          -- spacing, elevation, motion rules
 ├── copy/
-│   └── copy-spec.md            ← COPY: all UI strings per screen
+│   └── copy-spec.md            -- COPY: all UI strings per screen
 ├── components/
-│   ├── component-tree.md       ← COMP_ARCH: full component breakdown
-│   ├── component-specs.md      ← COMP_ARCH: per-component props/state/testids
-│   ├── state-model.md          ← COMP_ARCH: client + server state
-│   └── testid-registry.md      ← COMP_ARCH: all data-testids (→ verify-impl)
-└── a11y/
-    └── a11y-spec.md            ← A11Y: contrast, ARIA, keyboard, issues
+│   ├── component-tree.md       -- COMP_ARCH: full component breakdown
+│   ├── component-specs.md      -- COMP_ARCH: per-component props/state/testids
+│   ├── state-model.md          -- COMP_ARCH: client + server state
+│   └── testid-registry.md      -- COMP_ARCH: all data-testids (-> verify-impl)
+├── stitch-export/              -- (Stitch mode only) React/Tailwind code scaffolding
+│   ├── SCR-001.tsx             -- generated React component
+│   ├── SCR-002.tsx
+│   └── SCR-003.tsx
+├── a11y/
+│   └── a11y-spec.md            -- A11Y: contrast, ARIA, keyboard, issues
+└── DESIGN.md                   -- portable design system spec (cross-tool)
 ```
 
 ---
@@ -557,6 +695,7 @@ design/
 | `agents/ux-lead.md`       | Dispatching the UX_LEAD agent |
 | `agents/ui-designer-comp-arch-a11y-copy.md` | Dispatching UI_DESIGNER, COMP_ARCH, A11Y, COPY agents |
 | `references/token-schema-and-wireframe-notation.md` | Design token naming + ASCII wireframe symbols |
+| `references/design-tool-integration.md` | Stitch MCP, Figma MCP, and DESIGN.md integration guide |
 | `templates/component-spec.md` | Per-component spec template |
 
 ---
@@ -576,4 +715,13 @@ produces:
     format: markdown
     path: "design/visual-spec/tokens.md"
     consumed_by: "spec-to-impl FE agent"
+  - type: design-md
+    format: markdown
+    path: "design/DESIGN.md"
+    consumed_by: "stitch (round-trip), spec-to-impl FE agent, other design tools"
+  - type: code-scaffolding
+    format: tsx
+    path: "design/stitch-export/"
+    consumed_by: "spec-to-impl FE agent"
+    conditional: "only when design_source == stitch"
 ```
