@@ -2,6 +2,7 @@
 name: metrics-review
 description: Review analytics implementation and data quality for a feature. Covers event taxonomy, data accuracy, instrumentation gaps, and dashboard effectiveness. Triggers: "metrics review", "analytics review", "data quality", "instrumentation check", "are we tracking this right".
 argument-hint: "[feature / event / dashboard]"
+effort: medium
 ---
 
 # Metrics review
@@ -48,11 +49,18 @@ Audit the analytics instrumentation for a feature to ensure data is accurate, co
 ## Output
 Fill `templates/metrics-review.md`.
 
+## Learning & Memory
+After completing this skill, store reusable insights in memory:
+- **Event taxonomy patterns**: Naming conventions, property schemas, and event hierarchies that enabled consistent and queryable analytics
+- **Instrumentation gaps**: Recurring blind spots in funnel tracking, missing server-side validation events, and property omissions that hindered analysis
+- **Data quality issues**: Common accuracy problems such as double-counting, missing events under edge conditions, and client/server count mismatches
+
 ## Output contract
 ```yaml
 produces:
-  - type: "review"
+  - type: "metrics-review"
     format: "markdown"
     path: "claudedocs/<feature>-metrics-review.md"
     sections: [event_taxonomy, instrumentation, data_quality, dashboards]
+    handoff: "Write claudedocs/handoff-metrics-review-<timestamp>.yaml — suggest: experiment-design"
 ```

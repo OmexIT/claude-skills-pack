@@ -2,6 +2,7 @@
 name: experiment-design
 description: Design an experiment (A/B test) or staged rollout for a product change: hypothesis, metrics, guardrails, segments, exposure, duration, instrumentation, and decision rule. Triggers: "A/B test", "experiment", "feature flag rollout", "measure impact".
 argument-hint: "[feature]"
+effort: high
 ---
 
 # Experiment design
@@ -47,6 +48,13 @@ An experiment plan that's implementable by engineering and interpretable by prod
 ## Output
 Fill `templates/experiment-plan.md`.
 
+## Learning & Memory
+
+After experiment design completes, save:
+- Experiment configurations that produced actionable results (sample sizes, durations, segment definitions) for similar feature types
+- Metric definitions that proved meaningful and the data sources that were reliable enough for decision-making
+- Statistical approaches used (power analysis assumptions, significance thresholds, correction methods) and whether they matched observed effect sizes
+
 ## Output contract
 ```yaml
 produces:
@@ -54,4 +62,5 @@ produces:
     format: "markdown"
     path: "claudedocs/<feature>-experiment-design.md"
     sections: [hypothesis, metrics, segments, duration, decision_rule]
+    handoff: "Write claudedocs/handoff-experiment-design-<timestamp>.yaml — suggest: ticket-breakdown, metrics-review"
 ```

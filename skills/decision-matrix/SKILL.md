@@ -2,6 +2,7 @@
 name: decision-matrix
 description: Structure a decision with weighted criteria, options evaluation, and clear recommendation. For technical, product, or strategic choices. Triggers: "decision matrix", "help me decide", "compare options", "which should we choose", "trade-off analysis".
 argument-hint: "[decision to make]"
+effort: medium
 ---
 
 # Decision matrix
@@ -48,6 +49,13 @@ Structure a complex decision into a weighted evaluation framework that makes tra
 ## Output
 Fill `templates/decision-matrix.md`.
 
+## Learning & Memory
+
+After decision matrix evaluation completes, save:
+- Decision frameworks that produced clear outcomes vs those that led to inconclusive results
+- Weighting approaches that reflected actual priorities (and cases where initial weights needed recalibration)
+- Criteria that mattered most in practice for this type of decision (technical, organizational, cost, risk)
+
 ## Output contract
 ```yaml
 produces:
@@ -55,4 +63,5 @@ produces:
     format: "markdown"
     path: "claudedocs/<feature>-decision-matrix.md"
     sections: [criteria, weights, options, scores, recommendation]
+    handoff: "Write claudedocs/handoff-decision-matrix-<timestamp>.yaml — suggest: adr, design-doc"
 ```

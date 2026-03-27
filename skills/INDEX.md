@@ -23,6 +23,7 @@
 
 ## Implementation & Verification
 - **/spec-to-impl** — Multi-agent orchestration: spec → tasks → parallel implementation → tested artifacts
+- **/figma-to-code** — Convert Figma designs to production React/TypeScript via Figma MCP: selection, link, tokens, Code Connect, multi-screen flows, reverse capture
 - **/verify-impl** — Live verification: API, DB (Postgres/Mongo/Elastic/Typesense), UI (Playwright), Mobile
 - **/mobile-dev** — Mobile development patterns: Flutter, React Native, Android (Kotlin)
 - **/finalize** — Post-implementation: lint → test → clean up → commit → PR
@@ -63,6 +64,35 @@
 
 ---
 
+## Claude Code Features Leveraged
+
+Skills in this pack leverage these Claude Code capabilities:
+
+### Parallel Execution
+- **Multi-agent orchestration**: Orchestrator skills (spec-to-impl, code-audit, ui-design, spec-panel) launch multiple Agent calls in a single message for parallel execution
+- **Wave-based dispatch**: Complex skills execute in coordinated waves — independent agents run concurrently, dependent agents wait for prerequisites
+- **Background agents**: Low-priority agents (TECH_WRITER, OBS, COPY) run with `run_in_background: true` while critical-path agents execute
+- **Parallel expert panels**: Review skills (security-review, performance-review, ux-review) spawn specialist agents in parallel for multi-perspective analysis
+
+### Agent Configuration
+- **Model routing**: Agents route to optimal models — `opus` for architecture/security/deep reasoning, `sonnet` for implementation/analysis, `haiku` for documentation/lightweight tasks
+- **Effort levels**: Skills declare `effort: high|medium` in frontmatter to control reasoning depth
+- **Context isolation**: Complex skills use `context: fork` to run in subagent context, preserving the user's main conversation
+- **Worktree isolation**: Parallel implementation agents use `isolation: "worktree"` for conflict-free concurrent code changes
+
+### Coordination
+- **Handoff protocol**: Skills chain via `claudedocs/handoff-<skill>-<timestamp>.yaml` manifests with artifact status tracking
+- **Task management**: Skills use TaskCreate/TaskUpdate for real-time progress tracking visible to the user
+- **Memory integration**: Skills save reusable patterns (architecture decisions, review findings, performance baselines) to memory for cross-session learning
+- **Agent Teams** (experimental): For complex specs with tightly-coupled agents that need direct communication
+
+### MCP Integration
+- **Figma MCP**: spec-to-impl DESIGN agent and figma-to-code extract design tokens, components, and layouts from Figma
+- **Stitch MCP**: ui-design generates screens from text specifications when Stitch is available
+- **Chrome DevTools / Playwright**: verify-impl automates browser-based UI verification
+
+---
+
 ## Skill Chaining — Input/Output Contracts
 
 Skills produce structured output that downstream skills consume. The `/handoff` auto-guidance skill manages discovery.
@@ -70,29 +100,49 @@ Skills produce structured output that downstream skills consume. The `/handoff` 
 ```
 SKILL              PRODUCES (type)           CONSUMED BY
 ─────              ───────────────           ───────────
+── Discovery ──
 /opportunity    →  assessment             →  /prd, /decision-matrix
 /competitive    →  analysis               →  /prd, /go-to-market
+
+── Planning ──
 /prd            →  prd                    →  /design-doc, /ticket-breakdown, /spec-to-impl, /spec-panel
 /design-doc     →  design-doc             →  /spec-to-impl, /test-plan, /security-review, /infra-design, /spec-panel
 /adr            →  adr                    →  /design-doc
+/user-flow      →  user-flow             →  /flow-map, /ux-review, /test-plan, /ui-design
 /flow-map       →  flow-map              →  /spec-to-impl, /test-plan
+/ui-design      →  ui-design + testids   →  /spec-to-impl (FE), /verify-impl (testIDs), /figma-to-code
+/api-design     →  api-design            →  /spec-to-impl, /test-plan, /spec-panel
 /data-design    →  data-design           →  /spec-to-impl (DBA), /migration-plan
 /search-design  →  search-design         →  /spec-to-impl, /data-design
 /infra-design   →  infra-design          →  /spec-to-impl (DEVOPS), /monitoring-plan
-/ui-design      →  ui-design + testids   →  /spec-to-impl (FE), /verify-impl (testIDs)
-/api-design     →  api-design            →  /spec-to-impl, /test-plan, /spec-panel
-/mobile-dev     →  mobile-guidance       →  /spec-to-impl (FLUTTER/RN/ANDROID)
 /ticket-break.. →  tickets               →  /spec-to-impl
+/experiment-..  →  experiment-plan       →  /ticket-breakdown, /metrics-review
+/decision-mat.. →  decision              →  /adr, /design-doc
+/migration-plan →  migration-plan        →  /ticket-breakdown, /test-plan, /runbook
+
+── Implementation ──
+/spec-to-impl   →  code + test-plan      →  /verify-impl, /finalize, /pr-review, /code-audit, /monitoring-plan
+                    + obs-contract        (includes DESIGN agent for Figma MCP context when Figma URL provided)
+/figma-to-code  →  components + tokens   →  /verify-impl, /finalize, /code-audit
+/mobile-dev     →  mobile-guidance       →  /spec-to-impl (FLUTTER/RN/ANDROID)
+/verify-impl    →  verification          →  /finalize, /evidence-review
+/finalize       →  commit + PR           →  /pr-review, /release-notes
+
+── Quality ──
 /spec-panel     →  panel-analysis        →  /spec-to-impl, /ticket-breakdown, /test-plan
 /code-audit     →  code-audit            →  /finalize, /tech-debt-assessment, /test-plan
-/spec-to-impl   →  code + test-plan      →  /verify-impl, /finalize, /pr-review, /code-audit, /monitoring-plan
-                    + obs-contract
-/verify-impl    →  verification          →  /finalize, /evidence-review
-/evidence-rev.. →  review (rated)        →  /finalize
-/finalize       →  commit + PR           →  /pr-review, /release-notes
-/test-plan      →  test-plan             →  /verify-impl, /spec-to-impl
-/security-rev.. →  review                →  /finalize, /test-plan
-/pr-review      →  review                →  /release-notes
+/test-plan      →  test-plan             →  /spec-to-impl (QA planning input)
+/pr-review      →  pr-review             →  /release-notes
+/security-rev.. →  security-review       →  /finalize, /test-plan
+/performance-.. →  performance-review    →  /test-plan, /monitoring-plan
+/ux-review      →  ux-review             →  /ticket-breakdown, /pr-review
+/docs-review    →  docs-review           →  /finalize
+/metrics-rev..  →  metrics-review        →  /experiment-design
+/evidence-rev.. →  evidence-review       →  /finalize
+/tech-debt-..   →  assessment            →  /ticket-breakdown, /design-doc
+/debug-triage   →  triage                →  /postmortem, /test-plan
+
+── Operations ──
 /monitoring     →  monitoring-plan       →  /runbook, /incident-response
 ```
 
@@ -104,8 +154,9 @@ Discover         Plan              Build              Quality            Complet
 /opportunity  →  /prd          →  /flow-map       →  /evidence-     →  /finalize     →  /monitoring
 -assessment      /design-doc      /ui-design          review            (commit+PR)      -plan
 /competitive  →  /adr             /spec-to-impl      /pr-review     →  /release-     →  /runbook
--analysis        /flow-map        /mobile-dev        /test-plan        notes         →  /incident-
-                 /ui-design       /verify-impl
+-analysis        /user-flow       /mobile-dev        /test-plan        notes         →  /incident-
+                 /flow-map        /verify-impl
+                 /ui-design
                  /api-design                         /spec-panel    →  /go-to-          response
                  /data-design                        /code-audit       market        →  /postmortem
                  /search-design                      /security-

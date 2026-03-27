@@ -2,6 +2,7 @@
 name: migration-plan
 description: Plan safe migrations for databases, APIs, data formats, or infrastructure with rollback strategy, validation, and staged execution. Triggers: "migration plan", "database migration", "API migration", "data migration", "schema change".
 argument-hint: "[what's being migrated]"
+effort: high
 ---
 
 # Migration plan
@@ -50,6 +51,13 @@ Produce a detailed migration plan that moves data, schemas, or systems from stat
 ## Output
 Fill `templates/migration-plan.md`.
 
+## Learning & Memory
+
+After migration plan creation completes, save:
+- Migration patterns that worked (expand-migrate-contract phasing, batch sizes, checkpoint strategies) for the data volumes encountered
+- Rollback strategies that proved reliable and the specific validation steps that caught issues early
+- Data validation approaches (row counts, checksums, sampling) and which ones detected real problems vs false positives
+
 ## Output contract
 ```yaml
 produces:
@@ -57,4 +65,5 @@ produces:
     format: "markdown"
     path: "claudedocs/<feature>-migration-plan.md"
     sections: [strategy, steps, rollback, validation, timeline]
+    handoff: "Write claudedocs/handoff-migration-plan-<timestamp>.yaml — suggest: ticket-breakdown, test-plan, runbook"
 ```

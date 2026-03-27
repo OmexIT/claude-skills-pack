@@ -2,6 +2,7 @@
 name: onboarding-doc
 description: Generate a new team member onboarding guide for a service, domain, or codebase. Covers architecture, key workflows, local setup, and tribal knowledge. Triggers: "onboarding doc", "onboarding guide", "new hire guide", "getting started", "team wiki".
 argument-hint: "[service / domain / team]"
+effort: medium
 ---
 
 # Onboarding doc
@@ -44,6 +45,16 @@ Produce an onboarding guide that gets a new team member productive in the shorte
 
 ## Output
 Fill `templates/onboarding-doc.md`.
+
+## Learning & Memory
+
+After completing an onboarding doc, persist the following to project memory for future skill invocations:
+
+- **Onboarding gaps**: Areas where documentation was missing or outdated, to check in future iterations
+- **Tribal knowledge discovered**: Undocumented conventions, decisions, and gotchas captured during this pass
+- **Common new-hire questions**: Frequently asked questions surfaced during onboarding that should be addressed proactively
+
+Store in: `claudedocs/memory/onboarding-doc.md`
 
 ## Output contract
 ```yaml

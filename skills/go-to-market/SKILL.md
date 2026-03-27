@@ -2,6 +2,7 @@
 name: go-to-market
 description: Plan a product or feature launch with messaging, channels, enablement, success criteria, and timeline. Triggers: "go to market", "GTM", "launch plan", "product launch", "feature launch".
 argument-hint: "[product / feature]"
+effort: high
 ---
 
 # Go-to-market plan
@@ -47,6 +48,16 @@ Produce a launch plan that coordinates messaging, channels, enablement, and meas
 
 ## Output
 Fill `templates/go-to-market.md`.
+
+## Learning & Memory
+
+After completing a go-to-market plan, persist the following to project memory for future skill invocations:
+
+- **Launch patterns**: What launch types (phased, big-bang, beta) worked for this product and audience
+- **Channel effectiveness**: Which channels drove the most awareness, adoption, and activation for this audience
+- **Messaging frameworks**: Benefit-focused messages and positioning angles that resonated with target segments
+
+Store in: `claudedocs/memory/go-to-market.md`
 
 ## Output contract
 ```yaml

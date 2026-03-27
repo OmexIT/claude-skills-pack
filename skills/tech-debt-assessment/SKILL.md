@@ -2,6 +2,7 @@
 name: tech-debt-assessment
 description: Inventory and prioritize technical debt by type, cost-of-delay, and strategic impact. Produces an actionable repayment roadmap. Triggers: "tech debt", "technical debt", "code health", "refactoring priorities", "cleanup".
 argument-hint: "[codebase / area / service]"
+effort: high
 ---
 
 # Tech debt assessment
@@ -47,6 +48,12 @@ Inventory technical debt in a codebase or system, categorize it by type and seve
 ## Output
 Fill `templates/tech-debt-assessment.md`.
 
+## Learning & Memory
+After completing this skill, store reusable insights in memory:
+- **Tech debt categories**: Recurring debt patterns by type (code, architecture, testing, infra, docs) and their typical indicators in codebases
+- **Cost-of-delay patterns**: Observed relationships between debt items and team velocity, including compounding debt that worsened over time
+- **Repayment strategies**: Effective remediation approaches, budget allocation ratios, and quick-win identification heuristics that delivered results
+
 ## Output contract
 ```yaml
 produces:
@@ -54,4 +61,5 @@ produces:
     format: "markdown"
     path: "claudedocs/<feature>-tech-debt-assessment.md"
     sections: [inventory, prioritization, cost_of_delay, roadmap]
+    handoff: "Write claudedocs/handoff-tech-debt-assessment-<timestamp>.yaml — suggest: ticket-breakdown, design-doc"
 ```

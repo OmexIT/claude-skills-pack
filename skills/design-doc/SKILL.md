@@ -2,6 +2,7 @@
 name: design-doc
 description: Create or review a system design doc / RFC for a feature: requirements, constraints, architecture, data model, APIs, rollout, risks, and test plan. Triggers: "design doc", "RFC", "system design", "architecture plan".
 argument-hint: "[feature name]"
+effort: high
 ---
 
 # Design doc (RFC)
@@ -50,6 +51,13 @@ The doc should be review-ready:
 2. A short "Open questions" section (bullet list)
 3. A "Review checklist" with 5-10 items reviewers can quickly verify
 
+## Learning & Memory
+
+After design doc creation completes, save:
+- Architecture decisions made and the constraints that drove them
+- Design tradeoffs evaluated and which factors tipped the balance
+- Constraint patterns that recur across projects (latency budgets, compliance requirements, team capabilities)
+
 ## Output contract
 ```yaml
 produces:
@@ -57,4 +65,5 @@ produces:
     format: "markdown"
     path: "claudedocs/<feature>-design-doc.md"
     sections: [requirements, architecture, data_model, apis, rollout, risks]
+    handoff: "Write claudedocs/handoff-design-doc-<timestamp>.yaml — suggest: spec-to-impl, test-plan, security-review"
 ```

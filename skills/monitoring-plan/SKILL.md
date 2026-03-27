@@ -2,6 +2,7 @@
 name: monitoring-plan
 description: Design an observability strategy with metrics, alerts, dashboards, SLOs, and on-call response for a service or feature. Triggers: "monitoring plan", "observability", "alerts", "dashboards", "SLO", "on-call".
 argument-hint: "[service / feature]"
+effort: high
 ---
 
 # Monitoring plan
@@ -48,6 +49,12 @@ Design a comprehensive observability strategy that ensures you know when somethi
 
 ## Output
 Fill `templates/monitoring-plan.md`.
+
+## Learning & Memory
+After completing this skill, store reusable insights in memory:
+- **SLO definitions**: Service-level objective targets, error budget calculations, and burn-rate thresholds that proved effective for similar services
+- **Alert thresholds**: Calibrated alert values that balanced signal vs noise, including false-positive rates and tuning adjustments
+- **Dashboard layouts that proved useful**: Information hierarchy patterns, golden-signal arrangements, and drill-down structures that enabled fast incident triage
 
 ## Output contract
 ```yaml

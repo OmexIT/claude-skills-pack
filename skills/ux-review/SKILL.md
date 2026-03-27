@@ -2,6 +2,7 @@
 name: ux-review
 description: Evaluate a UI/UX design or implementation using heuristic analysis, accessibility audit, and cognitive walkthrough. Triggers: "UX review", "usability review", "heuristic evaluation", "accessibility audit", "is this usable".
 argument-hint: "[feature / screen / URL / mockup]"
+effort: high
 ---
 
 # UX review
@@ -14,6 +15,39 @@ Evaluate a design or implementation for usability, accessibility, and user exper
 - Target user persona and their goal
 - Context: mobile/desktop, new user/experienced, accessibility requirements
 - Known pain points or areas of concern
+
+## Parallel Expert Panel
+
+UX reviews benefit from multiple specialist perspectives:
+
+### Expert Roster
+
+| Expert | Model | Focus |
+|---|---|---|
+| `UX_STRATEGIST` | `opus` | Information architecture, user flows, task completion efficiency |
+| `A11Y_EXPERT` | `sonnet` | WCAG 2.2 compliance, keyboard nav, screen readers, color contrast |
+| `INTERACTION_DESIGNER` | `sonnet` | Micro-interactions, feedback loops, error recovery, state transitions |
+| `VISUAL_DESIGNER` | `sonnet` | Visual hierarchy, consistency, spacing, typography, brand alignment |
+
+### Execution Pattern
+
+```
+Phase 1: Context gathering — understand user persona, goals, platform (sequential)
+    ↓
+Phase 2: Parallel expert reviews
+  ┌──────────────┬──────────────┬──────────────┬──────────────┐
+  │ UX           │ A11Y_EXPERT  │ INTERACTION  │ VISUAL       │
+  │ _STRATEGIST  │              │ _DESIGNER    │ _DESIGNER    │
+  └──────┬───────┴──────┬───────┴──────┬───────┴──────┬───────┘
+         └──────────────┼──────────────┘──────────────┘
+                        ↓
+Phase 3: Consolidated UX findings report (sequential)
+```
+
+- Launch all 4 experts in parallel after context is established
+- Each expert reviews the UI independently through their lens
+- Use `run_in_background: true` for VISUAL_DESIGNER (lower priority than usability/a11y)
+- Consolidate findings, deduplicating overlapping observations
 
 ## How I'll think about this
 1. **Nielsen's 10 heuristics**: Systematically check visibility of system status, match between system and real world, user control, consistency, error prevention, recognition over recall, flexibility, aesthetic design, error recovery, and help/documentation.
@@ -79,11 +113,20 @@ Evaluate a design or implementation for usability, accessibility, and user exper
 ## Output
 Fill `templates/ux-review.md`.
 
+## Learning & Memory
+
+After review completes, save:
+- UX patterns that proved effective for this product type
+- Common usability issues found in this project (to check proactively)
+- Accessibility patterns most relevant to this user base
+- Design system consistency rules discovered during review
+
 ## Output contract
 ```yaml
 produces:
-  - type: "review"
+  - type: "ux-review"
     format: "markdown"
     path: "claudedocs/<feature>-ux-review.md"
     sections: [heuristics, accessibility, cognitive_walkthrough, recommendations]
+    handoff: "Write claudedocs/handoff-ux-review-<timestamp>.yaml — suggest: ticket-breakdown, pr-review"
 ```

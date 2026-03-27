@@ -1,8 +1,8 @@
 # Claude Code Skills Pack
 
-**43 ready-to-use skills for Claude Code** covering the entire software development lifecycle — from discovery and planning through design, implementation, verification, quality review, release, and operations.
+**46 ready-to-use skills for Claude Code** covering the entire software development lifecycle — from discovery and planning through design, implementation, verification, quality review, release, and operations.
 
-Skills range from lightweight methodology guides (50-100 lines) to comprehensive multi-agent orchestrators (500+ lines) that coordinate parallel implementation from a spec document.
+Skills range from lightweight methodology guides (~80 lines) to comprehensive multi-agent orchestrators (~700 lines) that coordinate parallel agent teams with model routing, worktree isolation, and wave-based execution.
 
 ---
 
@@ -30,17 +30,17 @@ When you invoke a skill, Claude loads the methodology, applies structured thinki
 | `/competitive-analysis` | Structured competitor landscape, feature comparison, differentiation |
 | `/go-to-market` | Launch plan with messaging, channels, enablement, and measurement |
 
-### Planning & Requirements (13 skills)
+### Planning & Requirements (14 skills)
 | Skill | What it does |
 |-------|-------------|
-| `/prd` | Product requirements document — problem, goals, users, scope, metrics |
+| `/prd` | Product requirements document with multi-agent generation (Problem Analyst, Requirements Engineer, Metrics Designer, Edge Case Analyst) |
 | `/design-doc` | System design / RFC — architecture, data model, APIs, alternatives |
 | `/adr` | Architecture decision record — context, decision, alternatives, consequences |
 | `/user-flow` | User journey mapping — states, decisions, error recovery, accessibility |
 | `/flow-map` | Pre-implementation path mapping — happy, failure, timeout, recovery paths |
-| `/ui-design` | Multi-agent UI/UX design — wireframes, tokens, components, a11y, testIDs |
+| `/ui-design` | **Multi-agent orchestrator**: 6 design agents in parallel waves — wireframes, tokens, components, a11y, testIDs |
 | `/api-design` | API design review — naming, versioning, error contracts, pagination |
-| `/data-design` | Polyglot data architecture — PostgreSQL, MongoDB, Elasticsearch, Typesense |
+| `/data-design` | Polyglot data architecture with parallel store analysis — PostgreSQL, MongoDB, Elasticsearch, Typesense |
 | `/search-design` | Search infrastructure — Elasticsearch + Typesense index, mapping, relevance |
 | `/infra-design` | Infrastructure architecture — Docker, Kubernetes, Terraform, CI/CD |
 | `/ticket-breakdown` | Break specs into epics + engineering tickets with acceptance criteria |
@@ -48,27 +48,30 @@ When you invoke a skill, Claude loads the methodology, applies structured thinki
 | `/decision-matrix` | Weighted criteria evaluation for complex choices |
 | `/migration-plan` | Safe database/API/infrastructure migration with rollback |
 
-### Implementation & Verification (4 skills)
+### Implementation & Verification (5 skills)
 | Skill | What it does |
 |-------|-------------|
-| `/spec-to-impl` | **Multi-agent orchestrator**: spec → tasks → parallel implementation → tested artifacts |
-| `/verify-impl` | **Live verification**: API (curl), DB (Postgres/Mongo/Elastic/Typesense), UI (Playwright), Mobile |
+| `/spec-to-impl` | **Multi-agent orchestrator**: spec → tasks → parallel implementation with 14 agent types, worktree isolation, wave-based dispatch |
+| `/figma-to-code` | Convert Figma designs to production React/TypeScript via Figma MCP |
+| `/verify-impl` | **Parallel verification**: API + DB + UI + Mobile layers run concurrently with evidence collection |
 | `/mobile-dev` | Mobile development patterns — Flutter, React Native, Android (Kotlin) |
-| `/finalize` | Post-implementation — lint → test → clean up → commit → PR |
+| `/finalize` | Post-implementation — parallel lint/test → clean up → commit → PR |
 
-### Quality & Review (10 skills)
+### Quality & Review (12 skills)
 | Skill | What it does |
 |-------|-------------|
 | `/pr-review` | Structured code review — correctness, security, performance, testing |
 | `/evidence-review` | **Default-to-rejection QA gate** — requires proof, not claims |
+| `/spec-panel` | **Multi-expert orchestrator**: IEEE 830 audit + spec smells + cross-cutting concerns + parallel expert panel |
+| `/code-audit` | **Multi-agent orchestrator**: 10-dimension parallel analysis with model-routed experts and quality scoring |
 | `/test-plan` | Risk-based test strategy with coverage matrix |
-| `/security-review` | Threat-model-lite with OWASP-aligned checks |
-| `/performance-review` | Performance analysis — hot paths, query patterns, caching |
-| `/ux-review` | Heuristic evaluation + WCAG accessibility audit |
+| `/security-review` | **Parallel expert panel**: Auth, Injection, Data Privacy, Abuse analysts |
+| `/performance-review` | **Parallel expert panel**: Backend, DB, Frontend, Infrastructure performance |
+| `/ux-review` | **Parallel expert panel**: UX Strategist, A11y Expert, Interaction Designer, Visual Designer |
 | `/docs-review` | Documentation clarity, correctness, and consistency review |
 | `/metrics-review` | Analytics instrumentation and data quality audit |
 | `/tech-debt-assessment` | Inventory, categorize, and prioritize technical debt |
-| `/debug-triage` | Bug triage — reproduction, hypotheses, bisection, minimal fix |
+| `/debug-triage` | Bug triage with parallel hypothesis investigation |
 
 ### Release & Operations (5 skills)
 | Skill | What it does |
@@ -97,6 +100,86 @@ When you invoke a skill, Claude loads the methodology, applies structured thinki
 |-------|-------------|
 | `repo-conventions` | Repo-specific conventions applied automatically (not a slash command) |
 | `handoff` | Inter-skill artifact protocol for chaining (not a slash command) |
+
+---
+
+## Architecture
+
+### Parallel Execution Model
+
+Skills maximize concurrency at every level:
+
+```
+Orchestrator Skills (spec-to-impl, ui-design, code-audit, spec-panel)
+├── Wave-based dispatch: independent agents run concurrently
+├── Dependency gating: dependent agents wait for prerequisites
+├── Background agents: low-priority work runs non-blocking
+└── Worktree isolation: parallel code changes without conflicts
+
+Review Skills (security-review, performance-review, ux-review)
+├── Parallel expert panels: 3-4 specialist agents per review
+├── Phase 1 (sequential): establish shared context
+├── Phase 2 (parallel): independent expert analysis
+└── Phase 3 (sequential): synthesize findings
+
+Workflow Skills (finalize, verify-impl)
+├── Parallel lint/test: multi-stack runs concurrently
+├── Parallel verification: API + DB + UI + Mobile layers
+└── Background agents: documentation generation non-blocking
+```
+
+### Agent Model Routing
+
+Skills route agents to optimal models for cost-efficiency:
+
+| Model | Used For | Skills |
+|-------|----------|--------|
+| **Opus** | Architecture, security, deep reasoning, design review | ARCH, SEC, DBA, SKEPTIC, COMP_ARCH |
+| **Sonnet** | Implementation, analysis, code generation | BE, FE, QA, DEVOPS, lint/test agents |
+| **Haiku** | Documentation, lightweight generation | TECH_WRITER, COPY, Typesense design |
+
+### Skill Chaining & Handoff Protocol
+
+Skills produce structured output that downstream skills consume automatically:
+
+```
+/prd            →  prd                    →  /design-doc, /spec-to-impl, /ui-design
+/design-doc     →  design-doc             →  /spec-to-impl, /test-plan, /security-review
+/ui-design      →  ui-design + testids   →  /spec-to-impl (FE), /verify-impl, /figma-to-code
+/data-design    →  data-design           →  /spec-to-impl (DBA), /migration-plan
+/spec-to-impl   →  code + test-plan      →  /verify-impl, /finalize, /code-audit
+/verify-impl    →  verification          →  /finalize, /evidence-review
+/finalize       →  commit + PR           →  /pr-review, /release-notes
+```
+
+Each skill writes a handoff artifact to `claudedocs/handoff-<skill>-<timestamp>.yaml` containing: produced artifacts, quality assessment, and context for the next skill.
+
+### Memory & Learning
+
+Skills save reusable patterns to Claude Code's memory system after execution:
+- **Architecture decisions** that worked well for specific spec types
+- **Performance baselines** and optimization patterns per project
+- **Security patterns** specific to the project's auth model
+- **Review findings** that should inform future work
+- **Agent routing** that proved effective (which agents needed opus vs sonnet)
+
+This enables future skill runs to benefit from accumulated project knowledge.
+
+### Claude Code Features Leveraged
+
+| Feature | How Skills Use It |
+|---------|-------------------|
+| **Agent tool with subagent_type** | Orchestrator skills launch specialized agents |
+| **Parallel Agent calls** | Multiple agents in a single message for concurrent execution |
+| **Background agents** (`run_in_background`) | Non-blocking low-priority work |
+| **Worktree isolation** | Conflict-free parallel code changes |
+| **Context forking** (`context: fork`) | Complex skills run in isolated context |
+| **Effort levels** | Skills declare `effort: high\|medium` for reasoning depth |
+| **Model routing** | Per-agent model selection (opus/sonnet/haiku) |
+| **Task management** | Real-time progress tracking visible to user |
+| **Memory system** | Cross-session learning and pattern persistence |
+| **MCP integration** | Figma (design extraction), Stitch (screen generation), Playwright (UI verification) |
+| **Agent Teams** (experimental) | Direct agent-to-agent communication for tightly-coupled specs |
 
 ---
 
@@ -150,31 +233,31 @@ Skills are designed to feed into each other. Each skill produces structured outp
 # 1. Validate the idea
 /opportunity-assessment "Add payment link feature for merchants"
 
-# 2. Write requirements
+# 2. Write requirements (multi-agent: problem analyst + requirements engineer + metrics designer)
 /prd Payment links — merchants can generate shareable payment URLs
 
 # 3. Design the system
 /design-doc @claudedocs/PRD-payment-links.md
 
-# 4. Design the UI (if applicable)
+# 4. Design the UI (6 parallel agents: UX Lead, UI Designer, Component Architect, A11y, Copy, Design System)
 /ui-design @claudedocs/DESIGN-DOC-payment-links.md
 
-# 5. Design the data layer
+# 5. Design the data layer (parallel: Postgres + Mongo + Elastic designers)
 /data-design @claudedocs/DESIGN-DOC-payment-links.md
 
 # 6. Map all paths before coding
 /flow-map @claudedocs/DESIGN-DOC-payment-links.md
 
-# 7. Implement everything from the spec
+# 7. Implement everything (14 agent types, wave-based parallel execution, worktree isolation)
 /spec-to-impl claudedocs/DESIGN-DOC-payment-links.md
 
-# 8. Verify the implementation
+# 8. Verify the implementation (parallel: API + DB + UI + Mobile layers)
 /verify-impl
 
-# 9. Final quality gate
+# 9. Final quality gate (default-to-rejection)
 /evidence-review
 
-# 10. Ship it
+# 10. Ship it (parallel lint/test, conventional commit, PR)
 /finalize
 ```
 
@@ -184,8 +267,25 @@ Each step discovers the previous step's output automatically (via `claudedocs/ha
 
 ```bash
 /debug-triage "NullPointerException in PaymentService.processRefund()"
-# → Fix the bug
+# → Fix the bug (parallel hypothesis investigation if 3+ hypotheses)
 /finalize
+```
+
+#### Example: Code quality audit
+
+```bash
+# 10-dimension parallel analysis: smells, SOLID, duplication, algorithms, security, performance, patterns, architecture, tech fitness, devil's advocate
+/code-audit src/payment/
+```
+
+#### Example: Security + Performance review (parallel panels)
+
+```bash
+# 4 parallel security experts: Auth, Injection, Data Privacy, Abuse
+/security-review src/api/auth/
+
+# 4 parallel perf experts: Backend, DB, Frontend, Infrastructure
+/performance-review src/payment/
 ```
 
 #### Example: Mobile feature
@@ -199,112 +299,20 @@ Each step discovers the previous step's output automatically (via `claudedocs/ha
 
 ### Comprehensive skills (multi-agent orchestrators)
 
-Three skills are significantly more powerful than the rest — they orchestrate parallel agent teams:
+Six skills orchestrate parallel agent teams:
 
-#### `/spec-to-impl` — Spec to Implementation
-
-Transforms a specification document into working, tested code using parallel agents.
-
-```bash
-# Single spec
-/spec-to-impl docs/PRD.md
-
-# Multiple spec files (merged as one project)
-/spec-to-impl docs/MONEY_REQUEST.md docs/PAYMENT_LINK.md
-
-# Check progress mid-execution
-status
-
-# Add a task mid-execution
-add task: add rate limiting to the payment API
-```
-
-**How it works:**
-1. **PARSE** — Reads spec, extracts requirements, APIs, entities, runs build check
-2. **PLAN** — Creates task board, assigns to agents (BE, FE, Flutter, DBA, QA, etc.), generates `e2e/test-plan.yaml`
-3. **EXECUTE** — Dispatches agents in parallel waves using Git worktrees
-
-**Key features:**
-- 12 agent types: ARCH, BE, FE, Flutter, RN, Android, AngularJS, QA, DBA, DEVOPS, SEC, TECH_WRITER
-- Mandatory codebase scan (prevents duplicate patterns)
-- Evidence-based wave gates (no "tests pass" without proof)
-- 3-retry budget with escalation (reassign / decompose / revise / defer)
-- Cleanup phase (worktree pruning, branch deletion, handoff artifact)
-
-**Supported stacks:**
-| Layer | Technologies |
-|---|---|
-| Backend | Java 21 + Spring Boot 3.x |
-| Frontend (Web) | React 18 + TypeScript + Tailwind, AngularJS |
-| Frontend (Mobile) | Flutter, React Native, Android (Kotlin) |
-| Database | PostgreSQL, MongoDB |
-| Search | Elasticsearch, Typesense |
-| Infrastructure | Docker, Kubernetes, Terraform |
-| Testing | JUnit 5, Vitest, Playwright, Flutter tests, Detox, Espresso |
-
-#### `/verify-impl` — Live Verification
-
-Validates implementation through 4 verification layers against a running system.
-
-```bash
-# Auto-discover test plan, run all layers
-/verify-impl
-
-# Specific layers
-/verify-impl --api --db
-/verify-impl --ui
-/verify-impl --mobile
-
-# Specific test cases
-/verify-impl --tc TC-001 TC-003
-
-# From a spec (no test plan yet)
-/verify-impl path/to/spec.md
-```
-
-**4 verification layers:**
-
-| Layer | What it checks | Tool |
-|---|---|---|
-| **API** | HTTP status codes, response bodies, auth enforcement, validation | `curl` |
-| **Database** | Row existence, field values, referential integrity, ledger balance | `psql`, `mongosh`, Elasticsearch API, Typesense API |
-| **UI** | Element visibility, form submission, navigation, screenshots | Playwright |
-| **Mobile** | Widget tests, component tests, device emulation | Flutter test, Jest, Espresso |
-
-**Output:** Pass/fail per test case with evidence (actual output, screenshots, query results).
-
-#### `/ui-design` — Multi-Agent UI/UX Design
-
-Produces complete design artifacts from a spec — ready for implementation.
-
-```bash
-# Design from spec
-/ui-design claudedocs/PRD.md
-
-# Platform-specific
-/ui-design docs/SPEC.md --platform flutter
-
-# Tokens only
-/ui-design docs/SPEC.md --tokens-only
-```
-
-**5 design agents:** UX Lead, UI Designer, Component Architect, Accessibility Reviewer, UX Copywriter
-
-**Produces:**
-- UX inventory + IA map + user flows
-- ASCII wireframes (default + loading + empty + error states)
-- Design tokens (CSS vars / Tailwind config / Flutter ThemeExtension)
-- Component specs with props, state model, and data-testIDs
-- Accessibility audit (WCAG 2.1 AA + keyboard + ARIA + screen reader)
-- UX copy spec (all labels, errors, empty states, tooltips)
+| Skill | Agents | Execution Pattern |
+|-------|--------|-------------------|
+| `/spec-to-impl` | 14 types (ARCH, BE, FE, Flutter, RN, Android, QA, DBA, DEVOPS, SEC, OBS, DESIGN, ANGULARJS, TECH_WRITER) | Wave-based with worktree isolation |
+| `/ui-design` | 6 types (UX Lead, UI Designer, Component Architect, A11y, Copy, Design System) | 4-wave parallel design |
+| `/code-audit` | 10 types (LEAD, ARCH, SMELL, DUP, ALGO, SEC, PERF, PATTERN, TECH, SKEPTIC) | Parallel 10-dimension analysis |
+| `/spec-panel` | Variable (fixed + domain-activated experts + devil's advocate) | Parallel expert panel |
+| `/verify-impl` | 4 types (API, DB, UI, Mobile) | Parallel verification layers |
+| `/figma-to-code` | Phase-based (Design Manifest → Code Generation) | Multi-phase with MCP |
 
 ### Evidence-based quality gate
 
 `/evidence-review` defaults to **NEEDS WORK** — the opposite of typical reviews:
-
-```bash
-/evidence-review
-```
 
 **Automatic FAIL triggers:**
 - Zero issues reported (impossible for real implementations)
@@ -318,68 +326,511 @@ Produces complete design artifacts from a spec — ready for implementation.
 
 `/finalize` handles everything after coding is done:
 
-```bash
-/finalize
-```
+**Pipeline:** Scan → Parallel Lint → Parallel Test → Simplify → Clean → Stage → Commit → PR
 
-**Pipeline:** Scan → Lint → Test → Clean → Stage → Commit → PR
-
-- Runs language-appropriate linters (checkstyle, eslint, dart analyze, ktlint)
-- Runs test suites and shows actual output
-- Cleans orphaned worktrees, stale branches, temp files
+- Detects project stacks and runs language-appropriate linters **in parallel**
+- Runs test suites **concurrently** across detected languages
+- Optional pre-commit quality sweep (reuse, quality, efficiency agents)
 - Creates conventional commit with correct type and scope
 - Creates PR with summary and test evidence
 
-### Thin skills (methodology guides)
+---
 
-The remaining 32 skills are lightweight methodology guides (50-100 lines) that teach Claude *how to think* about a specific task:
+## End-to-End Use Case: Merchant Payment Links
 
-```bash
-# Planning
-/prd Feature X                    # → claudedocs/PRD-feature-x.md
-/design-doc @claudedocs/PRD.md    # → claudedocs/DESIGN-DOC-feature-x.md
-/api-design POST /api/v1/payments # → claudedocs/api-design-payments.md
-/data-design payments entity      # → claudedocs/data-design-payments.md
+This walkthrough shows every skill in action for a realistic feature — from initial idea through production operations. Each step shows what happens behind the scenes, what artifacts are produced, and how skills chain together automatically.
 
-# Review
-/security-review src/auth/        # → claudedocs/security-review-auth.md
-/performance-review src/payments/  # → claudedocs/performance-review-payments.md
-/ux-review /dashboard              # → claudedocs/ux-review-dashboard.md
-
-# Operations
-/monitoring-plan payment-service   # → claudedocs/monitoring-plan-payments.md
-/runbook payment-service           # → claudedocs/runbook-payments.md
-/incident-response                 # → guided incident workflow
-```
-
-Each thin skill includes:
-- **Methodology** — structured thinking approach (5-8 steps)
-- **Anti-patterns** — common mistakes to avoid
-- **Quality bar** — concrete success criteria
-- **Workflow context** — what comes before/after
-- **Output contract** — structured output for downstream skills
+**Scenario**: A fintech platform wants to let merchants generate shareable payment links that customers can use to pay via web or mobile.
 
 ---
 
-## Skill Chaining
+### Phase 1: Discovery (Day 1)
 
-Skills produce structured output that downstream skills consume via the **handoff protocol**. The `handoff` auto-guidance skill manages discovery.
+#### Step 1 — Validate the opportunity
 
 ```
-SKILL              PRODUCES (type)           CONSUMED BY
-─────              ───────────────           ───────────
-/prd            →  prd                    →  /design-doc, /spec-to-impl
-/design-doc     →  design-doc             →  /spec-to-impl, /ui-design, /data-design
-/ui-design      →  ui-design + testids   →  /spec-to-impl (FE), /verify-impl
-/flow-map       →  flow-map              →  /spec-to-impl, /test-plan
-/data-design    →  data-design           →  /spec-to-impl (DBA)
-/spec-to-impl   →  code + test-plan      →  /verify-impl, /finalize
-/verify-impl    →  verification          →  /finalize, /evidence-review
-/evidence-rev.. →  review (rated)        →  /finalize
-/finalize       →  commit + PR           →  /pr-review, /release-notes
+> /opportunity-assessment "Payment links for merchants — generate shareable URLs that accept payments"
 ```
 
-Each skill writes a handoff artifact to `claudedocs/handoff-<skill>-<timestamp>.yaml` containing: produced artifacts, quality assessment, and context for the next skill.
+**What happens:**
+- Analyzes market fit, competitive landscape, and strategic alignment
+- Estimates cost/benefit and identifies risks
+- Produces a scored recommendation: BUILD / DEFER / KILL
+
+**Artifacts produced:**
+```
+claudedocs/payment-links-opportunity-assessment.md
+claudedocs/handoff-opportunity-assessment-20260327T0900.yaml
+```
+
+**Handoff manifest signals:** `suggested_next: [prd, decision-matrix]`
+
+#### Step 2 — Competitive context (optional, parallel with Step 1)
+
+```
+> /competitive-analysis "Payment link products: Stripe, Square, PayPal.me, Razorpay"
+```
+
+**What happens:**
+- Researches each competitor's payment link implementation
+- Compares features, pricing, developer experience, limitations
+- Identifies differentiation opportunities
+
+**Artifacts produced:**
+```
+claudedocs/payment-links-competitive-analysis.md
+claudedocs/handoff-competitive-analysis-20260327T0930.yaml
+```
+
+---
+
+### Phase 2: Planning (Day 1-2)
+
+#### Step 3 — Write the PRD
+
+```
+> /prd Payment links — merchants generate shareable payment URLs with configurable amounts, expiry, and branding
+```
+
+**What happens behind the scenes (multi-agent):**
+1. `PROBLEM_ANALYST` (opus) — deep-dives on merchant pain, validates "why now"
+2. Three agents run **in parallel**:
+   - `REQUIREMENTS_ENGINEER` (sonnet) — writes functional requirements with Given/When/Then acceptance criteria
+   - `METRICS_DESIGNER` (opus) — defines success metrics with baselines, targets, timelines
+   - `EDGE_CASE_ANALYST` (sonnet) — enumerates boundary conditions, error states, abuse scenarios
+3. Synthesis — combines into unified PRD with Definition of Ready checklist
+
+**Artifacts produced:**
+```
+claudedocs/payment-links-prd.md          # Full PRD with 12 FRs, 8 NFRs, 34 acceptance criteria
+claudedocs/handoff-prd-payment-links-20260327T1100.yaml
+```
+
+**Key PRD sections:**
+- Problem statement + "why now" validation
+- 3 user personas (merchant admin, end customer, platform ops)
+- 12 functional requirements with Given/When/Then criteria
+- Per-feature NFRs (payment submission < 200ms p95, link generation < 500ms)
+- UI component state matrices (default, loading, error, success, expired, disabled)
+- Dependency matrix with owners and risk ratings
+- Rollout plan: feature flag → 5% → 25% → 100%
+
+#### Step 4 — Expert panel review of the spec
+
+```
+> /spec-panel claudedocs/payment-links-prd.md
+```
+
+**What happens (parallel expert panel):**
+1. Phase 0: Asks 3-5 clarifying questions, waits for answers
+2. Phase 1: Deep research — codebase investigation + internet research
+3. Phase 2: IEEE 830 quality audit + spec smells scanner + cross-cutting concerns checklist
+4. Phase 3: **Parallel expert panel** — domain experts (payments, compliance, UX) + devil's advocate all analyze simultaneously
+5. Phase 4: Quality scoring (1-100) with actionable recommendations
+
+**Artifacts produced:**
+```
+claudedocs/payment-links-spec-panel.md   # Expert findings, quality score, recommendations
+claudedocs/handoff-spec-panel-20260327T1300.yaml
+```
+
+The panel might surface: "PCI compliance implications for storing payment link metadata — spec doesn't address data classification" → feeds back into PRD refinement.
+
+#### Step 5 — System design
+
+```
+> /design-doc claudedocs/payment-links-prd.md
+```
+
+**What happens:**
+- Reads PRD + panel analysis (auto-discovered via handoff manifests)
+- Designs architecture: API contracts, data model, sequence diagrams, deployment
+- Evaluates alternatives with tradeoff analysis
+- Produces design doc with ADR for key decisions
+
+**Artifacts produced:**
+```
+claudedocs/payment-links-design-doc.md
+claudedocs/handoff-design-doc-20260327T1500.yaml
+```
+
+#### Step 6 — Parallel planning skills (Steps 6a-6e run concurrently)
+
+**6a. UI Design** — 6 agents in 4 parallel waves
+
+```
+> /ui-design claudedocs/payment-links-prd.md
+```
+
+**What happens (wave-based parallel execution):**
+```
+Wave 1 (sequential):  UX_LEAD (opus) — surface extraction, IA mapping, user flows
+    ↓
+Wave 2 (parallel):    UI_DESIGNER (sonnet) + COPY (haiku) — wireframes + microcopy simultaneously
+    ↓
+Wave 3 (parallel):    COMP_ARCH (opus) + A11Y (sonnet) — component specs + accessibility review
+    ↓
+Wave 4 (sequential):  UX_LEAD — synthesis and design handoff
+```
+
+**Artifacts produced:**
+```
+design/DESIGN.md                          # Design tokens, typography, color system
+design/screens/                           # ASCII wireframes for every screen + every state
+design/components/component-tree.md       # Component hierarchy with props and state models
+design/components/testid-registry.md      # 44 stable testIDs for Playwright verification
+design/a11y-audit.md                      # WCAG 2.2 AA compliance audit
+design/copy-spec.md                       # All labels, errors, empty states, tooltips
+claudedocs/handoff-ui-design-20260327T1600.yaml
+```
+
+**6b. Data Design** — parallel store analysis
+
+```
+> /data-design claudedocs/payment-links-design-doc.md
+```
+
+**What happens (parallel per-store):**
+```
+Phase 1: Requirements analysis (sequential)
+    ↓
+Phase 2: Parallel store design
+  ┌──────────────────┬──────────────────┐
+  │ POSTGRES_DESIGNER│ ELASTIC_DESIGNER │
+  │ (opus)           │ (sonnet)         │
+  └────────┬─────────┴────────┬─────────┘
+           ↓                  ↓
+Phase 3: Cross-store sync strategy (sequential)
+```
+
+**6c. API Design**
+
+```
+> /api-design claudedocs/payment-links-design-doc.md
+```
+
+**6d. Flow Map**
+
+```
+> /flow-map claudedocs/payment-links-design-doc.md
+```
+
+Maps every path: happy path, expired link, invalid amount, duplicate payment, concurrent access, network timeout, partial failure, recovery.
+
+**6e. Ticket Breakdown**
+
+```
+> /ticket-breakdown claudedocs/payment-links-prd.md
+```
+
+Breaks into 3 epics, 14 tickets with acceptance criteria, dependencies, and story points.
+
+---
+
+### Phase 3: Implementation (Day 2-3)
+
+#### Step 7 — Implement from spec
+
+```
+> /spec-to-impl claudedocs/payment-links-design-doc.md claudedocs/payment-links-prd.md
+```
+
+**What happens (multi-agent orchestrator with 14 agent types):**
+
+**Phase 0 — DESIGN CONTEXT** (if Figma URL provided):
+- `DESIGN` agent (sonnet) extracts tokens, components, and layouts from Figma via MCP
+
+**Phase 1 — PARSE:**
+- Reads all spec files + all upstream handoff manifests
+- Extracts requirements, APIs, entities, UI screens
+- Runs `mvn compile` / `npm run build` to verify the project builds
+
+**Phase 2 — PLAN:**
+- `ARCH` (opus) creates the task board with dependency graph
+- Assigns tasks to agents: BE, FE, DBA, QA, DEVOPS, OBS
+- Generates `e2e/test-plan.yaml` for verify-impl
+- Groups tasks into execution waves based on dependencies
+
+**Phase 3 — EXECUTE (wave-based, parallel, worktree-isolated):**
+
+```
+Wave 1 — Foundation (parallel, worktree isolation)
+  ┌──────────┬──────────┬──────────┐
+  │ DBA      │ DEVOPS   │ OBS      │
+  │ (opus)   │ (sonnet) │ (sonnet) │
+  │ Schema + │ Docker + │ Logging +│
+  │ migration│ CI/CD    │ metrics  │
+  └────┬─────┴────┬─────┴────┬─────┘
+       └──────────┼──────────┘
+                  ↓
+Wave 2 — API Contract (sequential)
+  ARCH (opus) — defines shared interfaces, API standards contract
+                  ↓
+Wave 3 — Backend + Frontend (parallel, worktree isolation)
+  ┌──────────────────┬──────────────────┐
+  │ BE (sonnet)      │ FE (sonnet)      │
+  │ 3 controllers    │ 4 React pages    │
+  │ 3 services       │ 12 components    │
+  │ 2 repositories   │ API client       │
+  │ validation logic │ form handling    │
+  └────────┬─────────┴────────┬─────────┘
+           └──────────────────┘
+                  ↓
+Wave 4 — Testing (parallel)
+  ┌──────────────────┬──────────────────┐
+  │ QA (sonnet)      │ SEC (opus)       │
+  │ Unit tests       │ Security review  │
+  │ Integration tests│ OWASP checklist  │
+  │ E2E test plan    │ Auth/authz audit │
+  └────────┬─────────┴────────┬─────────┘
+           └──────────────────┘
+                  ↓
+Wave 5 — Documentation (background)
+  TECH_WRITER (haiku) — API docs, README updates, OpenAPI spec
+```
+
+**Background agents** run non-blocking: TECH_WRITER starts during Wave 3, OBS instrumentation runs during Wave 3.
+
+**Evidence-based wave gates**: Each wave must produce real build/test output before the next wave starts. "Tests pass" without `mvn test` stdout = automatic gate failure.
+
+**3-retry budget**: If an agent fails, it gets 3 attempts with escalation: retry → reassign → decompose into smaller tasks → defer to human.
+
+**Artifacts produced:**
+```
+src/main/java/com/app/payment/link/       # 8 Java files (controllers, services, DTOs, repos)
+src/main/resources/db/changelog/           # 2 Liquibase migration files
+src/test/java/com/app/payment/link/       # 12 unit test files
+src/test-integration/                      # 3 integration test files
+src/main/webapp/src/pages/PaymentLinks/   # 4 React page components
+src/main/webapp/src/components/           # 12 React UI components with testIDs
+e2e/test-plan.yaml                        # 8 test cases for verify-impl
+docker-compose.override.yml               # Service additions
+.github/workflows/payment-links.yml       # CI pipeline
+docs/api/payment-links-openapi.yaml       # OpenAPI 3.1 spec
+claudedocs/handoff-spec-to-impl-20260328T1000.yaml
+```
+
+---
+
+### Phase 4: Verification (Day 3)
+
+#### Step 8 — Live verification
+
+```
+> /verify-impl
+```
+
+**What happens (4 verification layers in parallel):**
+
+```
+Phase 1: Environment discovery (sequential)
+  API: http://localhost:8080  ✅ UP
+  Frontend: http://localhost:3000  ✅ UP
+  Database: localhost:5432/appdb  ✅ UP
+    ↓
+Phase 2: Parallel verification
+  ┌──────────────┬──────────────┬──────────────┐
+  │ VERIFY_API   │ VERIFY_DB    │ VERIFY_UI    │
+  │ (sonnet)     │ (sonnet)     │ (sonnet)     │
+  │ 24 HTTP calls│ 16 SQL checks│ 8 Playwright │
+  │ auth, CRUD,  │ row exists,  │ flows with   │
+  │ validation,  │ field values,│ screenshots  │
+  │ error codes  │ referential  │ per test case│
+  │              │ integrity    │              │
+  └──────┬───────┴──────┬───────┴──────┬───────┘
+         └──────────────┼──────────────┘
+                        ↓
+Phase 3: Evidence synthesis (sequential)
+```
+
+**Output:**
+```
+╔═══════════════════════════════════════════════════╗
+║     VERIFY-IMPL REPORT — Payment Links           ║
+╠═══════════════════════════════════════════════════╣
+║  Layer     │ Checks │ Passed │ Failed │ Status   ║
+╠═══════════════════════════════════════════════════╣
+║  API       │   24   │   23   │   1    │ ❌ ISSUE ║
+║  Database  │   16   │   16   │   0    │ ✅ CLEAN ║
+║  UI        │    8   │    8   │   0    │ ✅ CLEAN ║
+╠═══════════════════════════════════════════════════╣
+║  OVERALL   │   48   │   47   │   1    │ ❌       ║
+╚═══════════════════════════════════════════════════╝
+
+❌ FAILURE: PUT /api/v1/payment-links/:id/expire → 500
+   Root cause: NullPointerException — missing null check when link already expired
+   Fix: Add guard clause in PaymentLinkService.expire():42
+```
+
+The fix is applied, verify-impl is re-run (`/verify-impl --tc TC-005`), and now all 48 checks pass.
+
+```
+e2e/reports/verify-20260328T1400.log
+e2e/verify-impl/screenshots/                 # 8 screenshots as evidence
+claudedocs/handoff-verify-impl-20260328T1400.yaml
+```
+
+---
+
+### Phase 5: Quality Review (Day 3-4)
+
+#### Step 9 — Code audit
+
+```
+> /code-audit src/main/java/com/app/payment/link/
+```
+
+**What happens (10 agents in parallel):**
+- SMELL + DUP + ALGO + SEC + PERF + PATTERN + ARCH + TECH + SKEPTIC all analyze simultaneously
+- LEAD (opus) synthesizes into quality scorecard
+
+**Result:** Quality Score: 8.1/10 — 0 CRITICAL, 1 HIGH (missing rate limiting on link creation), 3 MEDIUM, 2 POSITIVE.
+
+#### Step 10 — Security review
+
+```
+> /security-review src/main/java/com/app/payment/link/
+```
+
+**What happens (4 parallel security experts):**
+- AUTH_EXPERT: validates JWT enforcement on all endpoints
+- INJECTION_ANALYST: checks parameterized queries, input sanitization
+- DATA_PRIVACY: verifies no PII in logs, proper data classification
+- ABUSE_ANALYST: checks rate limiting, enumeration protection
+
+#### Step 11 — Evidence review (quality gate)
+
+```
+> /evidence-review
+```
+
+**Default verdict: NEEDS WORK** until proven otherwise.
+
+Checks for:
+- Real test runner output (not just "tests pass")
+- Real screenshots from running app (not mockups)
+- Real DB query results (not assumed state)
+- All P0 requirements have evidence across all layers
+
+**Verdict:** CONDITIONAL PASS — rate limiting finding from code-audit must be fixed first.
+
+---
+
+### Phase 6: Ship (Day 4)
+
+#### Step 12 — Finalize
+
+```
+> /finalize payment-links
+```
+
+**What happens:**
+```
+Phase 1: SCAN — 23 changed files, 0 orphaned worktrees
+    ↓
+Phase 2: Parallel lint
+  ┌──────────────────┬──────────────────┐
+  │ Java: mvn        │ TS/React: eslint │
+  │ checkstyle:check │ + tsc --noEmit   │
+  └────────┬─────────┴────────┬─────────┘
+    ↓
+Phase 3: Parallel test
+  ┌──────────────────┬──────────────────┐
+  │ Java: mvn test   │ React: vitest    │
+  │ 47/47 passed     │ 23/23 passed     │
+  └────────┬─────────┴────────┬─────────┘
+    ↓
+Phase 4: CLEAN → STAGE → COMMIT → PR
+```
+
+**Output:**
+```
+✅ Lint: 0 errors
+✅ Tests: 70/70 passed
+✅ No secrets in diff
+✅ Conventional commit: feat(payment-links): add merchant payment link generation with expiry and branding
+✅ PR #234 created: https://github.com/org/repo/pull/234
+```
+
+#### Step 13 — Release notes
+
+```
+> /release-notes v2.4.0
+```
+
+Generates user-facing release notes, internal engineering notes, and known limitations.
+
+---
+
+### Phase 7: Operations (Ongoing)
+
+#### Step 14 — Monitoring plan
+
+```
+> /monitoring-plan payment-links-service
+```
+
+**Produces:**
+- Golden signals: latency (p50/p95/p99), error rate, saturation, traffic
+- SLOs: 99.9% availability, < 200ms p95 link creation, < 500ms p95 payment processing
+- Alerts: error rate > 1% for 5min, latency p99 > 2s, payment failure rate > 5%
+- Grafana dashboard spec with panel definitions
+
+#### Step 15 — Runbook
+
+```
+> /runbook payment-links-service
+```
+
+**Produces:** Deployment procedure, scaling playbook, failure recovery steps, common operations guide.
+
+---
+
+### What the handoff chain looks like
+
+Each skill reads upstream artifacts automatically. After the full workflow, `claudedocs/` contains:
+
+```
+claudedocs/
+├── payment-links-opportunity-assessment.md
+├── payment-links-competitive-analysis.md
+├── payment-links-prd.md
+├── payment-links-spec-panel.md
+├── payment-links-design-doc.md
+├── payment-links-data-design.md
+├── payment-links-api-design.md
+├── payment-links-flow-map.md
+├── payment-links-ticket-breakdown.md
+├── payment-links-code-audit.md
+├── payment-links-security-review.md
+├── handoff-opportunity-assessment-20260327T0900.yaml
+├── handoff-competitive-analysis-20260327T0930.yaml
+├── handoff-prd-payment-links-20260327T1100.yaml
+├── handoff-spec-panel-20260327T1300.yaml
+├── handoff-design-doc-20260327T1500.yaml
+├── handoff-ui-design-20260327T1600.yaml
+├── handoff-data-design-20260327T1630.yaml
+├── handoff-spec-to-impl-20260328T1000.yaml
+├── handoff-verify-impl-20260328T1400.yaml
+├── handoff-finalize-20260328T1600.yaml
+└── .archive/                                    # Archived after finalize
+```
+
+Each handoff YAML contains: source skill, produced artifacts with paths, quality status, and `suggested_next` skills — enabling fully automatic chaining.
+
+### Agents involved across the full workflow
+
+| Phase | Skills | Total agents spawned | Parallel agents |
+|-------|--------|---------------------|-----------------|
+| Discovery | opportunity-assessment, competitive-analysis | 0 (thin skills) | — |
+| Planning | prd, spec-panel, design-doc, ui-design, data-design, api-design, flow-map, ticket-breakdown | ~18 | 6 (ui-design), 4 (prd), 2 (data-design) |
+| Implementation | spec-to-impl | ~14 per wave | 3-5 per wave |
+| Verification | verify-impl | 3 | 3 (API + DB + UI) |
+| Quality | code-audit, security-review, evidence-review | ~14 | 10 (code-audit), 4 (security) |
+| Ship | finalize | 2 (lint + test) | 2 |
+| Operations | monitoring-plan, runbook | 0 (thin skills) | — |
+
+**Total: ~50+ agent invocations, heavily parallelized across 15 skills.**
 
 ---
 
@@ -391,18 +842,20 @@ Discover         Plan              Build              Quality            Complet
 /opportunity  →  /prd          →  /ui-design       →  /evidence-     →  /finalize     →  /monitoring
 -assessment      /design-doc      /flow-map            review            (commit+PR)      -plan
 /competitive  →  /adr             /spec-to-impl      /pr-review     →  /release-     →  /runbook
--analysis        /flow-map        /mobile-dev        /test-plan        notes         →  /incident-
-                 /ui-design       /verify-impl       /security-     →  /go-to-          response
-                 /api-design                         review            market        →  /postmortem
+-analysis        /flow-map        /figma-to-code     /test-plan        notes         →  /incident-
+                 /ui-design       /mobile-dev        /security-     →  /go-to-          response
+                 /api-design      /verify-impl       review            market        →  /postmortem
                  /data-design                        /performance-
                  /search-design                      review
                  /infra-design                       /ux-review
-                 /ticket-                            /metrics-
-                 breakdown                           review
-                 /decision-                          /tech-debt-
-                 matrix                              assessment
-                 /migration-
-                 plan
+                 /ticket-                            /code-audit
+                 breakdown                           /spec-panel
+                 /decision-                          /metrics-
+                 matrix                              review
+                 /migration-                         /tech-debt-
+                 plan                                assessment
+                 /experiment-                        /debug-
+                 design                              triage
 ```
 
 ---
@@ -415,12 +868,15 @@ Discover         Plan              Build              Quality            Complet
 2. **Tune triggers** — Modify the `description` field in each skill's frontmatter to match your vocabulary
 3. **Swap templates** — Replace templates with your org's existing formats
 4. **Adjust quality bars** — Modify anti-patterns and criteria to match your standards
+5. **Adjust model routing** — Update agent model assignments in orchestrator skills to match your cost/quality preferences
 
 ### Create your own skill
 
 ```
 my-skill/
 ├── SKILL.md          # Required: frontmatter + methodology
+├── agents/           # Optional: agent persona definitions
+├── references/       # Optional: reference documentation
 └── templates/        # Optional: output templates
     └── output.md
 ```
@@ -432,6 +888,8 @@ Every skill follows this structure:
 name: my-skill
 description: When to trigger this skill...
 argument-hint: "[context]"
+effort: high          # Optional: high|medium for reasoning depth
+context: fork         # Optional: run in isolated context (for complex skills)
 ---
 
 # My Skill
@@ -442,6 +900,7 @@ argument-hint: "[context]"
 ## Anti-patterns to flag
 ## Quality bar
 ## Workflow context
+## Learning & Memory
 ## Output contract
 ```
 
@@ -449,11 +908,12 @@ argument-hint: "[context]"
 
 ## Contributing
 
-1. Create a folder in `skills/` with your skill name
+1. Create a folder in `skills/` with your skill name (kebab-case)
 2. Add a `SKILL.md` following the standard structure
-3. Add templates in `templates/` if the skill produces a document
-4. Update `skills/INDEX.md` with your skill in the appropriate category
-5. Submit a PR
+3. Add agent personas in `agents/` for multi-agent skills
+4. Add templates in `templates/` if the skill produces a document
+5. Update `skills/INDEX.md` with your skill in the appropriate category
+6. Submit a PR
 
 ---
 

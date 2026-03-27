@@ -2,6 +2,7 @@
 name: competitive-analysis
 description: Analyze competitors and market positioning with structured feature comparison, strength/weakness assessment, and strategic differentiation opportunities. Triggers: "competitive analysis", "competitor review", "market landscape", "who else does this".
 argument-hint: "[product / market / feature area]"
+effort: high
 ---
 
 # Competitive analysis
@@ -45,6 +46,16 @@ Produce a structured competitive landscape analysis that identifies key players,
 
 ## Output
 Fill `templates/competitive-analysis.md`.
+
+## Learning & Memory
+
+After completing a competitive analysis, persist the following to project memory for future skill invocations:
+
+- **Competitor landscape**: Key players identified, their positioning, and trajectory observations to avoid re-research
+- **Differentiation patterns**: What dimensions proved most meaningful for differentiation in this market or domain
+- **Market positioning insights**: Customer buying criteria, underserved segments, and competitive gaps discovered
+
+Store in: `claudedocs/memory/competitive-analysis.md`
 
 ## Output contract
 ```yaml

@@ -3,6 +3,7 @@ name: pr-review
 description: Review a pull request or code diff for correctness, security, performance, tests, maintainability, and product impact. Triggers: "review this PR", "code review", "diff review", "LGTM?"
 argument-hint: "[PR URL | branch | commit range | files]"
 disable-model-invocation: true
+effort: high
 ---
 
 # PR review
@@ -84,8 +85,9 @@ Return feedback in this structure:
 ## Output contract
 ```yaml
 produces:
-  - type: "review"
+  - type: "pr-review"
     format: "markdown"
     path: "claudedocs/<feature>-pr-review.md"
     sections: [correctness, security, performance, tests, maintainability]
+    handoff: "Write claudedocs/handoff-pr-review-<timestamp>.yaml — suggest: release-notes"
 ```

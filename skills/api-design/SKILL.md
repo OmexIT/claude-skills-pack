@@ -2,6 +2,7 @@
 name: api-design
 description: Design or review an API for consistency, usability, error handling, versioning, pagination, and developer experience. Covers REST, GraphQL, and RPC patterns. Triggers: "API design", "endpoint design", "API review", "REST API", "GraphQL schema".
 argument-hint: "[API / endpoint / service]"
+effort: high
 ---
 
 # API design
@@ -51,6 +52,13 @@ Design a clear, consistent API (or review an existing one) that's easy for consu
 ## Output
 Fill `templates/api-design.md`.
 
+## Learning & Memory
+
+After API design completes, save:
+- API patterns adopted in this codebase (naming conventions, error format, auth scheme) for consistency across future endpoints
+- Versioning strategies chosen and the breaking-change policies that worked
+- Pagination approaches that proved effective for the data characteristics encountered
+
 ## Output contract
 ```yaml
 produces:
@@ -58,4 +66,5 @@ produces:
     format: "markdown"
     path: "claudedocs/<feature>-api-design.md"
     sections: [endpoints, contracts, error_handling, pagination, versioning]
+    handoff: "Write claudedocs/handoff-api-design-<timestamp>.yaml — suggest: spec-to-impl, test-plan, spec-panel"
 ```

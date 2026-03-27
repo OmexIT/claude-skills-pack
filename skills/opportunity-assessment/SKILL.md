@@ -2,6 +2,7 @@
 name: opportunity-assessment
 description: Evaluate whether a feature or product idea is worth building through cost/benefit analysis, risk assessment, strategic alignment, and effort estimation. Triggers: "should we build this", "opportunity assessment", "cost benefit", "is this worth it", "prioritization".
 argument-hint: "[feature idea / proposal]"
+effort: high
 ---
 
 # Opportunity assessment
@@ -46,6 +47,16 @@ Produce a structured assessment of whether an opportunity is worth pursuing, how
 
 ## Output
 Fill `templates/opportunity-assessment.md`.
+
+## Learning & Memory
+
+After completing an opportunity assessment, persist the following to project memory for future skill invocations:
+
+- **Market patterns**: Recurring market dynamics, demand signals, and timing patterns observed during assessment
+- **Opportunity evaluation criteria**: Scoring dimensions and thresholds that proved most predictive for this domain
+- **Strategic alignment factors**: How the team's strategic priorities influenced the recommendation, so future assessments stay calibrated
+
+Store in: `claudedocs/memory/opportunity-assessment.md`
 
 ## Output contract
 ```yaml

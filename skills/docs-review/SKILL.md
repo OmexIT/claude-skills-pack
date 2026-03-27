@@ -2,6 +2,7 @@
 name: docs-review
 description: Review documentation for clarity, correctness, structure, and consistency. Produces actionable edits and a checklist. Triggers: "review docs", "edit this doc", "make this clearer", "docs quality".
 argument-hint: "[file path | doc text]"
+effort: medium
 ---
 
 # Docs review
@@ -45,8 +46,9 @@ argument-hint: "[file path | doc text]"
 Use `references/style-guide.md` as the default style guide unless the repo has its own.
 
 ## Workflow context
-- Applies to: any documentation (READMEs, guides, API docs, runbooks)
-- Related: `/onboarding-doc` (new hire docs), `/runbook` (operational docs)
+- Typically follows: `/onboarding-doc`, `/runbook`, `/design-doc` (documentation created or updated)
+- Feeds into: `/finalize` (docs quality verified before shipping)
+- Related: `/ux-review` (content clarity overlaps)
 
 ## Output format
 1. **Quick summary** (what the doc covers and who it's for)
@@ -54,11 +56,18 @@ Use `references/style-guide.md` as the default style guide unless the repo has i
 3. **Gaps / missing info** (what's not answered but should be)
 4. **Final checklist** (yes/no items)
 
+## Learning & Memory
+After completing this skill, store reusable insights in memory:
+- **Documentation style patterns**: Effective heading structures, bullet-point density, and example-to-explanation ratios that improved readability
+- **Common clarity issues**: Recurring ambiguities, jargon traps, and structural problems found across documentation sets
+- **Structure improvements**: Reusable document organization patterns, information hierarchy templates, and navigation aids that reduced reader friction
+
 ## Output contract
 ```yaml
 produces:
-  - type: "review"
+  - type: "docs-review"
     format: "markdown"
     path: "claudedocs/<feature>-docs-review.md"
     sections: [clarity, correctness, structure, consistency, edits]
+    handoff: "Write claudedocs/handoff-docs-review-<timestamp>.yaml — suggest: finalize"
 ```

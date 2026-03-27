@@ -5,6 +5,7 @@ description: >
   Covers schema design, indexing, migrations, query patterns, consistency, and cross-store sync.
   Triggers: "data design", "database design", "schema design", "data model", "data architecture".
 argument-hint: "[entity / feature / data store]"
+effort: high
 ---
 
 # Data design (polyglot)
@@ -18,6 +19,38 @@ Design the data layer for your feature across one or more data stores: PostgreSQ
 - Query patterns (what reads are most frequent? what needs to be fast?)
 - Data volume estimates (rows/documents, growth rate)
 - Consistency requirements (strong vs eventual, cross-store sync needs)
+
+## Parallel Store Analysis
+
+When the feature involves multiple data stores, analyze each independently in parallel:
+
+### Execution Pattern
+
+```
+Phase 1: Requirements analysis — identify applicable stores (sequential)
+    ↓
+Phase 2: Parallel store design
+  ┌──────────────┬──────────────┬──────────────┬──────────────┐
+  │ POSTGRES     │ MONGO        │ ELASTIC      │ TYPESENSE    │
+  │ _DESIGNER    │ _DESIGNER    │ _DESIGNER    │ _DESIGNER    │
+  └──────┬───────┴──────┬───────┴──────┬───────┴──────┬───────┘
+         └──────────────┼──────────────┘──────────────┘
+                        ↓
+Phase 3: Cross-store sync strategy + consistency model (sequential)
+```
+
+**Model routing:**
+
+| Agent | Model | Rationale |
+|---|---|---|
+| `POSTGRES_DESIGNER` | `opus` | Schema design + RLS + migration safety requires deep reasoning |
+| `MONGO_DESIGNER` | `sonnet` | Document modeling and aggregation pipeline design |
+| `ELASTIC_DESIGNER` | `sonnet` | Index mapping, analyzers, and query design |
+| `TYPESENSE_DESIGNER` | `haiku` | Simpler schema, collection design |
+
+- Only activate agents for stores the feature actually uses
+- PostgreSQL agent always runs (source of truth for most features)
+- Phase 3 runs after all store designs complete — it needs all schemas to design sync
 
 ## How I'll think about this
 
@@ -79,6 +112,14 @@ Design the data layer for your feature across one or more data stores: PostgreSQ
 - Feeds into: `/spec-to-impl` (DBA agent), `/migration-plan`, `/verify-impl` (DB checks)
 - Related: `/search-design` (deep-dive on search), `/performance-review` (query performance)
 
+## Learning & Memory
+
+After design completes, save:
+- Schema patterns that worked well for this entity type
+- Index strategies that proved effective for the query patterns
+- Cross-store sync configurations that were reliable
+- Migration patterns that enabled safe rollback
+
 ## Output contract
 ```yaml
 produces:
@@ -86,4 +127,5 @@ produces:
     format: markdown
     path: "claudedocs/<feature>-data-design.md"
     sections: [entity_store_map, schemas, indexes, migrations, query_patterns, sync_strategy]
+    handoff: "Write claudedocs/handoff-data-design-<timestamp>.yaml — suggest: spec-to-impl, migration-plan"
 ```

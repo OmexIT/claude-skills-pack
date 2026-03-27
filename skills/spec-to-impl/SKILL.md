@@ -2,9 +2,13 @@
 name: spec-to-impl
 description: >
   Use this skill whenever a user provides a specification document (PRD, BRD, API spec, user story, system design doc, or any structured requirements doc) and wants it broken down and implemented into multiple output artifacts. Triggers include: "implement this spec", "build this from the PRD", "turn this spec into code", "generate artifacts from this document", "implement this end-to-end", "break this spec into tasks", "implement 1 to N from this doc", "plan and implement from spec", or any time the user provides a requirements document and expects multiple implementation outputs (code files, test suites, API contracts, DB schemas, architecture diagrams, etc.). Also trigger when the user wants multi-role task assignment, implementation tracking, or progress reporting across a complex deliverable. This skill orchestrates a team of specialized sub-agents (Architect, Backend, Frontend, QA, DevOps) in parallel to maximally compress execution time.
+  Also triggers when a Figma design link or selection is provided alongside a spec — the skill includes a DESIGN agent that extracts Figma context via the MCP server and feeds it to the FE agent, ensuring generated UI matches the design exactly. Additional trigger phrases: "implement this spec with the Figma designs", "build from PRD and Figma", "use Figma designs from this spec", "the designs are in Figma at [link]", "implement with design context from Figma", "spec plus Figma", "PRD with designs".
 arguments: >
   One or more space-separated paths to spec/analysis documents to implement.
   Example: /spec-to-impl path/to/PRD.md path/to/ANALYSIS.md path/to/API_SPEC.md
+context: fork
+agent: general-purpose
+effort: high
 ---
 
 # Spec-to-Impl: 1-to-N Document Specification Skill
@@ -20,29 +24,71 @@ When invoked as a slash command with arguments:
 /spec-to-impl $ARGUMENTS
 ```
 
-**Step 1 — Parse file paths** from `$ARGUMENTS` (space-separated):
+### Step 0 — Discover upstream handoff manifests
+
+**Before reading any files**, check for handoff manifests from upstream skills:
+
+```bash
+# Find all handoff manifests, most recent first
+ls -t claudedocs/handoff-*.yaml 2>/dev/null | head -10
+```
+
+For each manifest found:
+1. Read the YAML and check if `suggested_next[].skill` includes `"spec-to-impl"`
+2. If yes, read the `context` field for guidance from the upstream skill
+3. Read all files listed in `suggested_next[].reads[]` — these are the artifacts you should consume
+4. Record the manifest path — add it to `consumed_from[]` in your own handoff manifest later
+5. Check `quality.status` — if `"blocked"`, stop and report the blockers to the user
+
+**Report what was discovered:**
+```
+📋 UPSTREAM ARTIFACTS DISCOVERED
+  Handoff manifests found: <n>
+  Artifacts for spec-to-impl:
+    ✅ claudedocs/payment-links-prd.md (from /prd)
+    ✅ design/DESIGN.md (from /ui-design)
+    ✅ design/components/component-tree.md (from /ui-design)
+    ✅ design/components/testid-registry.md (from /ui-design)
+    ✅ claudedocs/payment-links-flow-map.md (from /flow-map)
+  Context from upstream:
+    /prd: "3 new API endpoints, payment link CRUD + expiry"
+    /ui-design: "6 components, 44 testIDs, 3 screens"
+```
+
+> If handoff manifests have `quality.status: "partial"`, consume artifacts with `status: "ready"` and skip those with `status: "in-progress"`.
+
+### Step 1 — Parse file paths from arguments
+
 ```
 $ARGUMENTS = "claudedocs/MONEY_REQUEST_PANEL_ANALYSIS.md claudedocs/PAYMENT_LINK_PAGE_PANEL_ANALYSIS.md"
 -> files = ["claudedocs/MONEY_REQUEST_PANEL_ANALYSIS.md", "claudedocs/PAYMENT_LINK_PAGE_PANEL_ANALYSIS.md"]
 ```
 
-**Step 2 — Read each file** using the Read tool sequentially before doing anything else.
+Combine with any files discovered from handoff manifests in Step 0.
 
-**Step 3 — Merge into unified context**: treat multiple files as **complementary spec sections** of the same project. Do NOT implement them as separate independent projects. Identify overlapping entities, shared flows, and integration points across all files.
+### Step 2 — Read each file
 
-**Step 4 — Confirm to the user**:
+Read using the Read tool sequentially before doing anything else.
+
+### Step 3 — Merge into unified context
+
+Treat multiple files as **complementary spec sections** of the same project. Do NOT implement them as separate independent projects. Identify overlapping entities, shared flows, and integration points across all files — including upstream handoff artifacts.
+
+### Step 4 — Confirm to the user
+
 ```
 Loaded <n> spec file(s):
   <file1> -- <one-line summary>
   <file2> -- <one-line summary>
 
+Upstream artifacts consumed: <n> (from <skills>)
 Detected: <brief description of what the combined spec covers>
 Ambiguities: <n> found -- will surface before execution
 
 Proceeding to Phase 1: PARSE...
 ```
 
-**Step 5 — Proceed** to the Quick Decision Tree below.
+### Step 5 — Proceed to the Quick Decision Tree below.
 
 > If a file path is not found or unreadable, report it clearly and ask the user to confirm the path before continuing.
 
@@ -52,8 +98,12 @@ Proceeding to Phase 1: PARSE...
 
 ```
 Input received?
+  |-- (always) Check handoff manifests first (Step 0)
+  |
   |-- $ARGUMENTS with file paths
-  |     --> Section 0: Read files -> merge -> PARSE -> PLAN -> EXECUTE
+  |     --> Step 0 + Steps 1-5 -> PARSE -> PLAN -> EXECUTE
+  |-- No args but handoff manifests found
+  |     --> Consume upstream artifacts -> PARSE -> PLAN -> EXECUTE
   |-- Spec doc / PRD / BRD / API contract / user story set (pasted inline)
   |     --> Run Phase 1: PARSE -> Phase 2: PLAN -> Phase 3: EXECUTE
   |-- "status" / "report" / "what's done?"
@@ -71,6 +121,7 @@ Before planning, instantiate the relevant agents from this roster. Not every spe
 | Agent ID | Role | Triggers |
 |---|---|---|
 | `ARCH` | Senior Architect | Any spec with system/service design, DB schema, integration points |
+| `DESIGN` | UI/UX Design Engineer | Any spec with UI screens AND a Figma URL or selection is provided |
 | `BE` | Backend Engineer | APIs, business logic, services, data models, integrations |
 | `FE` | Frontend Engineer (React) | React UI components, pages, state management, API wiring |
 | `FLUTTER` | Flutter Engineer | Flutter/Dart mobile UI, widgets, Riverpod/BLoC state, platform channels |
@@ -86,6 +137,7 @@ Before planning, instantiate the relevant agents from this roster. Not every spe
 
 **Always include `ARCH` as the orchestrating lead.**
 **Always include `OBS` when the spec involves any backend service or API.**
+**Include `DESIGN` agent whenever a Figma source is provided alongside UI requirements.** DESIGN always completes before FE tasks begin — it is a hard dependency for all UI implementation.
 
 ### 1.1 Agent Model Routing
 
@@ -94,14 +146,150 @@ Route agents to the right model for cost-efficiency without sacrificing quality:
 | Agent | Model | Rationale |
 |---|---|---|
 | `ARCH` | `opus` (default) | Deepest reasoning for architecture decisions |
+| `DESIGN` | `opus` | Design system extraction + component mapping requires deep reasoning |
 | `BE`, `FE`, `FLUTTER`, `RN`, `ANDROID` | `sonnet` | Best coding model, optimal for implementation |
 | `QA` | `sonnet` | Complex test reasoning + code generation |
-| `DBA` | `sonnet` | Schema design requires strong reasoning |
+| `DBA` | `opus` | Schema design + migration safety requires deep reasoning |
 | `OBS` | `sonnet` | Contract definition + instrumentation code |
 | `DEVOPS` | `sonnet` | Infrastructure-as-code generation |
-| `SEC` | `sonnet` | Security analysis needs depth |
+| `SEC` | `opus` | Security analysis and threat modeling requires deepest reasoning |
 | `TECH_WRITER` | `haiku` | Documentation generation, high-volume low-complexity |
 | `ANGULARJS` | `sonnet` | Legacy code requires careful reasoning |
+
+### 1.2 Agent Teams Mode (Experimental)
+
+For complex specs where agents need to communicate directly (e.g., BE and FE negotiating API contracts in real-time), enable Agent Teams:
+- Set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
+- Agents become full sessions with shared task lists and mailboxes
+- Use when agents need to challenge each other's decisions, not just report back
+- Higher token cost but better coordination for tightly-coupled specs
+
+Default: subagent mode (agents report back to ARCH lead). Use Agent Teams for specs with 5+ interacting agents.
+
+---
+
+## 1.5 Phase 0 — DESIGN CONTEXT EXTRACTION (Figma MCP)
+
+*(Only runs when a Figma source is present)*
+
+**Trigger conditions:**
+- User provides a Figma file or frame URL anywhere in their message
+- User says "use my current Figma selection"
+- User says "the designs are in Figma: [link]"
+- Spec document itself contains a Figma file ID or URL
+
+**DESIGN Agent step-by-step protocol:**
+
+**Step 1 — CONNECT:** Verify Figma MCP is connected by checking available MCP tools for "figma". If not connected, pause immediately and show the user this setup command: `claude plugin install figma@claude-plugins-official`. Do not proceed until connected.
+
+**Step 2 — INVENTORY:** List all frames and screens in the Figma file that are relevant to the spec being implemented. Output:
+- List of screen names with frame links and node IDs
+- List of component names with node IDs
+- List of any design libraries or component sets referenced
+
+**Step 3 — EXTRACT:** For each screen and component in scope, extract:
+- Color tokens and Figma variables → map to CSS custom property names
+- Typography styles → font-size, font-weight, line-height, letter-spacing
+- Spacing system → all gap, padding, margin values used
+- Component variant properties and their allowed values
+- Auto-layout rules → map to CSS flexbox/grid equivalents
+- Interactive states present in Figma variants: hover, focus, active, disabled, error, loading, empty
+- Responsive breakpoints → identify mobile, tablet, desktop frames
+- Asset references → icons, images, illustrations
+
+**Step 4 — PRODUCE Design Context Package** in this exact format:
+
+```
+DESIGN CONTEXT PACKAGE
+======================
+Source: <Figma file name>
+Extracted: <timestamp>
+Screens covered: <n>
+Components catalogued: <n>
+
+━━━ DESIGN TOKENS ━━━━━━━━━━━━━━━━━━━━━━━━
+
+COLORS (Figma variable → CSS custom property):
+  --color-brand-primary:     #<hex>
+  --color-brand-secondary:   #<hex>
+  --color-surface-default:   #<hex>
+  --color-surface-elevated:  #<hex>
+  --color-text-primary:      #<hex>
+  --color-text-muted:        #<hex>
+  --color-border-default:    #<hex>
+  --color-border-strong:     #<hex>
+  [all additional extracted color variables]
+
+SPACING:
+  --spacing-xs: 4px
+  --spacing-sm: 8px
+  --spacing-md: 16px
+  --spacing-lg: 24px
+  --spacing-xl: 40px
+
+TYPOGRAPHY:
+  --font-display:  <size>/<line-height> weight-<value>
+  --font-heading:  <size>/<line-height> weight-<value>
+  --font-body:     <size>/<line-height> weight-<value>
+  --font-caption:  <size>/<line-height> weight-<value>
+
+BORDER RADIUS:
+  --radius-sm: 4px | --radius-md: 8px | --radius-lg: 12px | --radius-xl: 16px
+
+━━━ COMPONENTS ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<ComponentName>:
+  Figma node:      <node-id>
+  Figma link:      <direct component link>
+  Variants:        [<prop>: <value1> | <value2> | ...]
+  Props:           { <propName>: <type>, ... }
+  States:          [default, hover, focus, disabled, error, loading, empty]
+  Code Connect:    <mapped → use <ImportName> | unmapped → generate from scratch>
+  Layout:          <flex-row | flex-col | grid-cols-<n>>
+  Gap:             <value>
+  Padding:         <top> <right> <bottom> <left>
+  Dimensions:      <w x h | hug | fill>
+  Notes:           <design decisions, edge cases, or ambiguities>
+
+[repeat for each component in scope]
+
+━━━ SCREENS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<ScreenName>:
+  Figma frame:     <frame-link>
+  Suggested route: <route path e.g. /dashboard>
+  Layout:          <describe overall grid/flex structure>
+  Components used: [<ComponentName>, ...]
+  Breakpoints:     [mobile 375px, tablet 768px, desktop 1440px]
+  Data implied:    [<what API data this screen needs to render>]
+
+[repeat for each screen in scope]
+
+━━━ AMBIGUITIES ━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[DESIGN-AMB-001]
+  Component/Screen: <name>
+  Issue:            <what is unclear>
+  Options:          <possible interpretations>
+  Blocking:         yes / no
+
+[repeat for each ambiguity]
+
+━━━ TAILWIND CONFIG ADDITIONS ━━━━━━━━━━━
+
+theme: {
+  extend: {
+    colors: { [extracted color tokens as CSS var references] },
+    spacing: { [extracted spacing tokens] },
+    borderRadius: { [extracted radius tokens] },
+    fontSize: { [extracted typography tokens] },
+  }
+}
+```
+
+**Rule:** If DESIGN agent finds more than 3 critical blocking ambiguities, PAUSE and surface them to the user before dispatching the FE agent.
+
+See `agents/design.md` for the full DESIGN agent persona and extraction protocol.
 
 ---
 
@@ -220,6 +408,7 @@ TASK-<ID>
   est_effort:  <XS | S | M | L | XL>
   patterns:    [<design patterns this task must apply>]
   observability: [<logging events, metrics, traces this task must emit>]
+  figma_ref:   <Figma frame link or node-id — required for all FE tasks when design source present>
   notes:       <optional>
 ```
 
@@ -238,6 +427,9 @@ TASK-<ID>
 - Every service endpoint MUST emit: request count, error count, and latency histogram (RED metrics)
 - `FE` agents MUST reference `/ui-design` outputs when available: wireframes, component specs, design tokens, accessibility requirements, testIDs
 - If `/ui-design` was NOT run but the spec has UI screens, suggest running it first or extract minimal component specs in Wave 1
+- `DESIGN` agent always completes before any `FE` task begins when a Figma source is present
+- All FE tasks that have a `figma_ref` field must list `TASK-000` (DESIGN) in their `depends_on`
+- When user updates the Figma source mid-execution, re-run Phase 0 and re-dispatch only the affected FE tasks
 - `TECH_WRITER` must produce OpenAPI/AsyncAPI/proto spec that matches the implemented API
 - `TECH_WRITER` tasks depend on the API/service tasks being complete
 
@@ -289,25 +481,37 @@ After creating tasks, ARCH must produce a **dependency graph** in ASCII or Merma
 
 ```mermaid
 graph TD
+  TASK-000[DESIGN: Extract Figma Context] --> TASK-FE1[FE: Build UI Components]
+  TASK-000 --> TASK-FE2[FE: Build Additional Screens]
   TASK-001[ARCH: System Design] --> TASK-002[BE: Auth Service]
   TASK-001 --> TASK-003[DBA: Schema]
+  TASK-001 --> TASK-FE1
   TASK-002 --> TASK-005[QA: Auth Tests]
   TASK-003 --> TASK-002
   ...
 ```
+
+> `TASK-000` is only present when a Figma source is provided. All FE tasks depend on it.
 
 ### 3.5 Parallel Execution Waves
 
 Group tasks into **execution waves** — tasks in the same wave run concurrently:
 
 ```
-WAVE 0 (pre-check): Detect design artifacts from /ui-design:
-  - Check: claudedocs/handoff-ui-design-*.yaml (handoff artifact)
-  - Check: design/DESIGN.md (portable design system -- from Stitch or manual)
-  - Check: design/stitch-export/*.tsx (Stitch code scaffolding -- FE agents use as starting point)
-  - Check: design/wireframes/*.png (visual references from Stitch or Figma)
-  - Check: design/components/testid-registry.md (testIDs for E2E)
-  - If NO design artifacts and spec has UI screens: suggest running /ui-design first (with --stitch for speed)
+WAVE 0 (pre-check): Detect design artifacts:
+  A. From /ui-design:
+    - Check: claudedocs/handoff-ui-design-*.yaml (handoff artifact)
+    - Check: claudedocs/handoff-ui-design-*.yaml → stitch.project_id (if present, FE agents can call get_screen() for live data)
+    - Check: design/DESIGN.md (portable design system -- from Stitch or manual)
+    - Check: design/stitch-screens/*.md (Stitch screen structure -- FE agents use as reference)
+    - Check: design/wireframes/*.png (visual references from Figma)
+    - Check: design/components/testid-registry.md (testIDs for E2E)
+  B. From Figma MCP (if Figma URL or selection provided):
+    - TASK-000 — DESIGN: Extract Figma Context (Phase 0)
+    - [BLOCKS all FE tasks until complete]
+    - Produces: Design Context Package (tokens, components, screens, ambiguities)
+  C. If NO design artifacts and NO Figma source and spec has UI screens:
+    - Suggest running /ui-design first (with --stitch for speed) or /figma-to-code if designs exist in Figma
 WAVE 1 (parallel): ARCH: System Design + API Standards + Patterns, OBS: Observability Contract, QA: Test Plan, DBA: Schema
 WAVE 2 (parallel): BE: Services (against API contract), FE: Components (against UI design), DEVOPS: Docker/CI
 WAVE 3 (parallel): QA: Tests, SEC: Review, OBS: Verify Instrumentation
@@ -381,7 +585,7 @@ Anti-patterns to flag and prevent:
 - Service locator -> use constructor injection exclusively
 - Premature abstraction -> extract only when 2+ implementations exist or pattern is proven
 
-### 3.7 Observability Contract — Mandatory Wave 1 Artifact
+### 3.8 Observability Contract — Mandatory Wave 1 Artifact
 
 **The OBS agent must produce the observability contract in Wave 1.** This defines instrumentation requirements that every implementation agent must follow — same weight as API contracts.
 
@@ -395,7 +599,7 @@ See `references/observability-contract.md` for the full standard. Key points enf
 
 Implementation agents reference this contract the same way they reference API contracts — it is a shared interface, not optional.
 
-### 3.8 Feedback Loop Design
+### 3.9 Feedback Loop Design
 
 Feedback is not just between waves — it is continuous and structured:
 
@@ -473,6 +677,26 @@ Agent(
 - ARCH works on main/integration branch directly (no worktree isolation)
 - Add `.worktrees/` to `.gitignore` if not already present
 - After merge, worktrees with no changes are auto-cleaned
+
+### Worktree Isolation for Parallel Agents
+
+When multiple implementation agents (BE, FE, DBA, etc.) need to write code simultaneously:
+- Each agent runs with `isolation: "worktree"` to get an independent copy of the repository
+- This prevents file conflicts when agents edit overlapping areas
+- Worktrees are auto-cleaned if the agent makes no changes
+- Results are merged via individual PRs or a combined branch
+
+Use worktree isolation when:
+- 3+ agents need to write code in parallel
+- Agents may touch the same configuration files (package.json, pom.xml, etc.)
+- The spec involves both backend and frontend changes in the same repo
+
+### Background Agent Execution
+
+Low-priority agents (TECH_WRITER, OBS) can run in background while critical-path agents execute:
+- Launch TECH_WRITER with `run_in_background: true` — documentation can be generated while code is being written
+- Launch OBS with `run_in_background: true` after BE completes — observability instrumentation doesn't block FE work
+- You'll be notified when background agents complete
 
 ### 4.1 Agent Dispatch Protocol
 
@@ -557,6 +781,55 @@ Coverage: <percentage if available>
 ---
 ```
 
+### 4.1.1 FE Agent Enhanced Dispatch — When Design Context Package is Available
+
+When the DESIGN agent has completed Phase 0 and produced a Design Context Package, the FE agent dispatch must include the full package and these additional instructions at the end of the prompt:
+
+```
+DESIGN-TO-CODE INSTRUCTIONS:
+
+1. The Design Context Package above is your source of truth for ALL visual decisions.
+   Do not assume, estimate, or freestyle any color, spacing, font size, or border radius.
+   Every value must come from the extracted tokens.
+
+2. Add all CSS custom properties to globals.css under :root and [data-theme="dark"].
+
+3. Add all token references to tailwind.config.ts under theme.extend.
+
+4. For each UI task you are assigned, check the figma_ref field.
+   This is the exact Figma frame you are implementing.
+   Use it as your visual specification — not the written spec text alone.
+
+5. For each component in the Design Context Package:
+   - If Code Connect = mapped → import and use the existing component by name.
+     Do NOT rewrite it from scratch.
+   - If Code Connect = unmapped → generate a new component using the extracted
+     props, variants, and layout data.
+
+6. Implement EVERY state listed in the component spec:
+   hover, focus, active, disabled, error, loading, empty.
+   If a state is missing from the design, implement a sensible default
+   and add a comment: // TODO: confirm <state> style with design
+
+7. Match auto-layout direction, gap, and padding EXACTLY as specified.
+   Use arbitrary Tailwind values [Xpx] when no Tailwind scale equivalent exists.
+
+8. All components must:
+   - Be keyboard-navigable (Tab, Enter, Escape, Arrow keys)
+   - Meet WCAG AA color contrast (4.5:1 text, 3:1 UI components)
+   - Have aria-label or visible label for interactive elements
+   - Use aria-live for dynamic content updates
+
+9. After completing each screen, output a Design Compliance Report:
+
+   DESIGN COMPLIANCE — <ScreenName>
+   ✅ <element> — matches Figma exactly
+   ⚠️ <element> — deviation: <reason e.g. "used flat color instead of gradient">
+   ❌ <element> — not implemented: <reason and what is needed>
+```
+
+See `templates/fe-dispatch-with-design.md` for the complete FE agent dispatch template with Design Context Package embedded.
+
 ### 4.2 Execution Tracking
 
 Maintain a live **Task Board** throughout execution. Use Claude Code's **TaskCreate/TaskUpdate** tools for persistent progress tracking across context windows.
@@ -568,16 +841,18 @@ TASK BOARD -- <Project Name>
 Updated: <timestamp>
 Progress: <X/Y tasks complete> (<Z%>)
 
-+----------+--------------------------+--------+---------------+---------------+-----------+----------+
-| TASK-ID  | Title                    | Agent  | Impl Status   | Test Status   | OBS Status| Output   |
-+----------+--------------------------+--------+---------------+---------------+-----------+----------+
-| TASK-001 | System Design            | ARCH   | Done          | N/A           | N/A       | arch.md  |
-| TASK-002 | Observability Contract   | OBS    | Done          | N/A           | N/A       | obs.md   |
-| TASK-003 | Auth Service             | BE     | Done          | 24/24 pass    | Verified  | auth/    |
-| TASK-004 | DB Schema                | DBA    | Done          | 8/8 pass      | N/A       | 001.sql  |
-| TASK-005 | Login UI                 | FE     | WIP           | Not run       | Pending   | -        |
-| TASK-006 | Payment Service          | BE     | Done          | 3 FAILING     | Partial   | pay/     |
-+----------+--------------------------+--------+---------------+---------------+-----------+----------+
++----------+--------------------------+--------+---------------+---------------+-----------+----------+-------------------+
+| TASK-ID  | Title                    | Agent  | Impl Status   | Test Status   | OBS Status| Output   | Figma Ref         |
++----------+--------------------------+--------+---------------+---------------+-----------+----------+-------------------+
+| TASK-000 | Extract Figma Context    | DESIGN | Done          | N/A           | N/A       | design-  | <file-link>       |
+|          |                          |        |               |               |           | context  |                   |
+| TASK-001 | System Design            | ARCH   | Done          | N/A           | N/A       | arch.md  | -                 |
+| TASK-002 | Observability Contract   | OBS    | Done          | N/A           | N/A       | obs.md   | -                 |
+| TASK-003 | Auth Service             | BE     | Done          | 24/24 pass    | Verified  | auth/    | -                 |
+| TASK-004 | DB Schema                | DBA    | Done          | 8/8 pass      | N/A       | 001.sql  | -                 |
+| TASK-005 | Login UI                 | FE     | WIP           | Not run       | Pending   | -        | <frame-link>      |
+| TASK-006 | Payment Service          | BE     | Done          | 3 FAILING     | Partial   | pay/     | -                 |
++----------+--------------------------+--------+---------------+---------------+-----------+----------+-------------------+
 
 Impl:  Done | WIP | Waiting | Blocked
 Tests: n/n pass | n FAILING | n ERRORS | Not run | No tests written | N/A
@@ -585,6 +860,14 @@ OBS:   Verified | Partial | Missing | Pending | N/A
 ```
 
 > **Hard rule**: A task with FAILING tests, No tests written, or Missing observability blocks the next wave. Do NOT advance until resolved.
+
+### Progress Tracking with Tasks
+
+Use Claude Code's task management for real-time progress:
+- Create a task per agent assignment: `TaskCreate` with agent role and scope
+- Update to `in_progress` when agent starts execution
+- Update to `completed` when agent produces its artifacts
+- This gives the user a live dashboard of implementation progress
 
 ### 4.3 Test Gates — Wave Advancement Rules
 
@@ -741,6 +1024,14 @@ OVERALL PROGRESS
   Blocked:        <n>
   Remaining:      <n>
 
+DESIGN (Figma MCP)                        [only when Figma source present]
+  Screens extracted:      <n> / <total>
+  Components catalogued:  <n>
+  Design tokens:          <n> tokens generated
+  Code Connect mapped:    <n> / <total> components
+  Design ambiguities:     <n> open | <n> resolved
+  MCP status:             connected | disconnected
+
 TEST HEALTH
   Tests Run:      <n>
   Passing:        <n>
@@ -801,6 +1092,10 @@ Handle these mid-execution requests gracefully:
 | "Reprioritize X to P0" | Move to earliest valid wave respecting dependencies |
 | "Show only BE tasks" | Filter task board by agent |
 | "What depends on TASK-X?" | Traverse dependency graph forward |
+| "Add Figma source: [url]" | Trigger Phase 0 (DESIGN extraction). Pause all FE tasks until DESIGN completes. Insert TASK-000. |
+| "Update design: [url]" | Re-run Phase 0 with new URL. Re-dispatch only FE tasks whose figma_ref frames changed. |
+| "Mark design approved" | Unblock all FE tasks. Proceed with current Design Context Package as frozen. |
+| "Skip design extraction" | Mark TASK-000 as SKIP. FE proceeds in code-only mode without design context. |
 
 ---
 
@@ -863,11 +1158,19 @@ git branch -d feature/fe-task-004
    [ ] No internal details leaked (stack traces, SQL, internal paths)
    [ ] OpenAPI spec generated and matches implementation
    ```
-3. **Schema Alignment** — Do data models match across services?
-4. **Test Coverage** — Are all P0/P1 FRs covered by at least one test?
-5. **Missing Artifacts** — Any spec requirement without a corresponding output?
-6. **Cross-Cutting Concerns** — Auth, logging, error handling consistently applied?
-6. **Observability Verification** — Full instrumentation audit:
+3. **Design Compliance** — Do FE outputs match the Figma designs? *(Only when Figma source was provided.)*
+   ```
+   DESIGN COMPLIANCE
+     ✅ <ScreenName> — matches Figma frame exactly (TASK-ID)
+     ✅ <ComponentName> — all variants implemented
+     ⚠️ <ElementName> — deviation: <description e.g. "Figma shows gradient border, implemented as solid">
+     ❌ <ScreenName> mobile breakpoint — not implemented, Figma frame exists at <link>
+   ```
+4. **Schema Alignment** — Do data models match across services?
+5. **Test Coverage** — Are all P0/P1 FRs covered by at least one test?
+6. **Missing Artifacts** — Any spec requirement without a corresponding output?
+7. **Cross-Cutting Concerns** — Auth, logging, error handling consistently applied?
+8. **Observability Verification** — Full instrumentation audit:
    ```
    OBSERVABILITY VERIFICATION
    ==========================
@@ -882,7 +1185,7 @@ git branch -d feature/fe-task-004
    [ ] Alert rules: defined for SLO breaches (error rate, latency p99)
    [ ] Log levels: no DEBUG statements left enabled for production
    ```
-7. **Duplicate Detection** — Scan for patterns that duplicate existing codebase code:
+9. **Duplicate Detection** — Scan for patterns that duplicate existing codebase code:
    ```bash
    # Check for duplicate controller/service/repository patterns
    # Compare new classes against existing base classes and abstractions
@@ -937,28 +1240,56 @@ rm -f e2e/.captures.json            # ephemeral test data
 find . -name "*.orig" -name "*.bak" -delete 2>/dev/null
 ```
 
-**4. HANDOFF ARTIFACT**
-Write a handoff artifact for downstream skills:
+**4. HANDOFF MANIFEST** (schema v2.0)
+Write a handoff manifest for downstream skills:
 ```yaml
-# claudedocs/handoff-spec-to-impl-<timestamp>.yaml
+# claudedocs/handoff-spec-to-impl-<feature>-<timestamp>.yaml
+schema_version: "2.0"
 source_skill: "spec-to-impl"
+feature: "<feature-name>"
+timestamp: "<ISO 8601 UTC>"
+
 artifacts:
   - path: "e2e/test-plan.yaml"
     type: "test-plan"
-  - path: "<list all produced source files>"
+    status: "ready"
+    summary: "<N> test cases across API, DB, and UI layers"
+    consumed_by: ["verify-impl"]
+  - path: "<list each produced source directory>"
     type: "code"
+    status: "ready"
+    summary: "<description of what was implemented>"
+    consumed_by: ["verify-impl", "pr-review", "code-audit"]
   - path: "claudedocs/<feature>-observability-contract.md"
-    type: "observability-contract"
-  - path: "claudedocs/<feature>-dashboard-spec.md"
-    type: "dashboard-spec"
-quality_assessment: "All waves passed, integration review clean, observability verified"
+    type: "architecture"
+    status: "ready"
+    summary: "Logging, metrics, and tracing requirements"
+    consumed_by: ["monitoring-plan"]
+
+quality:
+  status: "complete"
+  ambiguities: []
+
+consumed_from:
+  - "<path to each upstream handoff manifest consumed in Step 0>"
+
 suggested_next:
   - skill: "verify-impl"
+    reason: "Implementation complete, ready for live verification"
     context: "e2e/test-plan.yaml has N test cases ready"
+    reads: ["e2e/test-plan.yaml"]
   - skill: "finalize"
-    context: "Implementation complete, ready for commit and PR"
+    reason: "After verification, commit and PR"
+    context: "N agent branches to merge"
+    reads: []
   - skill: "monitoring-plan"
-    context: "Observability contract + dashboard spec ready for operationalization"
+    reason: "Observability contract ready for operationalization"
+    context: "Observability contract + dashboard spec ready"
+    reads: ["claudedocs/<feature>-observability-contract.md"]
+
+lifecycle:
+  archivable_after: ["verify-impl", "finalize"]
+  archive_policy: "after-finalize"
 ```
 
 **5. SUGGEST NEXT STEP**
@@ -1089,6 +1420,8 @@ For WAVE N:
 | `references/observability-contract.md` | Observability standards for all agents |
 | `references/api-standards.md` | API design standards (REST, GraphQL, gRPC, async) |
 | `templates/dispatch-prompt.md` | Agent dispatch prompt template |
+| `agents/design.md` | Dispatching the DESIGN agent for Figma context extraction |
+| `templates/fe-dispatch-with-design.md` | Complete FE agent dispatch prompt with Design Context Package embedded |
 
 ---
 
@@ -1109,3 +1442,23 @@ For WAVE N:
 | API standards violation | Fix in-place: wrong status code, missing pagination, incorrect error format — usually small changes |
 | OpenAPI spec drift | Regenerate from implementation or update implementation to match contract |
 | Agent 3x failure escalation | REASSIGN / DECOMPOSE / REVISE / DEFER (Section 4.3.1) |
+| Figma MCP not connected | Pause DESIGN task. Show setup command. Offer fallback: proceed in code-only mode without design context. |
+| Design extraction incomplete | Re-run DESIGN agent for missing frames. All dependent FE tasks remain on WAITING. |
+| Design-code mismatch found in review | Re-dispatch FE agent with targeted prompt referencing the specific Figma node-id and exact deviation. |
+| Code Connect not set up | FE generates raw components. Adds `// TODO: map to Code Connect after setup` comment to each component. |
+| Figma rate limit hit | Batch remaining MCP calls into one session. Reuse cached Design Context Package for related tasks in the same wave. |
+| Figma file access denied | Surface OAuth re-auth or file permission issue to user. Pause DESIGN task. |
+
+---
+
+## 12. Learning & Memory
+
+### Learning & Memory
+
+After implementation completes, save reusable patterns to memory:
+- Architecture decisions that worked well for this type of spec
+- Agent routing that proved effective (which agents needed opus vs sonnet)
+- Common blockers encountered and how they were resolved
+- Project-specific conventions discovered during implementation
+
+This enables future spec-to-impl runs to benefit from past experience.

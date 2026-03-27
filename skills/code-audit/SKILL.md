@@ -7,6 +7,9 @@ description: >
   "review this code", "code quality", "code smells", "design patterns review", "architecture review",
   "is this code good", "review the implementation", "audit this module".
 argument-hint: "[file, module, directory, or feature path]"
+context: fork
+agent: general-purpose
+effort: high
 ---
 
 # Code Audit: Multi-Agent Implementation Review
@@ -79,6 +82,44 @@ git shortlog -sn -- <target>
 | `SKEPTIC` | Devil's Advocate | Challenges design decisions, finds hidden assumptions | Always |
 
 **`LEAD` always orchestrates.** Other agents activate based on scope — single file reviews skip `ARCH` and `TECH`.
+
+### Agent Model Routing
+
+Route agents to optimal models for cost-efficiency:
+
+| Agent | Model | Rationale |
+|---|---|---|
+| `LEAD` | `opus` | Orchestration and synthesis requires deepest reasoning |
+| `ARCH` | `opus` | Architecture analysis requires deep structural reasoning |
+| `SEC` | `opus` | Security analysis requires careful vulnerability reasoning |
+| `SKEPTIC` | `opus` | Devil's advocate requires independent deep thinking |
+| `SMELL`, `DUP`, `ALGO` | `sonnet` | Code pattern analysis — best coding model |
+| `PERF`, `PATTERN` | `sonnet` | Implementation-focused analysis |
+| `TECH` | `sonnet` | Dependency and technology evaluation |
+
+### Parallel Execution Strategy
+
+All 10 agents execute their analysis dimensions **in parallel** during Phase 2:
+- Launch agents in a single message with multiple Agent calls
+- Each agent operates on the same codebase snapshot independently
+- Use `run_in_background: true` for lower-priority dimensions (TECH, PATTERN)
+- LEAD synthesizes results only after ALL agents complete
+
+```
+Phase 1: LEAD reads codebase + internet research (sequential)
+    ↓
+Phase 2: ALL 9 analysis agents run in parallel
+    ↓
+Phase 3: LEAD synthesizes scorecard + roadmap (sequential)
+```
+
+### Agent Teams Mode (Experimental)
+
+For large codebases (1000+ files), enable Agent Teams for competing-hypothesis investigation:
+- `SMELL` and `SKEPTIC` can challenge each other's findings
+- `SEC` and `PERF` can identify tradeoffs between security and performance
+- Set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` for this mode
+- Higher token cost but better finding quality for complex audits
 
 ---
 
@@ -573,6 +614,16 @@ Tell the user: "Audit saved to claudedocs/<name>-code-audit.md. Next steps: fix 
 - `/tech-debt-assessment` — Tier 2/3 findings feed debt inventory
 - `/performance-review` — Deep-dive on performance findings
 - `/security-review` — Deep-dive on security findings
+
+---
+
+### Learning & Memory
+
+After audit completes, save reusable patterns:
+- Code quality patterns specific to this project's stack
+- Common anti-patterns found that should inform future reviews
+- Effective review checklist items for this technology combination
+- Architecture conformance rules that should be codified as ArchUnit/lint rules
 
 ---
 

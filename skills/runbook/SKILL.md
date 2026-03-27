@@ -2,6 +2,7 @@
 name: runbook
 description: Generate an operational runbook for a service or system covering deployment, scaling, failure recovery, and common operations. Triggers: "runbook", "operations guide", "how to deploy", "on-call guide", "playbook".
 argument-hint: "[service / system]"
+effort: medium
 ---
 
 # Runbook
@@ -45,6 +46,12 @@ Produce an operational runbook that an on-call engineer can follow at 3am to dep
 
 ## Output
 Fill `templates/runbook.md`.
+
+## Learning & Memory
+After completing this skill, store reusable insights in memory:
+- **Operational patterns**: Common deployment sequences, health-check verification steps, and environment-specific procedures that recur across services
+- **Failure recovery procedures**: Proven remediation steps for recurring failure modes, including symptom-to-cause mappings and verification commands
+- **Scaling triggers**: Threshold indicators, capacity planning heuristics, and scaling decision criteria that proved reliable in production
 
 ## Output contract
 ```yaml

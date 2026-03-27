@@ -4,6 +4,8 @@ description: >
   Post-implementation completion workflow: lint, test, clean up, commit, and create PR.
   Triggers: "finalize", "commit this", "wrap up", "create PR", "ship it", "done implementing".
 argument-hint: "[branch name or feature description]"
+context: fork
+agent: general-purpose
 ---
 
 # Finalize
@@ -29,6 +31,41 @@ ls .worktrees/ 2>/dev/null              # stale worktree dirs
 Report what was found before proceeding.
 
 ### 2. LINT — Run language-appropriate linters
+
+**Parallel execution**: When the project uses multiple languages/stacks, run linters and test suites concurrently:
+
+```
+┌──────────────────────────────────────┐
+│ Phase 1: SCAN (sequential)            │
+└──────────────┬───────────────────────┘
+               │
+  ┌────────────┼────────────┐
+  ▼            ▼            ▼
+┌──────┐  ┌──────┐  ┌──────────┐
+│ Java │  │ TS/  │  │ Flutter/ │
+│ Lint │  │ React│  │ Dart     │
+│      │  │ Lint │  │ Lint     │
+└──┬───┘  └──┬───┘  └────┬────┘
+   │         │           │
+   └─────────┼───────────┘
+             ▼
+  ┌────────────┼────────────┐
+  ▼            ▼            ▼
+┌──────┐  ┌──────┐  ┌──────────┐
+│ Java │  │ TS/  │  │ Flutter/ │
+│ Test │  │ React│  │ Dart     │
+│      │  │ Test │  │ Test     │
+└──┬───┘  └──┬───┘  └────┬────┘
+   │         │           │
+   └─────────┼───────────┘
+             ▼
+┌──────────────────────────────────────┐
+│ Phase 4: CLEAN → STAGE → COMMIT → PR│
+└──────────────────────────────────────┘
+```
+
+Detect stacks from project files, then launch lint agents in parallel. After all lints pass, launch test agents in parallel.
+
 | Stack | Command |
 |---|---|
 | Java / Maven | `mvn checkstyle:check spotbugs:check -q` |
@@ -42,6 +79,16 @@ Show actual linter output. If lint fails:
 - Auto-fix what can be auto-fixed (`eslint --fix`, `dart format`)
 - Surface remaining issues and fix them
 - Re-run to confirm clean
+
+### 2.5 SIMPLIFY — Pre-commit quality review
+
+Before proceeding to tests, optionally run a code quality sweep on changed files:
+- Spawn three parallel review agents on recently changed files:
+  1. **Reuse agent**: Check if changed code duplicates existing utilities
+  2. **Quality agent**: Check for code smells, SOLID violations, dead code
+  3. **Efficiency agent**: Check for unnecessary allocations, N+1 patterns, missed optimizations
+- Only flag issues in code that was changed (not pre-existing issues)
+- Auto-fix what can be auto-fixed, surface remaining issues
 
 ### 3. TEST — Run test suites
 | Stack | Command |
@@ -72,6 +119,35 @@ rm -f e2e/.captures.json 2>/dev/null
 # Check .gitignore covers: node_modules, target, build, .gradle, .dart_tool
 ```
 
+### 4.5 ARCHIVE — Move intermediate artifacts (after successful commit)
+```bash
+# Archive planning/design artifacts — NOT handoff manifests or test evidence
+FEATURE="<feature-name>"
+ARCHIVE="claudedocs/.archive/$(date +%Y%m%d-%H%M%S)-$FEATURE"
+mkdir -p "$ARCHIVE"
+
+# Move primary outputs (PRD, design docs, analysis files)
+mv claudedocs/${FEATURE}-*.md "$ARCHIVE/" 2>/dev/null
+
+# Move design artifacts if present
+[ -d design/ ] && mv design/ "$ARCHIVE/design/" 2>/dev/null
+
+# PRESERVE (do NOT archive):
+#   claudedocs/handoff-*.yaml  — audit trail, never delete
+#   e2e/test-plan.yaml         — needed for regression testing
+#   e2e/reports/               — test evidence
+#   e2e/verify-impl/           — screenshots and traces
+```
+
+Report what was archived:
+```
+📦 ARCHIVED intermediate artifacts to: $ARCHIVE
+  Preserved: handoff manifests (audit trail)
+  Preserved: e2e/ artifacts (regression + evidence)
+```
+
+> **Safety rule:** Only archive after the commit succeeds. If commit fails, artifacts are still needed. Add `claudedocs/.archive/` to `.gitignore`.
+
 ### 5. STAGE — Selective git add
 ```bash
 # Stage specific files — NEVER git add -A blindly
@@ -96,6 +172,13 @@ git commit -m "<type>(<scope>): <description>"
 gh pr create --title "<title>" --body "$(cat <<'EOF'
 ## Summary
 <bullet points of what changed>
+
+## Design Reference
+<If handoff has stitch.project_id — include this section>
+- Stitch Project: <project_id>
+- Design System: <asset_id>
+- Screens: <n> generated
+<End if>
 
 ## Test Results
 <paste actual test output summary>
@@ -143,4 +226,5 @@ produces:
     lint_output: "<actual linter stdout>"
     test_output: "<actual test runner stdout>"
     files_committed: ["<list>"]
+    handoff: "Write claudedocs/handoff-finalize-<timestamp>.yaml — suggest: pr-review, release-notes"
 ```

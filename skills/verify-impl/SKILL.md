@@ -14,6 +14,9 @@ arguments: >
     /verify-impl e2e/test-plan.yaml --api    → consume test plan, API layer only
     /verify-impl --tc TC-001 TC-003          → run specific test cases only
     /verify-impl path/to/spec.md             → no test plan exists yet, derive from spec
+context: fork
+agent: general-purpose
+effort: high
 ---
 
 # Verify-Impl: Live Implementation Verification Skill
@@ -139,6 +142,52 @@ grep -r "CREATE TABLE\|@Entity\|@Table" --include="*.sql" --include="*.java" -l
 # Find Playwright test files if any exist
 find . -name "*.spec.ts" -o -name "*.e2e.ts" | head -10
 ```
+
+---
+
+## 1.5 Parallel Verification Strategy
+
+The four verification layers (API, DB, UI, Mobile) are **independent** and execute in parallel:
+
+```
+┌─────────────────────────────────────────────────┐
+│ Phase 1: Environment Discovery (sequential)      │
+└──────────────────┬──────────────────────────────┘
+                   │
+     ┌─────────────┼─────────────┬────────────────┐
+     ▼             ▼             ▼                ▼
+┌─────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐
+│ API     │ │ Database │ │ UI       │ │ Mobile       │
+│ Verify  │ │ Verify   │ │ Verify   │ │ Verify       │
+│ Agent   │ │ Agent    │ │ Agent    │ │ Agent        │
+└────┬────┘ └────┬─────┘ └────┬─────┘ └──────┬───────┘
+     │           │            │               │
+     └─────────┬─┴────────────┘───────────────┘
+               ▼
+┌─────────────────────────────────────────────────┐
+│ Phase 3: Evidence Synthesis (sequential)         │
+└─────────────────────────────────────────────────┘
+```
+
+**Agent model routing for verification:**
+
+| Agent | Model | Rationale |
+|---|---|---|
+| `VERIFY_API` | `sonnet` | HTTP calls + assertion logic |
+| `VERIFY_DB` | `sonnet` | SQL/NoSQL query execution |
+| `VERIFY_UI` | `sonnet` | Playwright automation |
+| `VERIFY_MOBILE` | `sonnet` | Platform-specific test execution |
+
+**Execution pattern:**
+- Launch all applicable verification agents in a single message (parallel Agent calls)
+- Each agent runs independently with its own verification scope
+- Use `run_in_background: true` for agents whose results don't block others
+- Wait for all agents to complete before producing the final report
+
+**Variable passing between layers:**
+- API layer captures variables (IDs, tokens) and writes them to `e2e/.captures.json`
+- DB and UI layers read from `e2e/.captures.json` if they depend on API-created resources
+- If DB or UI depend on API captures, run API first, then DB+UI in parallel
 
 ---
 
@@ -369,6 +418,17 @@ TC-001 [P0] User submits money request
   ledger_balanced transaction_id=abc-123                   ❌  imbalance=1000.00
                   → credit entry not created: check MoneyRequestService.postLedger()
 ```
+
+---
+
+### 3.4 Stitch Screen Reference (optional)
+
+When the handoff artifact (`claudedocs/handoff-ui-design-*.yaml`) contains a `stitch` block:
+- Read `stitch.project_id` and `stitch.screens` from the handoff YAML
+- For each screen under test, call `get_screen(name, projectId, screenId)` to retrieve the intended screen structure from Stitch
+- Use this as structural context when evaluating Playwright test results — it describes the intended layout and component arrangement
+- This is NOT a visual comparison tool — Stitch has no image export. It provides context for what the UI layout and component structure should look like
+- This step is informational: it helps investigate UI test failures by showing design intent
 
 ---
 
@@ -674,3 +734,28 @@ npx playwright test --grep "duplicate payment" 2>&1
 | `scripts/playwright-setup.sh` | Playwright install + browser setup |
 | `templates/playwright-test.ts` | Playwright test file template |
 | `references/data-testid-conventions.md` | Conventions for UI test selectors |
+
+## 7.5 Progress Tracking
+
+Use task management for real-time verification progress:
+- Create a task per verification layer
+- Update status as each layer completes (pass/fail)
+- Produces a live dashboard of verification progress for the user
+
+## 7.6 Learning & Memory
+
+After verification completes, save learnings:
+- Environment setup patterns that worked (connection strings, auth flows)
+- Common test failures and their root causes for this project
+- Playwright selectors that were stable vs. flaky
+- DB verification queries that proved most useful
+
+## Output contract
+```yaml
+produces:
+  - type: "verification"
+    format: "markdown"
+    path: "e2e/reports/verify-<timestamp>.log"
+    sections: [api_results, db_results, ui_results, mobile_results, verdict]
+    handoff: "Write claudedocs/handoff-verify-impl-<timestamp>.yaml — suggest: finalize, evidence-review"
+```

@@ -5,6 +5,7 @@ description: >
   Covers architecture, state management, navigation, testing, platform channels, and app store readiness.
   Triggers: "mobile", "flutter", "react native", "android", "ios", "mobile app", "widget test", "app store".
 argument-hint: "[platform: flutter | react-native | android] [feature description]"
+effort: medium
 ---
 
 # Mobile development
@@ -78,15 +79,20 @@ Provide stack-aware mobile development guidance, implementation patterns, and te
 - Typically follows: `/design-doc`, `/api-design`, `/flow-map`
 - Feeds into: `/test-plan` (mobile test cases), `/verify-impl` (mobile verification)
 - Related: `/ux-review` (mobile UX), `/infra-design` (CI/CD for mobile builds)
+- Related: `/ui-design --stitch --platform mobile` (Stitch supports MOBILE, TABLET, DESKTOP device types for layout generation)
+
+## Learning & Memory
+After completing this skill, store reusable insights in memory:
+- **Platform-specific patterns**: Architectural idioms, API usage patterns, and platform quirks unique to Flutter, React Native, or Android that affected implementation decisions
+- **State management choices**: Which state management approaches worked well for different feature complexities, and trade-offs observed in practice
+- **Navigation approaches**: Routing configurations, deep-link setups, and navigation composition patterns that proved reliable across app architectures
 
 ## Output contract
 ```yaml
 produces:
-  - type: implementation_guidance
-    format: markdown
-    sections: [architecture, state_management, navigation, testing, platform_specific]
-  - type: test_commands
-    commands: ["flutter test", "npx jest", "./gradlew testDebugUnitTest"]
-  - type: build_commands
-    commands: ["flutter build apk --flavor prod", "npx react-native run-android"]
+  - type: "mobile-guidance"
+    format: "markdown"
+    path: "claudedocs/<feature>-mobile-dev.md"
+    sections: [architecture, state_management, navigation, testing, platform_specific, test_commands, build_commands]
+    handoff: "Write claudedocs/handoff-mobile-dev-<timestamp>.yaml — suggest: spec-to-impl, test-plan, verify-impl"
 ```

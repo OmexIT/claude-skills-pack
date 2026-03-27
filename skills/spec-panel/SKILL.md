@@ -5,6 +5,9 @@ description: >
   and actionable recommendations. Triggers: "spec panel", "expert review", "panel analysis",
   "spec analysis", "expert panel review".
 argument-hint: "[spec document or @file]"
+context: fork
+agent: general-purpose
+effort: high
 ---
 
 # Spec Panel Analysis
@@ -172,6 +175,25 @@ The Skeptic's role is to prevent groupthink and rubber-stamping. They must produ
 
 State which domain experts are activated and why. Each expert provides 2-5 specific, actionable findings using the structured format above — not generic advice.
 
+### Parallel Expert Execution
+
+Expert panel members execute their analysis **in parallel**:
+- Launch all activated experts as separate Agent calls in a single message
+- Fixed experts (IEEE Auditor, Spec Smells Scanner, Cross-Cutting Reviewer) always run
+- Domain-activated experts (based on spec content) run in parallel alongside fixed experts
+- Devil's Advocate runs after initial findings are collected (needs findings to challenge)
+
+**Model routing for experts:**
+
+| Expert | Model | Rationale |
+|---|---|---|
+| Domain experts | `opus` | Deep domain reasoning |
+| IEEE Auditor | `sonnet` | Systematic checklist evaluation |
+| Spec Smells Scanner | `sonnet` | Pattern matching against red flags |
+| Cross-Cutting Reviewer | `sonnet` | Checklist-driven gap analysis |
+| Devil's Advocate | `opus` | Independent critical thinking |
+| Internet Researcher | `sonnet` | Web search + synthesis |
+
 ### Phase 4: Quality Score
 
 Produce an overall spec quality scorecard:
@@ -285,6 +307,16 @@ Tell the user: "Analysis saved to claudedocs/<name>-panel-analysis.md. To action
 - `/spec-to-impl` — Implementation from analyzed spec
 - `/ticket-breakdown` — Break analyzed spec into tickets
 - `/test-plan` — Test planning informed by expert findings
+
+### Learning & Memory
+
+After analysis completes, save:
+- Domain patterns specific to this project's industry vertical
+- Common spec gaps that were found (to proactively check in future specs)
+- Expert recommendations that the team accepted (validated patterns)
+- Spec quality benchmarks for this project
+
+---
 
 ## Output contract
 

@@ -2,6 +2,7 @@
 name: test-plan
 description: Create a risk-based test plan for a feature, PR, or release. Includes test strategy, coverage matrix, edge cases, and rollout checks. Triggers: "test plan", "QA plan", "how should we test", "release checklist".
 argument-hint: "[feature / PR / release]"
+effort: medium
 ---
 
 # Test plan
@@ -37,11 +38,22 @@ argument-hint: "[feature / PR / release]"
 
 ## Workflow context
 - Typically follows: `/design-doc`, `/ticket-breakdown`, `/pr-review`
-- Feeds into: `/release-notes` (confidence in release)
+- Feeds into: `/spec-to-impl` (QA planning input — shapes the machine-readable `e2e/test-plan.yaml`), `/release-notes`
 - Related: `/security-review` (security test cases), `/performance-review` (perf test cases)
+
+> **Note:** This skill produces a human-readable test strategy document (markdown).
+> For automated test execution, `/spec-to-impl`'s QA agent generates `e2e/test-plan.yaml` (machine-readable YAML)
+> which `/verify-impl` consumes directly. Use this skill for test planning; use `/spec-to-impl` + `/verify-impl` for automated execution.
 
 ## Output
 Fill `templates/test-plan.md` and tailor it to the change.
+
+## Learning & Memory
+
+After test plan creation completes, save:
+- Test strategies that proved effective for this type of feature (risk-based prioritization, boundary testing, integration test patterns)
+- Coverage gaps found during testing or post-release that should inform future test plans
+- Flaky test patterns encountered and the root causes identified (timing, shared state, external dependencies)
 
 ## Output contract
 ```yaml
@@ -50,4 +62,5 @@ produces:
     format: "markdown"
     path: "claudedocs/<feature>-test-plan.md"
     sections: [strategy, coverage_matrix, edge_cases, release_checklist]
+    handoff: "Write claudedocs/handoff-test-plan-<timestamp>.yaml — suggest: spec-to-impl"
 ```

@@ -5,6 +5,7 @@ description: >
   relevance tuning, autocomplete, faceting, and sync from source of truth.
   Triggers: "search design", "elasticsearch", "typesense", "search relevance", "autocomplete", "full-text search".
 argument-hint: "[search feature / entity to index]"
+effort: high
 ---
 
 # Search design
@@ -56,6 +57,13 @@ Design the search layer: index structure, mapping, analyzers, relevance tuning, 
 - Feeds into: `/spec-to-impl` (search implementation), `/performance-review` (query performance)
 - Related: `/api-design` (search API endpoint design), `/monitoring-plan` (search health)
 
+## Learning & Memory
+
+After search design completes, save:
+- Search relevance tuning decisions (field boosts, scoring formulas, synonym lists) and their measured impact on result quality
+- Analyzer configurations that worked for the content type and language (tokenizer, filters, edge n-gram settings)
+- Sync patterns between source of truth and search engine (CDC vs polling, batch sizes, lag thresholds) and their reliability in production
+
 ## Output contract
 ```yaml
 produces:
@@ -63,4 +71,5 @@ produces:
     format: markdown
     path: "claudedocs/<feature>-search-design.md"
     sections: [engine_choice, index_mapping, analyzers, autocomplete, facets, relevance, sync, operations]
+    handoff: "Write claudedocs/handoff-search-design-<timestamp>.yaml — suggest: spec-to-impl, data-design"
 ```

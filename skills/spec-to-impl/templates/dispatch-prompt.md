@@ -91,19 +91,27 @@ TASK-<ID>
 - Test IDs: <data-testid attributes for E2E automation -- check design/components/testid-registry.md>
 - DESIGN.md: <portable design system spec -- check design/DESIGN.md>
 
-IF STITCH SCAFFOLDING EXISTS (design/stitch-export/):
-  Use the Stitch-generated React/Tailwind code as your STARTING POINT.
-  Do NOT generate components from scratch -- refactor the Stitch output to:
-  1. Match the project's component library and patterns (from codebase scan)
-  2. Add proper TypeScript types (Stitch generates JS, not TS)
-  3. Wire to actual API endpoints (Stitch uses placeholder data)
-  4. Add state variants (empty, loading, error) not present in Stitch output
-  5. Add accessibility annotations from design/a11y/a11y-spec.md
-  6. Apply data-testid attributes from design/components/testid-registry.md
-  This saves significant time vs generating from wireframes alone.
+IF STITCH SCREENS AVAILABLE (design/stitch-screens/*.md or handoff has stitch.project_id):
+  Stitch screen specs describe the generated screen structure (layout, components, content).
+  Use them as DESIGN REFERENCE alongside wireframes and component specs.
+
+  If Stitch project ID is available in the handoff artifact:
+    You can call get_screen(name, projectId, screenId) for live screen structure data.
+    Screen IDs are listed in the handoff YAML under stitch.screens[].
+
+  Stitch does NOT provide exported code -- generate all components from scratch
+  using the component specs, tokens, wireframes, and Stitch screen structure as reference.
+
+  For each screen:
+  1. Read design/stitch-screens/SCR-XXX.md for Stitch-generated layout structure
+  2. Read design/components/component-specs.md for props, state, and interactions
+  3. Read design/visual-spec/tokens.md for design tokens (derived from Stitch design system config)
+  4. Read design/a11y/a11y-spec.md for accessibility annotations
+  5. Apply data-testid attributes from design/components/testid-registry.md
+  6. Add state variants (empty, loading, error) -- Stitch only generates happy path
 
 IF NO DESIGN ARTIFACTS EXIST:
-  Flag this to the orchestrator. Suggest running /ui-design --stitch first for rapid generation.
+  Flag this to the orchestrator. Suggest running /ui-design --stitch first for rapid screen structure generation.
   If proceeding without design artifacts, use the spec wireframes/descriptions as reference.
 
 Reference: skills/ui-design/SKILL.md for the full design system output format.

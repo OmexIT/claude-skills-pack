@@ -5,6 +5,7 @@ description: >
   CI/CD pipelines, and deployment strategies. Triggers: "infra design", "infrastructure",
   "deployment architecture", "k8s design", "terraform", "docker architecture", "CI/CD pipeline".
 argument-hint: "[service / feature / environment]"
+effort: high
 ---
 
 # Infrastructure design
@@ -72,6 +73,13 @@ Design the container, orchestration, IaC, and deployment architecture for a serv
 - Feeds into: `/monitoring-plan`, `/runbook`, `/security-review`
 - Related: `/migration-plan` (deployment changes), `/performance-review` (resource sizing)
 
+## Learning & Memory
+
+After infrastructure design completes, save:
+- Infrastructure patterns chosen (container strategies, orchestration configs, IaC module structures) and their operational outcomes
+- Deployment strategies that worked for this service profile (blue-green, canary, rolling) and the metrics that confirmed success
+- Scaling configurations (resource limits, HPA thresholds, replica counts) that matched actual traffic patterns
+
 ## Output contract
 ```yaml
 produces:
@@ -79,4 +87,5 @@ produces:
     format: markdown
     path: "claudedocs/<service>-infra-design.md"
     sections: [docker, kubernetes, terraform, cicd, deployment_strategy, rollback]
+    handoff: "Write claudedocs/handoff-infra-design-<timestamp>.yaml — suggest: spec-to-impl, monitoring-plan"
 ```

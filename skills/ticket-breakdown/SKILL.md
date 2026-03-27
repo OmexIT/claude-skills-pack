@@ -2,6 +2,7 @@
 name: ticket-breakdown
 description: Break a PRD or design doc into epics and engineering tickets with acceptance criteria, dependencies, sequencing, and rollout steps. Triggers: "break this into tickets", "work breakdown", "engineering plan", "Jira tickets", "Linear issues".
 argument-hint: "[PRD / design doc link or text]"
+effort: medium
 ---
 
 # Ticket breakdown
@@ -47,6 +48,13 @@ Turn a spec into implementable work items that can be assigned, tracked, and shi
 ## Output
 Use `templates/ticket-breakdown.md`.
 
+## Learning & Memory
+
+After ticket breakdown completes, save:
+- Estimation patterns that held up (ticket sizes vs actual delivery time) to calibrate future estimates
+- Dependency structures that caused sequencing problems or unlocked parallel work streams
+- Scope patterns that consistently needed splitting further or were over-decomposed for the team's workflow
+
 ## Output contract
 ```yaml
 produces:
@@ -54,4 +62,5 @@ produces:
     format: "markdown"
     path: "claudedocs/<feature>-ticket-breakdown.md"
     sections: [epics, tickets, acceptance_criteria, dependencies, sequencing]
+    handoff: "Write claudedocs/handoff-ticket-breakdown-<timestamp>.yaml — suggest: spec-to-impl"
 ```

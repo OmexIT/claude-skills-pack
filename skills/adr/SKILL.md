@@ -2,6 +2,7 @@
 name: adr
 description: Write an Architecture Decision Record (ADR) capturing context, decision, alternatives, and consequences. Triggers: "ADR", "decision record", "why did we choose", "architecture decision".
 argument-hint: "[decision title]"
+effort: high
 ---
 
 # ADR (Architecture Decision Record)
@@ -42,6 +43,13 @@ Capture an architectural decision so future readers understand *why* the choice 
 ## Output
 Create an ADR using `templates/adr.md`. Keep it short and specific.
 
+## Learning & Memory
+
+After ADR creation completes, save:
+- Decision patterns that recur across the codebase (technology choices, architectural styles, integration approaches)
+- Alternatives considered and why they were rejected, for reuse in future similar decisions
+- Context that informed the decision (constraints, team capabilities, timelines) to detect when circumstances change enough to revisit
+
 ## Output contract
 ```yaml
 produces:
@@ -49,4 +57,5 @@ produces:
     format: "markdown"
     path: "claudedocs/<feature>-adr.md"
     sections: [context, decision, alternatives, consequences]
+    handoff: "Write claudedocs/handoff-adr-<timestamp>.yaml — suggest: design-doc"
 ```

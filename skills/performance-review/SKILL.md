@@ -2,6 +2,7 @@
 name: performance-review
 description: Review a feature/PR for performance and reliability risks: budgets, hot paths, query patterns, caching, concurrency, load testing, and monitoring. Triggers: "performance review", "slow", "latency", "throughput", "load test".
 argument-hint: "[feature / PR]"
+effort: high
 ---
 
 # Performance review
@@ -14,6 +15,39 @@ Produce a practical performance assessment with concrete measurements, identifie
 - Target workload (requests/sec, users, data volume)
 - Current baseline metrics (if known)
 - Performance SLOs or budget (latency targets, error rate)
+
+## Parallel Expert Panel
+
+Performance reviews benefit from multi-layer specialist analysis:
+
+### Expert Roster
+
+| Expert | Model | Focus |
+|---|---|---|
+| `BACKEND_PERF` | `sonnet` | API latency, service-to-service calls, serialization overhead, thread management |
+| `DB_PERF` | `opus` | Query patterns, N+1 detection, index coverage, connection pooling, transaction scope |
+| `FRONTEND_PERF` | `sonnet` | Bundle size, render performance, network waterfall, Core Web Vitals |
+| `INFRA_PERF` | `sonnet` | Resource utilization, scaling strategy, connection limits, CDN/caching layers |
+
+### Execution Pattern
+
+```
+Phase 1: Hot path mapping (sequential — establishes shared context)
+    ↓
+Phase 2: Parallel expert analysis
+  ┌──────────────┬──────────────┬──────────────┬──────────────┐
+  │ BACKEND_PERF │ DB_PERF      │ FRONTEND     │ INFRA_PERF   │
+  │              │              │ _PERF        │              │
+  └──────┬───────┴──────┬───────┴──────┬───────┴──────┬───────┘
+         └──────────────┼──────────────┘──────────────┘
+                        ↓
+Phase 3: Bottleneck synthesis + load test plan (sequential)
+```
+
+- Launch all applicable experts in parallel after hot path is mapped
+- Skip FRONTEND_PERF for backend-only reviews, skip DB_PERF if no database involved
+- Each expert produces findings with quantified impact estimates
+- Synthesize into prioritized optimization plan ordered by user-facing impact
 
 ## How I'll think about this
 1. **Map the hot path**: Trace the request lifecycle end-to-end — from entry point through every service call, database query, and external dependency to response.
@@ -46,11 +80,20 @@ Produce a practical performance assessment with concrete measurements, identifie
 ## Output
 Fill `templates/perf-review.md`.
 
+## Learning & Memory
+
+After review completes, save:
+- Performance baselines and budgets established for this project
+- Hot path patterns specific to this architecture
+- Query optimization patterns that proved effective
+- Load test configurations and results for regression comparison
+
 ## Output contract
 ```yaml
 produces:
-  - type: "review"
+  - type: "performance-review"
     format: "markdown"
     path: "claudedocs/<feature>-performance-review.md"
     sections: [hot_paths, query_patterns, caching, load_test_plan]
+    handoff: "Write claudedocs/handoff-performance-review-<timestamp>.yaml — suggest: test-plan, monitoring-plan"
 ```

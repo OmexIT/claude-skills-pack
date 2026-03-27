@@ -5,6 +5,7 @@ description: >
   Requires actual test output, screenshots, build logs — not claims.
   Triggers: "evidence review", "prove it works", "show me proof", "quality gate", "final review".
 argument-hint: "[feature / PR / implementation to review]"
+effort: high
 ---
 
 # Evidence review (default-to-rejection)
@@ -110,12 +111,19 @@ Any of these → immediate NEEDS WORK rating:
 - Feeds into: `/finalize` (if PASS or CONDITIONAL PASS)
 - Related: `/test-plan` (defines what needs evidence), `/security-review`
 
+## Learning & Memory
+After completing this skill, store reusable insights in memory:
+- **Evidence quality standards**: What constitutes sufficient proof for different requirement types, and minimum evidence thresholds that caught real issues
+- **Common proof gaps**: Recurring areas where implementations lack verification -- untested edge cases, missing integration evidence, and overlooked regression checks
+- **Verification patterns**: Effective re-execution commands, cross-referencing techniques, and evidence collection workflows that streamlined the review process
+
 ## Output contract
 ```yaml
 produces:
-  - type: review
+  - type: "evidence-review"
     format: markdown
     path: "claudedocs/<feature>-evidence-review.md"
     sections: [evidence_inventory, verification_results, code_quality, rating, follow_ups]
     rating: "REJECT | NEEDS WORK | CONDITIONAL PASS | PASS"
+    handoff: "Write claudedocs/handoff-evidence-review-<timestamp>.yaml — suggest: finalize"
 ```

@@ -5,12 +5,17 @@ description: >
   network errors, concurrency conflicts, and recovery paths. Every path becomes a test case.
   Triggers: "flow map", "map the flows", "what are all the paths", "state diagram", "path mapping".
 argument-hint: "[feature or spec reference]"
+effort: medium
 ---
 
 # Flow map
 
 ## What I'll do
 Produce a complete path map covering every possible system state and transition — happy, failure, timeout, and recovery — before any implementation starts. Every mapped path becomes a test case.
+
+> **flow-map vs user-flow:** This skill maps the **system's perspective** — internal states, network failures, auth failures, concurrency conflicts, and resource cleanup.
+> Use `/user-flow` for the **user's perspective** — what users see, decide, and experience at each step.
+> Typical order: `/user-flow` first (UX journeys), then `/flow-map` (system paths for implementation).
 
 ## Inputs I'll use (ask only if missing)
 - Feature spec or PRD (or handoff artifact from /prd, /design-doc)
@@ -86,6 +91,12 @@ stateDiagram-v2
 - Feeds into: `/spec-to-impl` (paths become test cases), `/test-plan` (coverage matrix)
 - Related: `/data-design` (failure handling for data operations)
 
+## Learning & Memory
+After completing this skill, store reusable insights in memory:
+- **Flow patterns**: Recurring state machine structures, transition shapes, and path topologies that appear across features
+- **Recovery path patterns**: Effective rollback strategies, compensating transaction designs, and retry/circuit-breaker configurations
+- **Concurrency edge cases**: Race conditions, optimistic locking failures, and double-submit scenarios encountered and how they were resolved
+
 ## Output contract
 ```yaml
 produces:
@@ -94,4 +105,5 @@ produces:
     path: "claudedocs/<feature>-flow-map.md"
     sections: [state_diagram, path_table, cleanup_inventory]
     generates_test_cases: true
+    handoff: "Write claudedocs/handoff-flow-map-<timestamp>.yaml — suggest: spec-to-impl, test-plan"
 ```

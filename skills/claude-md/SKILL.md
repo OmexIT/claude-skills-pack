@@ -2,6 +2,7 @@
 name: claude-md
 description: Generate a CLAUDE.md project configuration file for Claude Code. Analyzes codebase to produce build commands, code conventions, architecture notes, and workflow preferences. Triggers: "claude md", "CLAUDE.md", "claude code setup", "project instructions", "claude config".
 argument-hint: "[project path or description]"
+effort: medium
 ---
 
 # CLAUDE.md generator
@@ -59,6 +60,12 @@ The following sections from the template are **not project-specific** — they m
 - **Core Principles** (Simplicity First, No Laziness, Minimal Impact)
 
 These sections define standard Claude Code working behavior and should never be omitted or modified during generation.
+
+## Learning & Memory
+After completing this skill, store reusable insights in memory:
+- **Project configuration patterns**: Common build tool setups, monorepo structures, and config file locations that recur across project types
+- **Build command conventions**: Reliable command extraction techniques and platform-specific build/test/lint invocations that proved accurate
+- **Useful CLAUDE.md sections**: High-signal content patterns that meaningfully improved Claude Code behavior, and low-signal sections to avoid
 
 ## Output contract
 ```yaml

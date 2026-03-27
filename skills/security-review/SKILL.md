@@ -2,6 +2,7 @@
 name: security-review
 description: Perform a practical security review (threat-model-lite) for a feature/PR: auth, data access, injection risks, abuse cases, privacy, secrets, logging, and safe defaults. Triggers: "security review", "threat model", "is this safe".
 argument-hint: "[feature / PR / endpoint]"
+effort: high
 ---
 
 # Security review (practical)
@@ -14,6 +15,39 @@ Produce a lightweight threat model and actionable security findings, prioritized
 - Data involved (PII? financial? secrets?)
 - Auth model (who can do what?)
 - Deployment context (public internet? internal? multi-tenant?)
+
+## Parallel Expert Panel
+
+Security reviews benefit from multiple specialist perspectives running simultaneously:
+
+### Expert Roster
+
+| Expert | Model | Focus |
+|---|---|---|
+| `AUTH_EXPERT` | `opus` | Authentication flows, authorization checks, session management, RBAC/ABAC |
+| `INJECTION_ANALYST` | `sonnet` | SQL/NoSQL/command/template injection, XSS, SSRF, path traversal |
+| `DATA_PRIVACY` | `opus` | PII handling, GDPR/CCPA compliance, data retention, logging hygiene |
+| `ABUSE_ANALYST` | `sonnet` | Rate limiting, enumeration attacks, credential stuffing, resource exhaustion |
+
+### Execution Pattern
+
+```
+Phase 1: Attack surface mapping (sequential — shared context)
+    ↓
+Phase 2: Parallel expert analysis
+  ┌──────────────┬──────────────┬──────────────┬──────────────┐
+  │ AUTH_EXPERT  │ INJECTION    │ DATA_PRIVACY │ ABUSE        │
+  │              │ _ANALYST     │              │ _ANALYST     │
+  └──────┬───────┴──────┬───────┴──────┬───────┴──────┬───────┘
+         └──────────────┼──────────────┘──────────────┘
+                        ↓
+Phase 3: Risk synthesis and prioritized findings (sequential)
+```
+
+- Launch all 4 experts as parallel Agent calls after attack surface is mapped
+- Each expert works independently on their focus area
+- Use `run_in_background: true` for ABUSE_ANALYST (lower priority than auth/injection)
+- Synthesize into unified risk matrix after all experts complete
 
 ## How I'll think about this
 1. **Map the attack surface**: Identify every entry point — API endpoints, form inputs, file uploads, webhooks, message queues, URL parameters, headers. Each is a potential injection vector.
@@ -60,11 +94,20 @@ Use `templates/security-review.md` and return findings as:
 - **Should-fix** (exploitable with effort, moderate impact)
 - **Nice-to-have** (defense-in-depth, low probability)
 
+## Learning & Memory
+
+After review completes, save reusable patterns:
+- Security patterns specific to this project's auth model and data classification
+- Common vulnerabilities found that should inform future reviews
+- OWASP checklist items most relevant to this technology stack
+- Threat model patterns that apply to similar features in this project
+
 ## Output contract
 ```yaml
 produces:
-  - type: "review"
+  - type: "security-review"
     format: "markdown"
     path: "claudedocs/<feature>-security-review.md"
     sections: [threat_model, findings, owasp_checklist, remediation]
+    handoff: "Write claudedocs/handoff-security-review-<timestamp>.yaml — suggest: finalize, test-plan"
 ```

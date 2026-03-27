@@ -2,6 +2,7 @@
 name: debug-triage
 description: Triage a bug or production issue into a clear investigation plan: reproduction, hypotheses, logs/metrics to check, bisection strategy, and a minimal safe fix. Triggers: "bug triage", "debug this", "investigate issue", "production bug".
 argument-hint: "[bug report / error message]"
+effort: high
 ---
 
 # Debug triage
@@ -43,6 +44,36 @@ argument-hint: "[bug report / error message]"
 ## Output
 Use `templates/triage-report.md`.
 
+## Parallel Investigation
+
+For complex bugs with multiple possible root causes, investigate hypotheses in parallel:
+
+```
+Phase 1: Reproduce + gather context (sequential — must confirm before investigating)
+    ↓
+Phase 2: Parallel hypothesis investigation (when 3+ hypotheses exist)
+  ┌──────────────┬──────────────┬──────────────┐
+  │ Hypothesis 1 │ Hypothesis 2 │ Hypothesis 3 │
+  │ (most likely)│ (second)     │ (third)      │
+  └──────┬───────┴──────┬───────┴──────┬───────┘
+         └──────────────┼──────────────┘
+                        ↓
+Phase 3: Root cause confirmed → minimal fix (sequential)
+```
+
+- Each hypothesis investigation runs as a separate Agent call
+- Use `model: sonnet` for log/code analysis, `model: opus` for complex reasoning
+- First agent to confirm root cause signals others to stop (via task completion)
+- Inherently sequential bugs (dependency chains) should NOT be parallelized
+
+## Learning & Memory
+
+After triage completes, save:
+- Bug patterns specific to this project (common failure modes)
+- Effective investigation techniques for this technology stack
+- Root causes that were non-obvious (help future triage of similar symptoms)
+- Monitoring gaps discovered that should be added
+
 ## Output contract
 ```yaml
 produces:
@@ -50,4 +81,5 @@ produces:
     format: "markdown"
     path: "claudedocs/<feature>-debug-triage.md"
     sections: [reproduction, hypotheses, investigation_plan, fix_strategy]
+    handoff: "Write claudedocs/handoff-debug-triage-<timestamp>.yaml — suggest: postmortem, test-plan"
 ```

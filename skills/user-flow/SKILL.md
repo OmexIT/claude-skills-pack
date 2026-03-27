@@ -2,12 +2,17 @@
 name: user-flow
 description: Map user journeys through a feature or product, identifying key paths, decision points, friction, error states, and edge cases. Triggers: "user flow", "user journey", "flow diagram", "happy path", "user path".
 argument-hint: "[feature / user goal]"
+effort: medium
 ---
 
 # User flow
 
 ## What I'll do
 Map the complete user journey for a feature — from entry point through completion — including happy paths, error states, edge cases, and decision points.
+
+> **user-flow vs flow-map:** This skill maps the **user's perspective** — what users see, decide, and experience.
+> Use `/flow-map` for the **system's perspective** — internal states, network failures, concurrency, and cleanup paths.
+> Typical order: `/user-flow` first (understand the UX), then `/flow-map` (map all system paths for implementation).
 
 ## Inputs I'll use (ask only if missing)
 - The user goal (what are they trying to accomplish?)
@@ -47,11 +52,18 @@ Map the complete user journey for a feature — from entry point through complet
 ## Output
 Fill `templates/user-flow.md`.
 
+## Learning & Memory
+After completing this skill, store reusable insights in memory:
+- **User journey patterns**: Common navigation flows, entry/exit points, and multi-step interaction sequences that recur across features
+- **Common friction points**: Recurring UX obstacles such as confusing decision points, missing context, or broken recovery paths
+- **Error state patterns**: Effective error recovery designs, dead-end patterns to avoid, and permission boundary handling strategies
+
 ## Output contract
 ```yaml
 produces:
-  - type: "flow-map"
+  - type: "user-flow"
     format: "markdown"
     path: "claudedocs/<feature>-user-flow.md"
     sections: [journeys, decision_points, error_states, edge_cases]
+    handoff: "Write claudedocs/handoff-user-flow-<timestamp>.yaml — suggest: flow-map, ux-review, ui-design"
 ```
