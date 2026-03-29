@@ -107,7 +107,7 @@ Phase 3: Consolidated UX findings report (sequential)
 
 ## Workflow context
 - Typically follows: `/user-flow`, `/prd` (UI requirements)
-- Feeds into: `/ticket-breakdown` (UX fix tickets), `/pr-review` (implementation review)
+- Feeds into: `/ticket-breakdown` (UX fix tickets), `code-review:code-review` (implementation review)
 - Related: `/docs-review` (content clarity overlaps)
 
 ## Output
@@ -128,5 +128,5 @@ produces:
     format: "markdown"
     path: "claudedocs/<feature>-ux-review.md"
     sections: [heuristics, accessibility, cognitive_walkthrough, recommendations]
-    handoff: "Write claudedocs/handoff-ux-review-<timestamp>.yaml — suggest: ticket-breakdown, pr-review"
+    handoff: "Write claudedocs/handoff-ux-review-<timestamp>.yaml — suggest: ticket-breakdown, code-review"
 ```

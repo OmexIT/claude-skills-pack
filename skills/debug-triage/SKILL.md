@@ -39,7 +39,7 @@ effort: high
 ## Workflow context
 - Typically follows: `/incident-response` (during incident), bug reports
 - Feeds into: `/postmortem` (if severe), `/test-plan` (regression tests)
-- Related: `/pr-review` (review the fix)
+- Related: `code-review:code-review` (review the fix)
 
 ## Output
 Use `templates/triage-report.md`.

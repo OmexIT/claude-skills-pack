@@ -23,13 +23,11 @@
 
 ## Implementation & Verification
 - **/spec-to-impl** — Multi-agent orchestration: spec → tasks → parallel implementation → tested artifacts
-- **/figma-to-code** — Convert Figma designs to production React/TypeScript via Figma MCP: selection, link, tokens, Code Connect, multi-screen flows, reverse capture
 - **/verify-impl** — Live verification: API, DB (Postgres/Mongo/Elastic/Typesense), UI (Playwright), Mobile
 - **/mobile-dev** — Mobile development patterns: Flutter, React Native, Android (Kotlin)
 - **/finalize** — Post-implementation: lint → test → clean up → commit → PR
 
 ## Quality & Review
-- **/pr-review** — Structured PR review (**manual-only**)
 - **/evidence-review** — Default-to-rejection quality gate requiring proof, not claims
 - **/spec-panel** — Multi-expert spec analysis: IEEE 830 audit, spec smells scanner, cross-cutting concerns checklist, expert panel with devil's advocate, quality scoring
 - **/code-audit** — Multi-agent code review: 10-dimension analysis (smells, SOLID, duplication, algorithms, security, performance, patterns, architecture, tech fitness, devil's advocate) with quality scoring
@@ -54,9 +52,6 @@
 - **/sprint-retro** — Sprint retrospective facilitation (**manual-only**)
 - **/onboarding-doc** — New team member onboarding guide
 - **/linkedin-post** — LinkedIn post draft with hook, body, and CTA optimized for engagement
-
-## Project Setup
-- **/claude-md** — Generate a CLAUDE.md project configuration file for Claude Code
 
 ## Auto-guidance
 - **repo-conventions** — Repo-specific conventions (**auto guidance; not a slash command**)
@@ -87,7 +82,7 @@ Skills in this pack leverage these Claude Code capabilities:
 - **Agent Teams** (experimental): For complex specs with tightly-coupled agents that need direct communication
 
 ### MCP Integration
-- **Figma MCP**: spec-to-impl DESIGN agent and figma-to-code extract design tokens, components, and layouts from Figma
+- **Figma MCP**: spec-to-impl DESIGN agent extracts design tokens, components, and layouts from Figma (use `figma` official plugin for full Figma workflows)
 - **Stitch MCP**: ui-design generates screens from text specifications when Stitch is available
 - **Chrome DevTools / Playwright**: verify-impl automates browser-based UI verification
 
@@ -110,7 +105,7 @@ SKILL              PRODUCES (type)           CONSUMED BY
 /adr            →  adr                    →  /design-doc
 /user-flow      →  user-flow             →  /flow-map, /ux-review, /test-plan, /ui-design
 /flow-map       →  flow-map              →  /spec-to-impl, /test-plan
-/ui-design      →  ui-design + testids   →  /spec-to-impl (FE), /verify-impl (testIDs), /figma-to-code
+/ui-design      →  ui-design + testids   →  /spec-to-impl (FE), /verify-impl (testIDs)
 /api-design     →  api-design            →  /spec-to-impl, /test-plan, /spec-panel
 /data-design    →  data-design           →  /spec-to-impl (DBA), /migration-plan
 /search-design  →  search-design         →  /spec-to-impl, /data-design
@@ -121,21 +116,19 @@ SKILL              PRODUCES (type)           CONSUMED BY
 /migration-plan →  migration-plan        →  /ticket-breakdown, /test-plan, /runbook
 
 ── Implementation ──
-/spec-to-impl   →  code + test-plan      →  /verify-impl, /finalize, /pr-review, /code-audit, /monitoring-plan
-                    + obs-contract        (includes DESIGN agent for Figma MCP context when Figma URL provided)
-/figma-to-code  →  components + tokens   →  /verify-impl, /finalize, /code-audit
+/spec-to-impl   →  code + test-plan      →  /verify-impl, /finalize, /code-audit, /monitoring-plan
+                    + obs-contract
 /mobile-dev     →  mobile-guidance       →  /spec-to-impl (FLUTTER/RN/ANDROID)
 /verify-impl    →  verification          →  /finalize, /evidence-review
-/finalize       →  commit + PR           →  /pr-review, /release-notes
+/finalize       →  commit + PR           →  /release-notes
 
 ── Quality ──
 /spec-panel     →  panel-analysis        →  /spec-to-impl, /ticket-breakdown, /test-plan
 /code-audit     →  code-audit            →  /finalize, /tech-debt-assessment, /test-plan
 /test-plan      →  test-plan             →  /spec-to-impl (QA planning input)
-/pr-review      →  pr-review             →  /release-notes
 /security-rev.. →  security-review       →  /finalize, /test-plan
 /performance-.. →  performance-review    →  /test-plan, /monitoring-plan
-/ux-review      →  ux-review             →  /ticket-breakdown, /pr-review
+/ux-review      →  ux-review             →  /ticket-breakdown
 /docs-review    →  docs-review           →  /finalize
 /metrics-rev..  →  metrics-review        →  /experiment-design
 /evidence-rev.. →  evidence-review       →  /finalize
@@ -153,7 +146,7 @@ Discover         Plan              Build              Quality            Complet
 ─────────        ──────            ─────              ───────            ────────         ───────
 /opportunity  →  /prd          →  /flow-map       →  /evidence-     →  /finalize     →  /monitoring
 -assessment      /design-doc      /ui-design          review            (commit+PR)      -plan
-/competitive  →  /adr             /spec-to-impl      /pr-review     →  /release-     →  /runbook
+/competitive  →  /adr             /spec-to-impl                    →  /release-     →  /runbook
 -analysis        /user-flow       /mobile-dev        /test-plan        notes         →  /incident-
                  /flow-map        /verify-impl
                  /ui-design

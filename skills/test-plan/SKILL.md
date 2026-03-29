@@ -37,7 +37,7 @@ effort: medium
 - Observability checks are included (how to verify in production)
 
 ## Workflow context
-- Typically follows: `/design-doc`, `/ticket-breakdown`, `/pr-review`
+- Typically follows: `/design-doc`, `/ticket-breakdown`, `code-review:code-review` (official plugin)
 - Feeds into: `/spec-to-impl` (QA planning input — shapes the machine-readable `e2e/test-plan.yaml`), `/release-notes`
 - Related: `/security-review` (security test cases), `/performance-review` (perf test cases)
 

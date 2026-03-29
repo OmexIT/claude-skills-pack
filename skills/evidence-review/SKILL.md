@@ -107,7 +107,7 @@ Any of these → immediate NEEDS WORK rating:
 - ✅ Follow-up items documented for anything not covered
 
 ## Workflow context
-- Typically follows: `/verify-impl`, `/spec-to-impl`, `/pr-review`
+- Typically follows: `/verify-impl`, `/spec-to-impl`, `code-review:code-review` (official plugin)
 - Feeds into: `/finalize` (if PASS or CONDITIONAL PASS)
 - Related: `/test-plan` (defines what needs evidence), `/security-review`
 

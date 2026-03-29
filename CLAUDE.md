@@ -1,7 +1,7 @@
 # Claude Code Skills Pack
 
 ## Project Overview
-A collection of 45 Claude Code skills covering the full software development lifecycle. Skills range from lightweight methodology guides (~80 lines) to comprehensive multi-agent orchestrators (~700 lines).
+A collection of 43 Claude Code skills covering the full software development lifecycle. Skills range from lightweight methodology guides (~80 lines) to comprehensive multi-agent orchestrators (~700 lines). Skills that overlap with official Claude Code plugins (figma, code-review, claude-md-management, frontend-design) have been removed in favor of the official plugin equivalents.
 
 ## Structure
 ```
@@ -18,10 +18,9 @@ skills/
 - **Discovery** (3): opportunity-assessment, competitive-analysis, go-to-market
 - **Planning** (14): prd, design-doc, adr, user-flow, flow-map, ui-design, api-design, data-design, search-design, infra-design, ticket-breakdown, experiment-design, decision-matrix, migration-plan
 - **Implementation** (4): spec-to-impl, verify-impl, mobile-dev, finalize
-- **Quality** (12): pr-review, evidence-review, spec-panel, code-audit, test-plan, security-review, performance-review, ux-review, docs-review, metrics-review, tech-debt-assessment, debug-triage
+- **Quality** (11): evidence-review, spec-panel, code-audit, test-plan, security-review, performance-review, ux-review, docs-review, metrics-review, tech-debt-assessment, debug-triage
 - **Release** (5): release-notes, monitoring-plan, runbook, incident-response, postmortem
 - **Communication** (4): stakeholder-update, sprint-retro, onboarding-doc, linkedin-post
-- **Setup** (1): claude-md
 - **Auto-guidance** (2): repo-conventions, handoff
 
 ## Conventions

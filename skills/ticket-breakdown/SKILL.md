@@ -42,7 +42,7 @@ Turn a spec into implementable work items that can be assigned, tracked, and shi
 
 ## Workflow context
 - Typically follows: `/prd`, `/design-doc`
-- Feeds into: `/test-plan`, `/pr-review`
+- Feeds into: `/test-plan`, `code-review:code-review` (official plugin)
 - Related: `/experiment-design` (rollout sequencing)
 
 ## Output

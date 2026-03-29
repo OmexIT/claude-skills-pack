@@ -763,6 +763,8 @@ quality_assessment: "Complete, <n> a11y issues to resolve"
 suggested_next:
   - skill: "spec-to-impl"
     context: "Design artifacts ready. Stitch project <id> has <n> screens. FE agents can call get_screen() for live structure data. <n> components, <n> test IDs."
+  - skill: "figma:figma-generate-design"
+    context: "Design artifacts ready for Figma generation. <n> screens with wireframes, <n> tokens, <n> components. Consume design/ artifacts to populate Figma file."
   - skill: "verify-impl"
     context: "testid-registry.md has <n> selectors for Playwright. Stitch screen IDs available for structural reference."
 ```
@@ -1122,7 +1124,7 @@ Status:  Ready for development
 <anything needing designer/PM decision>
 ```
 
-This document feeds into `/spec-to-impl` (FE agent) and `/figma-to-code`.
+This document feeds into `/spec-to-impl` (FE agent) and `figma:figma-implement-design` (official plugin).
 
 ---
 
@@ -1194,7 +1196,7 @@ produces:
   - type: design-system-spec
     format: markdown
     path: "design/design-system-spec.md"
-    consumed_by: "spec-to-impl FE agent, figma-to-code"
+    consumed_by: "spec-to-impl FE agent, figma:figma-implement-design"
     conditional: "only when --design-system or Phase 4.5 runs"
   - type: design-review-report
     format: markdown
@@ -1204,6 +1206,6 @@ produces:
   - type: developer-handoff
     format: markdown
     path: "design/developer-handoff.md"
-    consumed_by: "spec-to-impl FE agent, figma-to-code"
+    consumed_by: "spec-to-impl FE agent, figma:figma-implement-design"
     conditional: "only when --handoff or Phase 8 runs"
 ```

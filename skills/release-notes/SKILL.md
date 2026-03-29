@@ -34,7 +34,7 @@ disable-model-invocation: true
 - Links to PRs, dashboards, and runbooks are included for internal audience
 
 ## Workflow context
-- Typically follows: `/pr-review`, `/test-plan`
+- Typically follows: `code-review:code-review` (official plugin), `/test-plan`
 - Feeds into: `/stakeholder-update`, customer communications
 - Related: `/experiment-design` (staged rollout notes), `/incident-response` (if rollout causes issues)
 

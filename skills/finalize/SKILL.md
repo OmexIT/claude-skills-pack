@@ -211,7 +211,7 @@ Return the PR URL.
 
 ## Workflow context
 - Follows: `/spec-to-impl`, `/verify-impl`, or any manual implementation work
-- Feeds into: `/pr-review` (PR is ready for review)
+- Feeds into: `code-review:code-review` (PR is ready for review)
 - Related: `/release-notes` (PR description feeds release notes)
 
 ## Output contract
@@ -226,5 +226,5 @@ produces:
     lint_output: "<actual linter stdout>"
     test_output: "<actual test runner stdout>"
     files_committed: ["<list>"]
-    handoff: "Write claudedocs/handoff-finalize-<timestamp>.yaml — suggest: pr-review, release-notes"
+    handoff: "Write claudedocs/handoff-finalize-<timestamp>.yaml — suggest: code-review, release-notes"
 ```

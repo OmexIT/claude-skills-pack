@@ -2,7 +2,7 @@
 name: spec-to-impl
 description: >
   Use this skill whenever a user provides a specification document (PRD, BRD, API spec, user story, system design doc, or any structured requirements doc) and wants it broken down and implemented into multiple output artifacts. Triggers include: "implement this spec", "build this from the PRD", "turn this spec into code", "generate artifacts from this document", "implement this end-to-end", "break this spec into tasks", "implement 1 to N from this doc", "plan and implement from spec", or any time the user provides a requirements document and expects multiple implementation outputs (code files, test suites, API contracts, DB schemas, architecture diagrams, etc.). Also trigger when the user wants multi-role task assignment, implementation tracking, or progress reporting across a complex deliverable. This skill orchestrates a team of specialized sub-agents (Architect, Backend, Frontend, QA, DevOps) in parallel to maximally compress execution time.
-  Also triggers when a Figma design link or selection is provided alongside a spec — the skill includes a DESIGN agent that extracts Figma context via the MCP server and feeds it to the FE agent, ensuring generated UI matches the design exactly. Additional trigger phrases: "implement this spec with the Figma designs", "build from PRD and Figma", "use Figma designs from this spec", "the designs are in Figma at [link]", "implement with design context from Figma", "spec plus Figma", "PRD with designs".
+  Also triggers when a Figma design link or selection is provided alongside a spec — the skill includes a DESIGN agent that extracts Figma context via the MCP server and feeds it to the FE agent, ensuring generated UI matches the design exactly. When a handoff artifact from /figma:figma:figma-generate-design is present, the FE agent consumes Figma file keys, node IDs, component maps, and variable bindings directly — no DESIGN agent needed. Additional trigger phrases: "implement this spec with the Figma designs", "build from PRD and Figma", "use Figma designs from this spec", "the designs are in Figma at [link]", "implement with design context from Figma", "spec plus Figma", "PRD with designs".
 arguments: >
   One or more space-separated paths to spec/analysis documents to implement.
   Example: /spec-to-impl path/to/PRD.md path/to/ANALYSIS.md path/to/API_SPEC.md
@@ -502,16 +502,25 @@ WAVE 0 (pre-check): Detect design artifacts:
   A. From /ui-design:
     - Check: claudedocs/handoff-ui-design-*.yaml (handoff artifact)
     - Check: claudedocs/handoff-ui-design-*.yaml → stitch.project_id (if present, FE agents can call get_screen() for live data)
-    - Check: design/DESIGN.md (portable design system -- from Stitch or manual)
-    - Check: design/stitch-screens/*.md (Stitch screen structure -- FE agents use as reference)
+    - Check: design/DESIGN.md (portable design system — from Stitch or manual)
+    - Check: design/stitch-screens/*.md (Stitch screen structure — FE agents use as reference)
     - Check: design/wireframes/*.png (visual references from Figma)
     - Check: design/components/testid-registry.md (testIDs for E2E)
-  B. From Figma MCP (if Figma URL or selection provided):
+  B. From /figma:figma:figma-generate-design:
+    - Check: claudedocs/handoff-figma:figma-generate-design-*.yaml (Figma design handoff)
+    - If found, extract from figma: block:
+      - file_key and file_url — FE agents call get_design_context(fileKey, nodeId) for each screen
+      - pages[].screens[] — node IDs for every screen at each viewport
+      - component_map[] — Figma component keys mapped to design system components
+      - variable_bindings[] — design token → Figma variable mappings (source of truth for colors, spacing, typography)
+      - screenshot_path — visual reference for each screen
+    - [REPLACES the need for TASK-000 DESIGN agent — context already extracted]
+  C. From Figma MCP (if Figma URL or selection provided but NO figma:figma-generate-design handoff):
     - TASK-000 — DESIGN: Extract Figma Context (Phase 0)
     - [BLOCKS all FE tasks until complete]
     - Produces: Design Context Package (tokens, components, screens, ambiguities)
-  C. If NO design artifacts and NO Figma source and spec has UI screens:
-    - Suggest running /ui-design first (with --stitch for speed) or /figma-to-code if designs exist in Figma
+  D. If NO design artifacts and NO Figma source and spec has UI screens:
+    - Suggest running /ui-design first (with --stitch for speed) or /figma:figma:figma-generate-design to create Figma designs
 WAVE 1 (parallel): ARCH: System Design + API Standards + Patterns, OBS: Observability Contract, QA: Test Plan, DBA: Schema
 WAVE 2 (parallel): BE: Services (against API contract), FE: Components (against UI design), DEVOPS: Docker/CI
 WAVE 3 (parallel): QA: Tests, SEC: Review, OBS: Verify Instrumentation
@@ -829,6 +838,88 @@ DESIGN-TO-CODE INSTRUCTIONS:
 ```
 
 See `templates/fe-dispatch-with-design.md` for the complete FE agent dispatch template with Design Context Package embedded.
+
+### 4.1.2 FE Agent Enhanced Dispatch — When Figma Generate-Design Handoff is Available
+
+When a `handoff-figma:figma-generate-design-*.yaml` manifest is present (from the `/figma:figma:figma-generate-design` skill), the FE agent receives Figma design context **without** needing the DESIGN agent (TASK-000). The handoff already contains file keys, node IDs, component maps, and variable bindings.
+
+**Step 1 — Extract Figma context from handoff:**
+
+Read the `figma:` block from the handoff manifest to get:
+- `file_key` and `file_url` — the Figma file to reference
+- `pages[].screens[]` — each screen's `node_id`, `viewport`, and `route_suggestion`
+- `component_map[]` — component name → Figma component key → node IDs where used
+- `variable_bindings[]` — design token name → Figma variable key → resolved value
+
+**Step 2 — Pull live design context from Figma MCP:**
+
+For each screen in `pages[].screens[]`, call:
+```
+mcp__plugin_figma_figma__get_design_context(fileKey, nodeId)
+```
+
+This returns:
+- Code snippets (React + Tailwind) enriched with design system hints
+- A screenshot of the frame
+- Component documentation links and Code Connect mappings
+- Design annotations from the designer
+
+For individual components, call:
+```
+mcp__plugin_figma_figma__get_screenshot(fileKey, nodeId)
+```
+
+**Step 3 — Map Figma components to codebase components:**
+
+For each entry in `component_map[]`:
+1. Check if Code Connect mappings exist (via `get_code_connect_map` or `get_code_connect_suggestions`)
+2. If mapped → import and use the existing codebase component directly
+3. If unmapped → match by component name against existing codebase components
+4. If no match → generate a new component from the Figma design context
+
+**Step 4 — Use variable bindings as design token source of truth:**
+
+The `variable_bindings[]` from the handoff are the authoritative values for all visual properties:
+```
+DESIGN TOKENS (from Figma handoff):
+  --color-brand-primary:    #6366F1  (var:abc123)
+  --color-surface-default:  #FFFFFF  (var:abc456)
+  --spacing-md:             16px     (var:def789)
+  ...
+
+→ Add as CSS custom properties in globals.css
+→ Reference in tailwind.config.ts under theme.extend
+→ NEVER use raw hex values — always reference the token
+```
+
+**Step 5 — Add to FE agent dispatch prompt:**
+
+Append to the standard FE dispatch template:
+
+```
+FIGMA DESIGN HANDOFF:
+  File: <file_url>
+  Screens: <n> screens with node IDs (call get_design_context for each)
+  Components: <n> components mapped (check Code Connect status)
+  Tokens: <n> variable bindings (source of truth for all visual values)
+
+FIGMA-TO-CODE INSTRUCTIONS:
+  1. For each screen in your task, call get_design_context(fileKey, nodeId)
+     to get the latest design data. The handoff screenshot is a fallback reference.
+  2. Map variable_bindings to CSS custom properties — these are the single
+     source of truth for colors, spacing, typography, and radius values.
+  3. Check component_map for Code Connect status before generating components.
+     Reuse existing codebase components where mappings exist.
+  4. Match the Figma layout exactly: auto-layout direction, gap, padding,
+     alignment constraints.
+  5. Generate responsive variants for all viewports present in the handoff
+     (check each screen's viewport field).
+```
+
+**Fallback:** When no `handoff-figma:figma-generate-design-*.yaml` exists, fall back to the existing workflow:
+- Use `/ui-design` handoff artifacts (wireframes, token specs, component tree) if present
+- Use TASK-000 DESIGN agent (Phase 0) if a raw Figma URL is provided
+- Use spec text alone if no design artifacts exist
 
 ### 4.2 Execution Tracking
 
@@ -1158,13 +1249,16 @@ git branch -d feature/fe-task-004
    [ ] No internal details leaked (stack traces, SQL, internal paths)
    [ ] OpenAPI spec generated and matches implementation
    ```
-3. **Design Compliance** — Do FE outputs match the Figma designs? *(Only when Figma source was provided.)*
+3. **Design Compliance** — Do FE outputs match the Figma designs? *(Only when Figma source was provided — either via DESIGN agent or figma:figma-generate-design handoff.)*
    ```
    DESIGN COMPLIANCE
+     Source: <DESIGN agent (Phase 0) | figma:figma-generate-design handoff | ui-design handoff>
      ✅ <ScreenName> — matches Figma frame exactly (TASK-ID)
      ✅ <ComponentName> — all variants implemented
      ⚠️ <ElementName> — deviation: <description e.g. "Figma shows gradient border, implemented as solid">
      ❌ <ScreenName> mobile breakpoint — not implemented, Figma frame exists at <link>
+     Token compliance: <n>/<n> variable_bindings used as CSS custom properties
+     Component compliance: <n>/<n> component_map entries matched to codebase components
    ```
 4. **Schema Alignment** — Do data models match across services?
 5. **Test Coverage** — Are all P0/P1 FRs covered by at least one test?
@@ -1259,7 +1353,7 @@ artifacts:
     type: "code"
     status: "ready"
     summary: "<description of what was implemented>"
-    consumed_by: ["verify-impl", "pr-review", "code-audit"]
+    consumed_by: ["verify-impl", "code-review", "code-audit"]
   - path: "claudedocs/<feature>-observability-contract.md"
     type: "architecture"
     status: "ready"
@@ -1272,6 +1366,10 @@ quality:
 
 consumed_from:
   - "<path to each upstream handoff manifest consumed in Step 0>"
+  # Typical upstream manifests:
+  # - claudedocs/handoff-prd-<feature>-<timestamp>.yaml
+  # - claudedocs/handoff-ui-design-<feature>-<timestamp>.yaml
+  # - claudedocs/handoff-figma:figma-generate-design-<feature>-<timestamp>.yaml
 
 suggested_next:
   - skill: "verify-impl"

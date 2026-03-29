@@ -94,7 +94,7 @@ lifecycle:
 # ── Tool-Specific Extensions ───────────────────────────────
 # Optional blocks for design tools, CI systems, etc.
 # stitch: { ... }             # Stitch MCP references (ui-design)
-# figma: { ... }              # Figma MCP references (figma-to-code)
+# figma: { ... }              # Figma MCP references (figma:figma-implement-design, figma:figma-generate-design)
 ```
 
 ### 2.1 Artifact Status Values
@@ -113,6 +113,39 @@ lifecycle:
 | `partial` | Some artifacts ready, others in-progress | Consume ready artifacts, wait on others |
 | `has-ambiguities` | Artifacts produced but with unresolved questions | Consume but flag ambiguities to user |
 | `blocked` | Cannot proceed until user resolves an issue | Do not consume; surface blockers |
+
+### 2.3 Figma Extension Block
+
+Skills that produce or consume Figma designs include a `figma:` extension block:
+
+```yaml
+figma:
+  file_key: "<Figma file key>"
+  file_url: "<full Figma URL>"
+  pages:
+    - page_name: "<page name>"
+      screens:
+        - screen_name: "<human-readable screen name>"
+          node_id: "<Figma node ID for this frame>"
+          viewport: "<viewport width: 375px | 768px | 1440px>"
+          route_suggestion: "<suggested frontend route>"
+          screenshot_path: "<path to screenshot PNG>"
+  component_map:
+    - component_name: "<design component name>"
+      component_key: "<Figma component key>"
+      node_ids: ["<node IDs where this component is used>"]
+      variant_used: "<variant name>"
+  variable_bindings:
+    - token_name: "<CSS custom property name>"
+      variable_key: "<Figma variable key>"
+      value: "<resolved value>"
+  generation_method: "<make | use_figma | combined>"
+```
+
+Downstream skills use this block to:
+- `spec-to-impl` FE agent: call `get_design_context(fileKey, nodeId)` for each screen
+- `figma:figma-implement-design`: call `get_design_context` for individual components by `component_key`
+- Both: map `variable_bindings` to CSS custom properties / Tailwind theme tokens
 
 ---
 
@@ -161,7 +194,7 @@ Skills MUST work without handoff manifests. If no relevant manifests are found:
 
 ## 4. Multi-Artifact Skills
 
-Skills that produce multiple files (ui-design, spec-to-impl, figma-to-code) use the same schema — they just have more entries in `artifacts[]`.
+Skills that produce multiple files (ui-design, spec-to-impl, figma:figma-implement-design) use the same schema — they just have more entries in `artifacts[]`.
 
 ### 4.1 Example: ui-design Handoff
 
@@ -201,7 +234,7 @@ artifacts:
     type: "design-md"
     status: "ready"
     summary: "Portable design system spec"
-    consumed_by: ["spec-to-impl", "figma-to-code"]
+    consumed_by: ["spec-to-impl", "figma:figma-implement-design"]
 
 quality:
   status: "complete"
@@ -240,7 +273,7 @@ artifacts:
     type: "code"
     status: "ready"
     summary: "Backend service: controller, service, repository, DTOs"
-    consumed_by: ["verify-impl", "pr-review", "code-audit"]
+    consumed_by: ["verify-impl", "code-review", "code-audit"]
   - path: "src/main/resources/db/migration/V001__money_request.sql"
     type: "code"
     status: "ready"
@@ -250,7 +283,7 @@ artifacts:
     type: "code"
     status: "ready"
     summary: "React components for money request flow"
-    consumed_by: ["verify-impl", "pr-review"]
+    consumed_by: ["verify-impl", "code-review"]
   - path: "e2e/test-plan.yaml"
     type: "test-plan"
     status: "ready"
@@ -283,6 +316,94 @@ suggested_next:
 
 lifecycle:
   archivable_after: ["verify-impl", "finalize"]
+  archive_policy: "after-finalize"
+```
+
+### 4.3 Example: figma:figma-generate-design Handoff
+
+```yaml
+schema_version: "2.0"
+source_skill: "figma:figma-generate-design"
+feature: "payment-links"
+timestamp: "2026-03-27T15:00:00Z"
+
+artifacts:
+  - path: "https://figma.com/design/abc123/payment-links"
+    type: "figma-design"
+    status: "ready"
+    summary: "4 screens built in Figma with design tokens and components"
+    consumed_by: ["spec-to-impl", "figma:figma-implement-design"]
+    key_sections: ["screens", "components", "tokens"]
+
+figma:
+  file_key: "abc123"
+  file_url: "https://figma.com/design/abc123/payment-links"
+  pages:
+    - page_name: "Screens"
+      screens:
+        - screen_name: "Dashboard"
+          node_id: "123:456"
+          viewport: "1440px"
+          route_suggestion: "/dashboard"
+          screenshot_path: "claudedocs/screenshots/dashboard.png"
+        - screen_name: "Dashboard Mobile"
+          node_id: "123:789"
+          viewport: "375px"
+          route_suggestion: "/dashboard"
+          screenshot_path: "claudedocs/screenshots/dashboard-mobile.png"
+        - screen_name: "Create Link"
+          node_id: "124:100"
+          viewport: "1440px"
+          route_suggestion: "/links/new"
+          screenshot_path: "claudedocs/screenshots/create-link.png"
+        - screen_name: "Link Details"
+          node_id: "124:200"
+          viewport: "1440px"
+          route_suggestion: "/links/:id"
+          screenshot_path: "claudedocs/screenshots/link-details.png"
+  component_map:
+    - component_name: "PaymentCard"
+      component_key: "comp:abc"
+      node_ids: ["123:456", "124:200"]
+      variant_used: "default"
+    - component_name: "StatusBadge"
+      component_key: "comp:def"
+      node_ids: ["124:200"]
+      variant_used: "active"
+  variable_bindings:
+    - token_name: "--color-brand-primary"
+      variable_key: "var:abc123"
+      value: "#6366F1"
+    - token_name: "--spacing-md"
+      variable_key: "var:def456"
+      value: "16px"
+  generation_method: "combined"
+
+quality:
+  status: "complete"
+  completeness_score: "100%"
+  token_coverage: "22/24 tokens applied"
+  component_coverage: "10/12 components instantiated"
+  ambiguities: []
+  gaps:
+    - "Icon illustrations not available in Figma — used placeholder rectangles"
+
+consumed_from:
+  - "claudedocs/handoff-prd-payment-links-20260327T120000.yaml"
+  - "claudedocs/handoff-ui-design-payment-links-20260327T143000.yaml"
+
+suggested_next:
+  - skill: "spec-to-impl"
+    reason: "Figma designs ready for FE implementation"
+    context: "File key abc123, 4 screens with node IDs. Use get_design_context for each screen. Design tokens applied as Figma variables."
+    reads: []
+  - skill: "figma:figma-implement-design"
+    reason: "Individual components can be converted to code"
+    context: "Component map has 10 components with Figma node IDs"
+    reads: []
+
+lifecycle:
+  archivable_after: ["spec-to-impl", "figma:figma-implement-design"]
   archive_policy: "after-finalize"
 ```
 
@@ -362,19 +483,26 @@ for manifest in handoff_manifests:
 ```
 /prd → writes handoff-prd-payment-links-20260327T120000.yaml
   → artifacts: [{path: "claudedocs/payment-links-prd.md", status: "ready"}]
-  → suggests: design-doc, ticket-breakdown, spec-to-impl
-  → context for design-doc: "3 new API endpoints, payment link CRUD + expiry"
+  → suggests: design-doc, ticket-breakdown, spec-to-impl, ui-design
+  → context for ui-design: "8 screen descriptions, 3 user flows"
 
 /ui-design → reads handoff-prd-*.yaml, writes handoff-ui-design-*.yaml
   → artifacts: [6 files in design/ — all status: "ready"]
-  → suggests: spec-to-impl, verify-impl
+  → suggests: spec-to-impl, verify-impl, figma:figma-generate-design
   → consumed_from: ["claudedocs/handoff-prd-payment-links-*.yaml"]
 
-/spec-to-impl → reads handoff-prd-*.yaml AND handoff-ui-design-*.yaml
+/figma:figma-generate-design → reads handoff-prd-*.yaml AND handoff-ui-design-*.yaml
+  → writes handoff-figma:figma-generate-design-*.yaml
+  → artifacts: [Figma file with 4 screens, screenshots — all status: "ready"]
+  → figma: {file_key, screens with node_ids, component_map, variable_bindings}
+  → suggests: spec-to-impl, figma:figma-implement-design
+  → consumed_from: [both upstream manifests]
+
+/spec-to-impl → reads handoff-prd-*.yaml AND handoff-ui-design-*.yaml AND handoff-figma:figma-generate-design-*.yaml
   → writes handoff-spec-to-impl-*.yaml
   → artifacts: [code + test-plan + obs-contract — all status: "ready"]
   → suggests: verify-impl, finalize
-  → consumed_from: [both upstream manifests]
+  → consumed_from: [all upstream manifests]
 
 /verify-impl → reads handoff-spec-to-impl-*.yaml
   → writes handoff-verify-impl-*.yaml
@@ -429,15 +557,15 @@ for manifest in handoff_manifests:
 | `spec-manifest` | /spec-to-impl (Phase 1) | /spec-to-impl (Phase 2+) |
 | `architecture` | /spec-to-impl (ARCH) | /spec-to-impl (all agents) |
 | `test-plan` | /spec-to-impl (QA), /test-plan | /verify-impl, /spec-to-impl |
-| `code` | /spec-to-impl (BE/FE/DBA) | /verify-impl, /finalize, /pr-review |
+| `code` | /spec-to-impl (BE/FE/DBA) | /verify-impl, /finalize, code-review |
 | `verification` | /verify-impl | /finalize, /evidence-review |
 | **Quality** | | |
 | `panel-analysis` | /spec-panel | /spec-to-impl, /ticket-breakdown, /test-plan |
 | `code-audit` | /code-audit | /finalize, /tech-debt-assessment, /test-plan |
-| `pr-review` | /pr-review | /release-notes |
+| `code-review` | code-review (official plugin) | /release-notes |
 | `security-review` | /security-review | /finalize, /test-plan |
 | `performance-review` | /performance-review | /test-plan, /monitoring-plan |
-| `ux-review` | /ux-review | /ticket-breakdown, /pr-review |
+| `ux-review` | /ux-review | /ticket-breakdown, code-review |
 | `docs-review` | /docs-review | /finalize |
 | `metrics-review` | /metrics-review | /experiment-design |
 | `evidence-review` | /evidence-review | /finalize |
@@ -446,10 +574,11 @@ for manifest in handoff_manifests:
 | `ui-design` | /ui-design | /spec-to-impl (FE), /ux-review |
 | `component-tree` | /ui-design | /spec-to-impl (FE) |
 | `testid-registry` | /ui-design | /verify-impl, /spec-to-impl (FE) |
-| `design-tokens` | /ui-design, /figma-to-code | /spec-to-impl (FE) |
+| `design-tokens` | /ui-design, /figma:figma-implement-design | /spec-to-impl (FE) |
 | `a11y-spec` | /ui-design | /spec-to-impl (FE), /ux-review |
-| `design-md` | /ui-design | /spec-to-impl (FE), /figma-to-code |
+| `design-md` | /ui-design | /spec-to-impl (FE), /figma:figma-implement-design |
 | `stitch-reference` | /ui-design (Stitch mode) | /spec-to-impl (FE), /verify-impl |
 | `stitch-screen-specs` | /ui-design (Stitch mode) | /spec-to-impl (FE) |
-| `react-components` | /figma-to-code | /verify-impl, /finalize, /code-audit |
-| `code-connect-mappings` | /figma-to-code | /finalize |
+| `figma-design` | /figma:figma-generate-design | /spec-to-impl (FE), /figma:figma-implement-design, /ux-review |
+| `react-components` | /figma:figma-implement-design | /verify-impl, /finalize, /code-audit |
+| `code-connect-mappings` | /figma:figma-implement-design | /finalize |

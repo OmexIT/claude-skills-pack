@@ -73,7 +73,7 @@ Phase 3: Bottleneck synthesis + load test plan (sequential)
 - Includes regression detection strategy (how we'll know if it gets worse)
 
 ## Workflow context
-- Typically follows: `/design-doc`, `/pr-review`
+- Typically follows: `/design-doc`, `code-review:code-review` (official plugin)
 - Feeds into: `/test-plan` (performance test cases), `/monitoring-plan`
 - Related: `/security-review` (rate limiting overlaps)
 

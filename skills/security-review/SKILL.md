@@ -84,7 +84,7 @@ Phase 3: Risk synthesis and prioritized findings (sequential)
 - Verification plan: how to confirm each fix works
 
 ## Workflow context
-- Typically follows: `/design-doc`, `/pr-review`
+- Typically follows: `/design-doc`, `code-review:code-review` (official plugin)
 - Feeds into: `/test-plan` (security test cases), `/incident-response`
 - Related: `/performance-review` (rate limiting overlaps)
 
