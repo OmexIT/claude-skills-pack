@@ -1,8 +1,9 @@
 ---
 name: spec-to-impl
 description: >
-  Use this skill whenever a user provides a specification document (PRD, BRD, API spec, user story, system design doc, or any structured requirements doc) and wants it broken down and implemented into multiple output artifacts. Triggers include: "implement this spec", "build this from the PRD", "turn this spec into code", "generate artifacts from this document", "implement this end-to-end", "break this spec into tasks", "implement 1 to N from this doc", "plan and implement from spec", or any time the user provides a requirements document and expects multiple implementation outputs (code files, test suites, API contracts, DB schemas, architecture diagrams, etc.). Also trigger when the user wants multi-role task assignment, implementation tracking, or progress reporting across a complex deliverable. This skill orchestrates a team of specialized sub-agents (Architect, Backend, Frontend, QA, DevOps) in parallel to maximally compress execution time.
-  Also triggers when a Figma design link or selection is provided alongside a spec — the skill includes a DESIGN agent that extracts Figma context via the MCP server and feeds it to the FE agent, ensuring generated UI matches the design exactly. When a handoff artifact from /figma:figma:figma-generate-design is present, the FE agent consumes Figma file keys, node IDs, component maps, and variable bindings directly — no DESIGN agent needed. Additional trigger phrases: "implement this spec with the Figma designs", "build from PRD and Figma", "use Figma designs from this spec", "the designs are in Figma at [link]", "implement with design context from Figma", "spec plus Figma", "PRD with designs".
+  Use this skill whenever a user provides a specification document (PRD, BRD, API spec, user story, system design doc, ANALYSIS.md, PANEL_ANALYSIS.md, or any structured requirements doc) and wants it broken down and implemented end-to-end into multiple output artifacts. ALWAYS use this skill when the user pastes a PRD/spec and says "implement", "build", "turn this into code", or provides a file path ending in spec/prd/analysis/brd. Primary trigger phrases: "implement this spec", "build this from the PRD", "turn this spec into code", "generate artifacts from this document", "implement this end-to-end", "break this spec into tasks", "implement 1 to N from this doc", "plan and implement from spec", "ship this feature", "build the feature described in", "make this real".
+  Implicit triggers (even without the word "spec"): user pastes a multi-section markdown document with "Requirements", "User Stories", "API endpoints", "Data model" sections; user says "here's the PRD" followed by a link; user asks for code AND tests AND migrations AND API docs in one shot; user mentions multiple output artifacts (code + tests + schema + docs); user wants multi-role task assignment, implementation tracking, or progress reporting across a complex deliverable. This skill orchestrates a specialized sub-agent team (ARCH, DESIGN, BE, FE, FLUTTER, RN, ANDROID, QA, DBA, DEVOPS, SEC, OBS, TECH_WRITER) in parallel waves to compress execution time, with progressive disclosure via agents/ and references/ files.
+  Stack defaults are Java 25 + Spring Boot 4.x + Spring Modulith + Spring Data JDBC + Gradle (or Maven) on the backend and React 19 + Next.js 15 + TypeScript 5 + Tailwind 4 on the web frontend. The skill auto-detects deviations and adapts. It understands fintech patterns (double-entry ledger, SAGA compensation, idempotency, multi-tenancy with PostgreSQL RLS), iGaming patterns (wallet flows, live odds, provider integration), and infrastructure patterns (Temporal workflows, Liquibase/Flyway migrations, Testcontainers, OpenTelemetry observability). Also triggers when a Figma design link or selection is provided alongside a spec — the DESIGN agent extracts Figma context via the MCP server and feeds it to the FE agent. When a handoff artifact from /figma:figma-generate-design is present, the FE agent consumes Figma file keys, node IDs, component maps, and variable bindings directly. Additional Figma trigger phrases: "implement this spec with the Figma designs", "build from PRD and Figma", "use Figma designs from this spec", "the designs are in Figma at [link]", "implement with design context from Figma", "spec plus Figma", "PRD with designs".
 arguments: >
   One or more space-separated paths to spec/analysis documents to implement.
   Example: /spec-to-impl path/to/PRD.md path/to/ANALYSIS.md path/to/API_SPEC.md
@@ -1409,58 +1410,16 @@ Implementation complete. All waves passed, integration review clean.
 
 ## 8. Tech Stack Inference
 
-If the user does not specify a tech stack, infer from the spec context, detect from project files, or ask. Default assumptions:
+If the user does not specify a tech stack, infer from the spec context, detect from project files, or ask.
 
-| Layer | Default | Alternatives |
-|---|---|---|
-| Backend | Java 21 + Spring Boot 3.x | — |
-| Frontend (Web) | React 18 + TypeScript + Tailwind | AngularJS (1.x legacy) |
-| Frontend (Mobile) | Flutter 3.x + Dart | React Native + TypeScript, Android (Kotlin) |
-| Database (Relational) | PostgreSQL | — |
-| Database (Document) | MongoDB (if document store needed) | — |
-| Search | Elasticsearch | Typesense |
-| Auth | JWT / OAuth2 | — |
-| Containerization | Docker + Docker Compose | — |
-| Orchestration | Kubernetes | — |
-| IaC | Terraform | — |
-| Messaging | Kafka (if async flows present) | — |
-| BE Testing | JUnit 5 + Mockito + AssertJ | — |
-| FE Testing (Web) | Vitest + React Testing Library | Karma + Jasmine (AngularJS) |
-| FE Testing (Mobile) | Flutter: widget + integration tests | RN: Jest + RNTL, Android: JUnit + MockK |
-| E2E Testing | Playwright (Chromium) | Detox (React Native), Espresso (Android) |
-| API Style | REST (OpenAPI 3.x) | — |
-| Migrations (SQL) | Liquibase | — |
-| Migrations (Mongo) | mongosh scripts | — |
-| **Observability** | | |
-| Structured Logging | Logback + logstash-logback-encoder (JSON) | Log4j2 + JSON layout |
-| Distributed Tracing | OpenTelemetry (OTLP) + Spring Boot Actuator | — |
-| Metrics | Micrometer + Prometheus exposition format | — |
-| Dashboards | Grafana (JSON model) | — |
-| Log Aggregation | Loki (or ELK) | — |
-| Trace Backend | Tempo (or Jaeger) | — |
-| Alerting | Grafana Alerting (or Prometheus Alertmanager) | — |
+**Read `references/stack-defaults.md` for**:
+- Full default stack table (backend, frontend web/mobile, data, observability, testing)
+- Architectural principles to encode in every agent prompt
+- Auto-detection shell snippets for Gradle/Maven/Node/Docker/Spring Boot versions
 
-**Auto-detection from project files:**
-```bash
-# Detect stack from project markers
-[ -f "pubspec.yaml" ]       && echo "Flutter detected"
-[ -f "build.gradle" ]       && echo "Android/Gradle detected"
-[ -f "pom.xml" ]            && echo "Java/Maven detected"
-[ -f "package.json" ]       && echo "Node/React/RN detected"
-[ -f "angular.json" ]       && echo "Angular detected"
-[ -f "bower.json" ]         && echo "AngularJS detected"
-[ -f "docker-compose.yml" ] && echo "Docker Compose detected"
-[ -d "terraform" ]          && echo "Terraform detected"
+Short version: Java 25 + Spring Boot 4.x + Spring Modulith + Spring Data JDBC backend; React 19 + Next.js 15 + TypeScript 5 + Tailwind 4 frontend; PostgreSQL + Redis + Temporal; Liquibase (Kifiya) or Flyway 10+ (new); Testcontainers for integration tests.
 
-# Detect observability stack
-grep -q "micrometer" pom.xml 2>/dev/null && echo "Micrometer detected"
-grep -q "opentelemetry" pom.xml 2>/dev/null && echo "OpenTelemetry detected"
-grep -q "logstash-logback-encoder" pom.xml 2>/dev/null && echo "Structured logging detected"
-[ -f "prometheus.yml" ] || [ -f "docker-compose.yml" ] && grep -q "prometheus" docker-compose.yml 2>/dev/null && echo "Prometheus detected"
-[ -f "grafana" ] || [ -d "grafana" ] && echo "Grafana detected"
-```
-
-> Always confirm stack with user before dispatching execution agents.
+> Always run auto-detection before assuming defaults. Always confirm with user if detection returns unexpected versions. Project-specific CLAUDE.md overrides these defaults — read it first.
 
 ---
 
@@ -1514,11 +1473,12 @@ For WAVE N:
 |---|---|
 | `agents/arch.md` | Dispatching the ARCH agent |
 | `agents/be-fe-qa-dba-devops.md` | Dispatching BE, FE, QA, DBA, DEVOPS, OBS, or other agents |
+| `agents/design.md` | Dispatching the DESIGN agent for Figma context extraction |
 | `references/spec-manifest-template.md` | Phase 1 output structure |
 | `references/observability-contract.md` | Observability standards for all agents |
 | `references/api-standards.md` | API design standards (REST, GraphQL, gRPC, async) |
+| `references/stack-defaults.md` | Default tech stack + auto-detection snippets + architectural principles |
 | `templates/dispatch-prompt.md` | Agent dispatch prompt template |
-| `agents/design.md` | Dispatching the DESIGN agent for Figma context extraction |
 | `templates/fe-dispatch-with-design.md` | Complete FE agent dispatch prompt with Design Context Package embedded |
 
 ---

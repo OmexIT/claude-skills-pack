@@ -130,7 +130,7 @@ management:
 ```
 
 ```java
-// Custom observation example using Spring Boot 3.x Observation API
+// Custom observation example using Spring Boot 4.x Observation API (Micrometer)
 @Service
 public class PaymentService {
     private final ObservationRegistry observationRegistry;
@@ -309,12 +309,14 @@ Every feature must produce a dashboard spec with these panels:
 
 ## 6. Framework-Specific Patterns
 
-### Spring Boot 3.x (Java)
+### Spring Boot 4.x (Java 25)
 - Use `spring-boot-starter-actuator` + `micrometer-registry-prometheus`
 - Use `opentelemetry-javaagent` or `micrometer-tracing-bridge-otel` for traces
 - Use `logstash-logback-encoder` for structured JSON logs
 - Use `@Observed` annotation (from `micrometer-observation`) for custom spans + metrics in one annotation
 - Use `ObservationRegistry` for programmatic observation
+- Java 25: prefer virtual threads (`spring.threads.virtual.enabled=true`) to shrink observation stacks
+- Spring Boot 4: JSpecify nullability annotations work across micrometer APIs
 
 ### React / Next.js (TypeScript)
 - Use `@opentelemetry/api` for browser-side tracing

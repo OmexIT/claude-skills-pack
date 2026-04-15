@@ -22,15 +22,20 @@
 - **/migration-plan** — Safe migration planning (database, API, infrastructure)
 
 ## Implementation & Verification
-- **/spec-to-impl** — Multi-agent orchestration: spec → tasks → parallel implementation → tested artifacts
+- **/spec-to-impl** — Multi-agent orchestration: spec → tasks → parallel implementation → tested artifacts. Stack defaults: Java 25 + Spring Boot 4 + Spring Modulith + Spring Data JDBC.
 - **/verify-impl** — Live verification: API, DB (Postgres/Mongo/Elastic/Typesense), UI (Playwright), Mobile
 - **/mobile-dev** — Mobile development patterns: Flutter, React Native, Android (Kotlin)
+- **/temporal-workflow** — Java Temporal SDK 1.26+: SAGA compensation, config-driven state machines, retry profiles, Spring Boot wiring, TestWorkflowEnvironment
+- **/fintech-ledger** — Double-entry ledger ops — dual mode: Blnk (Onbilia) + pgledger (PayserFlow). Balance invariants, idempotency, FX, reconciliation
+- **/api-first** — OpenAPI 3.1 → Spring Boot 4 controller + service + Spring Data JDBC + MapStruct + validation + RFC 9457 errors + tests
+- **/db-migration** — Liquibase / Flyway 10 migrations with audit columns, RLS, destructive-op safety, rollback-tested
 - **/finalize** — Post-implementation: lint → test → clean up → commit → PR
 
 ## Quality & Review
 - **/evidence-review** — Default-to-rejection quality gate requiring proof, not claims
-- **/spec-panel** — Multi-expert spec analysis: IEEE 830 audit, spec smells scanner, cross-cutting concerns checklist, expert panel with devil's advocate, quality scoring
+- **/spec-panel** — Multi-expert spec analysis: IEEE 830 audit, spec smells scanner, cross-cutting concerns checklist, expert panel with devil's advocate, quality scoring. Pre-implementation gate — routes to `/spec-update` then `/spec-to-impl`
 - **/code-audit** — Multi-agent code review: 10-dimension analysis (smells, SOLID, duplication, algorithms, security, performance, patterns, architecture, tech fitness, devil's advocate) with quality scoring
+- **/arch-review** — Clean architecture invariants: dependency direction, transaction boundaries, circuit breakers, value objects, module boundaries. Report-only or fix-plan mode
 - **/test-plan** — Risk-based test plan (templates/test-plan.md)
 - **/security-review** — Threat-model-lite with OWASP-aligned checks
 - **/performance-review** — Performance analysis and optimization plan
@@ -56,6 +61,9 @@
 ## Auto-guidance
 - **repo-conventions** — Repo-specific conventions (**auto guidance; not a slash command**)
 - **handoff** — Inter-skill artifact protocol for chaining (**auto guidance; not a slash command**)
+
+## Meta / Custom Skill Maintenance
+- **/superpowers-integrator** — Audits and upgrades custom skills to integrate with the superpowers plugin workflow. Classifies by skill class, runs integration checklist, inserts the correct "Before You Start" block. Re-runnable — single source of truth for keeping the whole pack in sync with superpowers as it evolves
 
 ---
 
@@ -116,15 +124,25 @@ SKILL              PRODUCES (type)           CONSUMED BY
 /migration-plan →  migration-plan        →  /ticket-breakdown, /test-plan, /runbook
 
 ── Implementation ──
-/spec-to-impl   →  code + test-plan      →  /verify-impl, /finalize, /code-audit, /monitoring-plan
-                    + obs-contract
+/spec-to-impl   →  code + test-plan      →  /verify-impl, /finalize, /code-audit, /arch-review,
+                    + obs-contract            /monitoring-plan
 /mobile-dev     →  mobile-guidance       →  /spec-to-impl (FLUTTER/RN/ANDROID)
+/temporal-work. →  workflow+activities   →  /verify-impl, /arch-review, /monitoring-plan
+/fintech-ledger →  ledger-service+tests  →  /temporal-workflow (if saga compensation needed),
+                                            /verify-impl, /arch-review, /monitoring-plan
+/api-first      →  controller+service+   →  /verify-impl, /db-migration (if schema changes),
+                    mapper+DTOs+tests         /arch-review
+/db-migration   →  migration.sql+verify  →  /verify-impl, /api-first (if paired with endpoint)
 /verify-impl    →  verification          →  /finalize, /evidence-review
 /finalize       →  commit + PR           →  /release-notes
 
 ── Quality ──
-/spec-panel     →  panel-analysis        →  /spec-to-impl, /ticket-breakdown, /test-plan
+/spec-panel     →  panel-analysis        →  /spec-update (apply recommendations),
+                                            /spec-to-impl (ONLY after CRITICAL resolved),
+                                            /ticket-breakdown, /test-plan
 /code-audit     →  code-audit            →  /finalize, /tech-debt-assessment, /test-plan
+/arch-review    →  arch-findings         →  /ticket-breakdown (fix-plan mode), /api-first,
+                                            /temporal-workflow, /fintech-ledger (for fixes)
 /test-plan      →  test-plan             →  /spec-to-impl (QA planning input)
 /security-rev.. →  security-review       →  /finalize, /test-plan
 /performance-.. →  performance-review    →  /test-plan, /monitoring-plan
@@ -137,6 +155,9 @@ SKILL              PRODUCES (type)           CONSUMED BY
 
 ── Operations ──
 /monitoring     →  monitoring-plan       →  /runbook, /incident-response
+
+── Meta ──
+/superpowers-integrator →  audit-report + skill-upgrade →  (re-run against pack after changes)
 ```
 
 ## Workflow chain

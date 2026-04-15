@@ -1,7 +1,7 @@
 # Claude Code Skills Pack
 
 ## Project Overview
-A collection of 43 Claude Code skills covering the full software development lifecycle. Skills range from lightweight methodology guides (~80 lines) to comprehensive multi-agent orchestrators (~700 lines). Skills that overlap with official Claude Code plugins (figma, code-review, claude-md-management, frontend-design) have been removed in favor of the official plugin equivalents.
+A collection of 52 Claude Code skills covering the full software development lifecycle. Skills range from lightweight methodology guides (~80 lines) to comprehensive multi-agent orchestrators (~1500 lines). Skills that overlap with official Claude Code plugins (figma, code-review, claude-md-management, frontend-design) have been removed in favor of the official plugin equivalents. Every code-generation skill is wired into the [superpowers](https://github.com/anthropics/claude-plugins-official) development workflow via a "Before You Start" block that routes through brainstorming → plans → TDD → verification → review; the `superpowers-integrator` meta-skill keeps all custom skills in sync as superpowers evolves.
 
 ## Structure
 ```
@@ -17,11 +17,15 @@ skills/
 ## Skill Categories
 - **Discovery** (3): opportunity-assessment, competitive-analysis, go-to-market
 - **Planning** (14): prd, design-doc, adr, user-flow, flow-map, ui-design, api-design, data-design, search-design, infra-design, ticket-breakdown, experiment-design, decision-matrix, migration-plan
-- **Implementation** (4): spec-to-impl, verify-impl, mobile-dev, finalize
-- **Quality** (11): evidence-review, spec-panel, code-audit, test-plan, security-review, performance-review, ux-review, docs-review, metrics-review, tech-debt-assessment, debug-triage
+- **Implementation** (8): spec-to-impl, verify-impl, mobile-dev, finalize, temporal-workflow, fintech-ledger, api-first, db-migration
+- **Quality** (12): evidence-review, spec-panel, code-audit, arch-review, test-plan, security-review, performance-review, ux-review, docs-review, metrics-review, tech-debt-assessment, debug-triage
 - **Release** (5): release-notes, monitoring-plan, runbook, incident-response, postmortem
 - **Communication** (4): stakeholder-update, sprint-retro, onboarding-doc, linkedin-post
 - **Auto-guidance** (2): repo-conventions, handoff
+- **Meta / Custom Skill Maintenance** (1): superpowers-integrator
+
+## Superpowers Integration
+All code-generation skills include a "Before You Start — Superpowers Workflow" section chaining through brainstorming → writing-plans → using-git-worktrees → test-driven-development → (invoke skill) → verification-before-completion → requesting-code-review. Skill-class-specific variants live in `skills/superpowers-integrator/templates/blocks.md` (code-generator, code-generator-money-critical, code-generator-sql, reviewer, refactor, debugger, planner). To re-sync the whole pack after superpowers or templates change, run `/superpowers-integrator skills/*/`.
 
 ## Conventions
 
