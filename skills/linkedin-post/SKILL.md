@@ -1,62 +1,104 @@
 ---
 name: linkedin-post
-description: Draft a LinkedIn post with hook, body, and CTA optimized for engagement and professional credibility. Supports thought leadership, announcements, storytelling, and lessons learned. Triggers: "linkedin post", "linkedin", "linkedin update", "professional post", "thought leadership post".
+description: "Draft a LinkedIn post with hook, body, and CTA optimized for engagement and professional credibility. Supports thought leadership, announcements, storytelling, and lessons learned. Use when writing a linkedin post, linkedin update, professional post, or thought leadership post."
 argument-hint: "[topic / announcement / lesson]"
 ---
 
 # LinkedIn post
 
-## What I'll do
-Produce a publish-ready LinkedIn post that earns attention in the feed, delivers value to the reader, and drives a clear outcome — whether that's engagement, traffic, or credibility.
+## What this skill does
+Produce a publish-ready LinkedIn post that earns attention in the feed, delivers value, and drives a clear outcome (engagement, traffic, or credibility).
 
-## Inputs I'll use (ask only if missing)
-- Topic, announcement, or story to share
-- Post type: thought leadership, announcement, lesson learned, how-to, hot take, storytelling, carousel outline
-- Target audience (who should stop scrolling?)
-- Goal: engagement (comments), traffic (link clicks), credibility (brand building), hiring, or community building
-- Tone: conversational, authoritative, vulnerable, provocative, celebratory
-- Any constraints (company voice guidelines, links to include, hashtags)
+## Inputs (ask only if missing)
+- **Topic**: The announcement, story, lesson, or idea to share
+- **Post type**: thought leadership | announcement | lesson learned | how-to | hot take | storytelling | carousel outline
+- **Audience**: Who should stop scrolling
+- **Goal**: engagement (comments) | traffic (link clicks) | credibility (brand building) | hiring | community building
+- **Tone**: conversational | authoritative | vulnerable | provocative | celebratory
+- **Constraints**: Company voice guidelines, required links, hashtag preferences
 
-## How I'll think about this
-1. **Hook in the first 2 lines**: LinkedIn truncates after ~210 characters with "...see more." The hook must create enough curiosity or tension that people click to expand. No throat-clearing ("I've been thinking about..."), no preambles. Lead with a bold claim, a surprising number, a counterintuitive take, or a relatable moment.
-2. **One idea per post**: Posts that try to cover 3 topics get scrolled past. Pick one clear idea and make it land. If there are multiple ideas, that's multiple posts.
-3. **Write for scanners**: Short paragraphs (1-2 sentences max). Line breaks between every thought. Use white space aggressively — a wall of text dies in the feed. Numbered lists and bullet points work when they add structure, not decoration.
-4. **Value before ask**: Give the reader something — an insight, a framework, a lesson, a reframe — before asking them to do anything. The CTA earns the right to exist by coming after genuine value.
-5. **Authentic voice over polish**: LinkedIn rewards posts that sound like a person, not a press release. Specific details ("We lost our biggest client on a Tuesday morning") beat generic statements ("Sometimes business is tough"). Vulnerability and specificity drive engagement.
-6. **Strategic CTA**: Every post needs a purpose. "Agree? Disagree? Tell me in the comments" drives engagement. A link drives traffic. A question drives conversation. No CTA means wasted attention. Match the CTA to the goal.
-7. **Hashtag discipline**: 3-5 relevant hashtags maximum, placed at the end. Mix broad (#Leadership, #ProductManagement) with niche (#DevTooling, #StartupLessons). More than 5 looks spammy and doesn't improve reach.
-8. **Platform-aware formatting**: No markdown (LinkedIn doesn't render it). Use Unicode symbols sparingly if needed. Emojis as bullet points work when they match the tone — don't force them on serious content. Tag people and companies only when genuinely relevant.
+## Writing checklist
 
-## Anti-patterns to flag
-- Weak hooks ("I wanted to share some thoughts on...")
-- Wall-of-text paragraphs (no line breaks, no scanning structure)
-- Humble-brag framing ("I'm so humbled that..." — just state the achievement)
+Apply every item below. If a draft violates any point, revise before presenting.
+
+### Hook (first 2 lines)
+- Lead with a bold claim, surprising number, counterintuitive take, or relatable moment
+- Must create enough curiosity that the reader taps "see more"
+- Never open with "I wanted to share...", "I've been thinking...", or any preamble
+- Do not start the first line with "I" -- make the opening about the reader or the idea
+
+### Body
+- One idea per post. Multiple ideas = multiple posts
+- Use specific details ("We lost our biggest client on a Tuesday morning") over generic statements ("Sometimes business is tough")
+- Each paragraph must earn its place: if it restates the hook or adds no new value, cut it
+- Deliver genuine value (insight, framework, lesson, reframe) before any ask
+
+### CTA
+- Every post needs exactly one call to action matched to the stated goal
+- Engagement goal: pose a question or invite disagreement
+- Traffic goal: context-first, then link (or place link in first comment to avoid suppression)
+- Credibility goal: invite readers to share their own experience
+
+### Formatting and platform rules
+- No markdown (LinkedIn does not render it)
+- Plain text only; use Unicode symbols sparingly if needed
+- 3-5 hashtags at the end, mixing broad (#Leadership) with niche (#DevTooling)
+- Tag people/companies only when genuinely relevant
+- Target 150-300 words; do not pad and do not rush
+
+### Things to avoid
+- Humble-brag framing ("I'm so humbled that...") -- state the achievement directly
 - Engagement bait without substance ("Like if you agree!")
-- Corporate speak that sounds like a press release, not a person
-- Posts with no clear CTA or purpose (attention with no direction)
-- Overloaded with hashtags (>5) or emojis (every line starts with one)
-- Multiple competing ideas in one post (pick one, save the rest)
-- Starting with "I" (makes the post about you, not the reader)
-- Link in the body without context (LinkedIn suppresses external links — explain the value first)
+- Corporate press-release tone
+- More than 5 hashtags or emoji-heavy formatting
+- Dropping a link in the body without explaining its value first
 
-## Quality bar
-- Hook creates genuine curiosity or tension (would YOU click "see more"?)
-- Post delivers on the hook's promise (no bait-and-switch)
-- Single clear idea, fully developed
-- Every paragraph earns its place (no filler)
-- Reads like a real person wrote it, not a template
-- CTA matches the stated goal
-- Post length fits the content (not padded, not rushed — typically 150-300 words)
-- Hashtags are relevant and restrained (3-5)
-- No markdown formatting (LinkedIn doesn't support it)
+## Example
+
+**Input**: Topic: We just shipped a CLI tool that cuts deploy time by 40%. Audience: DevOps engineers. Goal: engagement. Tone: conversational.
+
+**Output** (copy-paste ready):
+
+```
+Most deploy pipelines have a dirty secret.
+
+They waste 40% of their time on steps nobody questioned.
+
+We just shipped a CLI that strips out the dead weight:
+- Parallel asset builds instead of sequential
+- Cached dependency resolution (hit rate >90% after first run)
+- Zero-downtime swap with automatic rollback
+
+We tested it across 11 production services over 3 weeks.
+Average deploy went from 14 minutes to 8.
+
+The surprising part? The biggest win wasn't parallelism.
+It was skipping the integrity check that re-hashed unchanged files every single time.
+
+What's the one step in your pipeline you suspect is wasted time but nobody wants to touch?
+
+#DevOps #CICD #DeveloperProductivity #ShipFaster
+```
+
+## Output template
+
+The output fills `templates/linkedin-post.md` with this structure:
+
+| Section | Content |
+|---------|---------|
+| **Post metadata** | Type, audience, goal, tone |
+| **Hook** | First 2 lines (must work before the "see more" fold) |
+| **Body** | Core content, one idea, scannable paragraphs |
+| **CTA** | Single call to action matched to goal |
+| **Hashtags** | 3-5 relevant hashtags |
+| **Post (copy-paste ready)** | Full assembled post in plain text, no markdown |
+| **Variations** (optional) | Shorter (~100 words) and longer (~400 words) versions |
+| **Notes** | Character count, tagged people, link strategy, suggested posting time |
 
 ## Workflow context
 - Typically follows: `/go-to-market` (launch announcements), `/release-notes` (shipping updates), `/stakeholder-update` (milestone sharing), `/postmortem` (lessons learned)
 - Feeds into: Content calendar, social media strategy, personal branding
 - Related: `/go-to-market` (launch messaging), `/competitive-analysis` (positioning takes)
-
-## Output
-Fill `templates/linkedin-post.md`.
 
 ## Output contract
 ```yaml

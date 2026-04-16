@@ -1,6 +1,6 @@
 ---
 name: prd
-description: Write or update a Product Requirements Document. Supports both creating new PRDs from scratch and surgically updating existing PRDs to match implementation changes. Triggers: "write a PRD", "update the PRD", "requirements", "feature brief", "product spec".
+description: "Writes or updates a Product Requirements Document with acceptance criteria, edge cases, and per-feature NFRs. Supports creating new PRDs from scratch and surgically updating existing PRDs to match implementation changes. Use when writing a PRD, updating the PRD, defining requirements, creating a feature brief, or drafting a product spec."
 argument-hint: "[feature / problem / path-to-existing-prd]"
 effort: high
 ---
@@ -58,7 +58,7 @@ Present the PRD and wait for approval before considering it done.
 
 ## Update Mode Workflow
 
-This is the critical addition. Updating an existing PRD is fundamentally different from creating one.
+Updating an existing PRD is fundamentally different from creating one.
 
 ### Step 1: Map the change scope
 
@@ -77,80 +77,143 @@ Section 8.2 (User Flow): REWRITE
 ### Step 2: Apply surgical edits
 
 **Rules for updating:**
-- **Preserve requirement IDs** — update content, not IDs. Downstream artifacts (test plans, tickets, traceability) reference these IDs.
-- **Mark superseded requirements** — don't delete them silently. Add: "**Superseded** — merged into FR-018 via SigningStrategy pattern (v1.1)"
-- **Add new requirements** with sub-IDs when possible — FR-017a, FR-017b — to avoid renumbering everything
-- **Update the version and change log** — add an entry at the top:
+- **Preserve requirement IDs** — update content, not IDs. Downstream artifacts reference these IDs.
+- **Mark superseded requirements** — don't delete them. Add: "**Superseded** — merged into FR-018 via SigningStrategy pattern (v1.1)"
+- **Add new requirements** with sub-IDs (FR-017a, FR-017b) to avoid renumbering
+- **Update the version and change log:**
   ```
   | Version | Date | Author | Changes |
   |---------|------|--------|---------|
-  | 1.1 | 2026-03-29 | Engineering | Order flow redesign: new state machine, prerequisites, profiles |
+  | 1.1 | 2026-03-29 | Engineering | Order flow redesign: new state machine |
   ```
 - **Preserve all unrelated sections** — do NOT touch sections outside the change scope
-- **Update cross-references** — if Section 3.4 mentions Section 5.1, and both changed, ensure consistency
+- **Update cross-references** — ensure consistency across changed sections
 
 ### Step 3: Codebase-aware validation
 
-**After editing, verify against the implementation:**
-- Do the requirement IDs still align with what's actually built?
+After editing, verify against the implementation:
+- Do requirement IDs still align with what's built?
 - Are there implemented features not captured in the PRD?
-- Are there PRD requirements that were descoped during implementation?
-- Do the API contracts in the PRD match the actual endpoints?
-- Do the data model sketches match the actual schema?
+- Are there PRD requirements that were descoped?
+- Do API contracts and data model sketches match actual endpoints and schema?
 
-This step catches drift between PRD and reality. Use an Explore subagent to spot-check.
+Use an Explore subagent to spot-check.
 
 ### Step 4: Self-review + user review
 
-Same as create mode — run the Definition of Ready checklist, then present for user approval.
+Run the Definition of Ready checklist, then present for user approval.
 
 ---
 
-## How I'll think about this
+## P0 Requirement Example
 
-1. **Start with the problem, not the solution**: Articulate user pain clearly before proposing anything. If the problem isn't compelling, the feature shouldn't exist.
-2. **Validate the "why now"**: What changed that makes this urgent?
-3. **Define users precisely**: Not "users" — which users, doing what, in what context?
-4. **Scope ruthlessly**: Non-goals are as important as goals.
-5. **Quantify success**: "Improve retention" is not a metric. "Increase 7-day retention from 40% to 48% within 3 months" is.
-6. **Think about failure modes**: What happens if misused? What if adoption is low? Rollback plan?
-7. **Acceptance criteria per requirement**: Every P0 needs Given/When/Then. If you can't write criteria, the requirement isn't specific enough.
-8. **Edge cases are requirements**: Empty states, max values, concurrent access, expired sessions, missing permissions.
-9. **NFRs per feature, not just global**: "FR-003 must respond in < 200ms p95" is actionable. "The system should be fast" is not.
-10. **PRDs are living documents**: They drift from reality. Update mode exists because implementation always reveals things the original PRD didn't anticipate. Acknowledge and capture the drift rather than pretending the original PRD was right.
+A concrete example of a well-formed P0 requirement:
 
-## Anti-patterns to flag
-- Writing a solution disguised as requirements
-- Listing features without explaining what problem each solves
-- Vague success metrics ("improve user experience")
-- Missing non-goals (leads to unbounded scope)
-- Ignoring edge cases and error states in UX requirements
-- Requirements without acceptance criteria (untestable)
-- Global NFRs without per-feature targets (unmeasurable)
-- UI descriptions without states (loading, empty, error, success)
-- Dependencies listed without owners or status (unaccountable)
-- Open questions without owners or due dates (never resolved)
-- **Update-mode specific:**
-  - Silently deleting superseded requirements (breaks traceability)
-  - Renumbering all requirement IDs (breaks downstream references)
-  - Updating the PRD without reading the actual implementation (creates new drift)
-  - Touching unrelated sections "while we're at it" (scope creep)
+### FR-003: Session timeout with unsaved changes
 
-## Quality bar
-- Every P0 requirement has acceptance criteria in Given/When/Then format
-- Every P0 requirement has at least 2 edge cases documented
-- Every requirement that touches UI lists component states (default, loading, empty, error)
-- NFRs are specified per feature where applicable (performance, security, accessibility)
+**Description:** When a user's session expires while they have unsaved form data, the system preserves their input and prompts re-authentication.
+**User story:** US-002
+**Priority:** P0
+
+**Acceptance criteria:**
+```gherkin
+Given a user has unsaved changes in a form
+When their session token expires
+Then the system displays a re-authentication modal without navigating away
+And after successful re-authentication, the form retains all unsaved data
+
+Given a user has unsaved changes in a form
+When their session token expires and re-authentication fails 3 times
+Then the system saves a local draft and redirects to the login page
+And displays a banner on next login: "You have a recovered draft from <timestamp>"
+```
+
+**Edge cases and error states:**
+| Scenario | Expected behavior |
+|---|---|
+| User has unsaved changes across multiple tabs | Each tab independently prompts re-auth; drafts saved per-tab |
+| Local storage is full when saving draft | Show warning: "Could not save draft — copy your work before logging in again" |
+| Session expires during file upload | Cancel upload gracefully; resume after re-auth if file is still available |
+
+**Non-functional requirements (this feature):**
+- **Performance:** Re-auth modal renders in < 100ms; draft save completes in < 50ms
+- **Security:** Local drafts encrypted at rest; cleared after 24 hours or successful recovery
+- **Accessibility:** Re-auth modal traps focus, announces via screen reader, supports keyboard-only flow
+
+---
+
+## Requirements Principles and Quality Gates
+
+These principles guide both writing and reviewing requirements. Flag violations during self-review.
+
+**Problem-first thinking:**
+- Articulate user pain before proposing solutions. If the problem isn't compelling, the feature shouldn't exist.
+- Validate the "why now" — what changed that makes this urgent?
+- Define users precisely: which users, doing what, in what context?
+
+**Rigorous scoping:**
+- Non-goals are as important as goals. Missing non-goals lead to unbounded scope.
+- "Improve retention" is not a metric. "Increase 7-day retention from 40% to 48% within 3 months" is.
+- Never list features without explaining what problem each solves.
+
+**Testable requirements:**
+- Every P0 requirement has Given/When/Then acceptance criteria. If you can't write criteria, the requirement isn't specific enough.
+- Edge cases are requirements: empty states, max values, concurrent access, expired sessions, missing permissions.
+- NFRs per feature, not just global: "FR-003 must respond in < 200ms p95" is actionable; "the system should be fast" is not.
+- UI requirements list all component states (default, loading, empty, error, success).
+
+**Completeness checks:**
 - Success metrics have baselines, targets, and timelines
 - Dependencies have owners and risk assessments
 - Rollout plan includes feature flags, staged release, and rollback trigger
 - Open questions have owners and due dates
-- Definition of Ready checklist at the end passes
-- **Update-mode specific:**
-  - Change log entry added with version, date, and summary
-  - Superseded requirements marked (not deleted)
-  - New requirements use sub-IDs (FR-017a) to preserve numbering
-  - Cross-references updated consistently
+- Definition of Ready checklist passes
+
+**Anti-patterns to flag:**
+- Writing a solution disguised as requirements
+- Vague success metrics ("improve user experience")
+- Requirements without acceptance criteria (untestable)
+- Global NFRs without per-feature targets (unmeasurable)
+- Dependencies listed without owners or status (unaccountable)
+- Open questions without due dates (never resolved)
+
+**Update-mode specific checks:**
+- Superseded requirements marked, not silently deleted (breaks traceability)
+- Requirement IDs preserved, not renumbered (breaks downstream references)
+- PRD validated against actual implementation (prevents new drift)
+- Unrelated sections left untouched (prevents scope creep)
+- Change log entry added with version, date, and summary
+- New requirements use sub-IDs (FR-017a) to preserve numbering
+- Cross-references updated consistently
+
+## PRDs are living documents
+
+Implementation always reveals things the original PRD didn't anticipate. Update mode exists to acknowledge and capture drift rather than pretending the original PRD was right. Think about failure modes: what happens if misused? What if adoption is low? What's the rollback plan?
+
+---
+
+## Template Structure Reference
+
+The output uses the template at `templates/prd.md`. Key sections for reference if the template file is unavailable:
+
+1. **Summary** — One paragraph: what, who, outcome
+2. **Problem** — User pain, evidence table, why now
+3. **Goals** — Table with metric, target, timeline per goal
+4. **Non-goals** — Explicit exclusions with rationale
+5. **Users and personas** — Primary/secondary with current behavior and pain level
+6. **User stories** — ID, persona, action, outcome, priority
+7. **Scope** — In scope, out of scope, future considerations
+8. **Functional requirements** — Each with acceptance criteria (Given/When/Then), edge case table, per-feature NFRs
+9. **UI requirements** — Screens/states matrix, component specs, responsive behavior
+10. **Data model sketch** — Entities, key fields, relationships, storage
+11. **Global NFRs** — Performance, reliability, security, privacy, accessibility, localization, compatibility
+12. **Success metrics** — Primary metric with baseline/target/timeline, secondary metrics, guardrails
+13. **Dependencies** — Dependency matrix (owner, status, risk) and integration points (trigger, payload, auth, failure behavior)
+14. **Rollout plan** — Feature flags, staged rollout table, rollback plan
+15. **Analytics and instrumentation** — Events, dashboards, alerts
+16. **Risks and mitigations** — Likelihood/impact matrix
+17. **Open questions** — Owner, due date, resolution status
+18. **Definition of Ready checklist** — Must pass before implementation begins
 
 ## Workflow context
 - Typically follows: `/opportunity-assessment`, `/competitive-analysis`, `/spec-panel`
@@ -158,23 +221,12 @@ Same as create mode — run the Definition of Ready checklist, then present for 
 - Related: `/user-flow` (UX requirements), `/experiment-design` (A/B test design)
 - **Update mode typically follows:** `/design-doc`, `/spec-to-impl`, implementation completion
 
-## Output
-Use the template at `templates/prd.md`.
-
-The template enforces:
-- **Acceptance criteria** (Given/When/Then) per functional requirement
-- **Edge cases and error states** per requirement
-- **Per-feature NFRs** (performance, security, accessibility targets)
-- **UI component specs** (props, states, interactions, accessibility)
-- **Dependency matrix** (owner, status, risk if delayed)
-- **Definition of Ready checklist** (must pass before implementation)
-
 ## Learning & Memory
 
 After PRD completes, save:
 - User personas and pain points specific to this product area
 - Requirements patterns that proved well-structured for downstream consumers
-- Common gaps that were caught during Definition of Ready review
+- Common gaps caught during Definition of Ready review
 - Stakeholder feedback patterns (what they typically push back on)
 - **Update mode:** Which sections drifted most from implementation and why
 

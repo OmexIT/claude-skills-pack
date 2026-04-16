@@ -1,8 +1,6 @@
 ---
 name: code-audit
-description: >
-  Use this skill whenever existing implementation code needs a rigorous multi-dimensional review — covering code smells, SOLID violations, duplication, algorithm efficiency, security, performance, design pattern fitness, architecture conformance, technology fitness, and a devil's advocate challenge. ALWAYS trigger on: "code audit", "code review", "review this code", "code quality", "code smells", "design patterns review", "architecture review", "is this code good", "review the implementation", "audit this module", "quality check", "assess this codebase". Implicit triggers: user asks whether code is "production-ready", user wants a second opinion on a module, user suspects tech debt but wants specifics, user is onboarding and wants a map of problem areas, user needs evidence for a refactoring ticket.
-  Orchestrates a multi-agent expert panel with model routing (opus for LEAD/ARCH/SEC/SKEPTIC, sonnet for SMELL/DUP/ALGO/PERF/PATTERN/TECH). Reviews **code that exists** — for reviewing **specs before implementation**, use `/spec-panel` instead. Produces a findings report with severity ratings, a quality scorecard, and an ordered improvement roadmap. Does NOT modify code inline — findings route through the fix workflow (systematic-debugging → writing-plans → code-generator skill → requesting-code-review).
+description: "Orchestrates a multi-agent expert panel to review existing implementation code across 10 dimensions -- code smells, SOLID violations, duplication, algorithm efficiency, security, performance, design pattern fitness, architecture conformance, technology fitness, and devil's advocate challenge. Uses model routing (opus for LEAD/ARCH/SEC/SKEPTIC, sonnet for SMELL/DUP/ALGO/PERF/PATTERN/TECH). Produces a findings report with severity ratings, quality scorecard, and ordered improvement roadmap. Use when running a code audit, code review, quality check, assessing a codebase, or checking if code is production-ready. For reviewing specs before implementation, use /spec-panel instead."
 argument-hint: "[file, module, directory, or feature path]"
 context: fork
 agent: general-purpose
@@ -11,33 +9,27 @@ effort: high
 
 # Code Audit: Multi-Agent Implementation Review
 
-Orchestrates a **multi-agent expert panel** to conduct a comprehensive review of implemented code — combining static analysis, internet research, expert perspectives, and quantified quality scoring across 10 review dimensions.
+Orchestrates a **multi-agent expert panel** to conduct a comprehensive review of implemented code -- combining static analysis, internet research, expert perspectives, and quantified quality scoring across 10 review dimensions.
 
-This skill reviews **code that exists** (implementation). For reviewing **specs before implementation**, use `/spec-panel`.
+**Routing rules:**
+- "Review this spec" -> route to `/spec-panel`
+- "Check the architecture of module X" -> route to `/arch-review`
+- "Is this production-ready" or "does this code follow our patterns" -> this skill
+
+This skill is read-only -- it produces findings, never inline fixes. Fixes go through systematic-debugging -> writing-plans -> code-generator.
 
 ---
 
-## Before You Start — Superpowers Workflow
+## Before You Start -- Superpowers Workflow
 
-This skill is read-only — it produces a findings report, never inline fixes. It sits at a specific point in the superpowers workflow.
+**Before**: Nothing required. Reviewers analyze existing work.
 
-**Before invoking this skill**: nothing. Reviewers analyze existing work and don't need brainstorming or planning upfront.
-
-**Invoke this skill** (`code-audit`) to audit existing code across 10 dimensions. Produces findings with severity ratings (CRITICAL/HIGH/MEDIUM/LOW/POSITIVE), quality scorecard, and improvement roadmap.
-
-**After findings are produced** — for each CRITICAL or HIGH finding, route through the fix workflow:
-
-1. **superpowers:systematic-debugging** — MANDATORY per finding. Understand the root cause before proposing a fix. Do not skip to fixes.
-2. **superpowers:writing-plans** — turn findings into a reviewable remediation plan with ordered tickets and dependencies.
-3. Chain to a code-generator skill for actual code changes:
-   - `api-first` for controller/service/DTO restructuring
-   - `temporal-workflow` for saga/orchestration extraction
-   - `fintech-ledger` for money-code restructuring
-   - `arch-review` (paired with this skill for deeper architecture analysis)
-4. **superpowers:requesting-code-review** — after fixes are in place, before merging.
-5. **superpowers:finishing-a-development-branch** — if remediation spans multiple branches, decide merge strategy.
-
-**Hard rule**: this skill NEVER produces inline fixes. It produces findings. Fixes happen in a separate pass through the code-generator workflow.
+**After findings are produced** -- for each CRITICAL or HIGH finding:
+1. **superpowers:systematic-debugging** -- MANDATORY per finding. Understand root cause first.
+2. **superpowers:writing-plans** -- turn findings into a remediation plan.
+3. Chain to a code-generator skill (`api-first`, `temporal-workflow`, `fintech-ledger`, or `arch-review`).
+4. **superpowers:requesting-code-review** -- after fixes, before merging.
+5. **superpowers:finishing-a-development-branch** -- if remediation spans branches.
 
 ---
 
@@ -47,40 +39,27 @@ This skill is read-only — it produces a findings report, never inline fixes. I
 /code-audit $ARGUMENTS
 ```
 
-**Step 1 — Parse target:**
-- File path(s): `src/payment/PaymentService.java`
-- Directory: `src/payment/`
-- Feature scope: `"the payment processing module"`
-- PR reference: `#123` or branch name
+**Step 1 -- Parse target:** File path(s), directory, feature scope, or PR reference.
 
-**Step 2 — Scope determination.** Ask only if unclear:
-- What's the review scope? (single file, module, feature, full codebase)
-- What's the primary concern? (general quality, security, performance, architecture, all)
-- What's the context? (pre-merge review, tech debt audit, incident investigation, onboarding)
+**Step 2 -- Scope determination.** Ask only if unclear: review scope, primary concern, context (pre-merge, tech debt audit, incident, onboarding).
 
-**Step 3 — Codebase scan:**
+**Step 3 -- Codebase scan:**
 ```bash
-# Map the target
 find <target> -type f -name "*.java" -o -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.go" -o -name "*.dart" | head -50
 wc -l <target files>
-
-# Identify test coverage
 find <target> -path "*/test*" -type f | head -20
-
-# Check git activity
 git log --oneline -20 -- <target>
 git shortlog -sn -- <target>
 ```
 
-**Step 4 — Confirm:**
+**Step 4 -- Confirm:**
 ```
-🔍 CODE AUDIT TARGET
+CODE AUDIT TARGET
   Scope:     <n> files, ~<n> lines
   Language:  <detected>
   Framework: <detected>
   Tests:     <n> test files found
   Recent activity: <n> commits in last 30 days, <n> contributors
-
   Review dimensions activating: [list based on scope]
   Proceeding to Phase 1: Research...
 ```
@@ -99,278 +78,160 @@ git shortlog -sn -- <target>
 | `SEC` | Security Reviewer | OWASP, auth, injection, secrets, crypto | Always |
 | `PERF` | Performance Analyst | N+1 queries, memory, concurrency, caching | Always |
 | `PATTERN` | Design Pattern Evaluator | Pattern fitness, anti-patterns, over-engineering | Module+ scope |
-| `ARCH2` | Deep Architecture (optional — delegated to `/arch-review`) | Clean arch invariants, dep direction | Module+ scope, when deeper structural review needed |
+| `ARCH2` | Deep Architecture (optional) | Clean arch invariants, dep direction | Delegated to `/arch-review` |
 | `TECH` | Technology Evaluator | Stack fitness, dependency health, alternatives | Feature/codebase scope |
-| `TESTING` | Test Coverage & Quality | Coverage gaps, test smells, flake signals, assertion quality | Always |
-| `SKEPTIC` | Devil's Advocate | Challenges design decisions, finds hidden assumptions | Always |
+| `TESTING` | Test Coverage & Quality | Coverage gaps, test smells, flake signals | Always |
+| `SKEPTIC` | Devil's Advocate | Challenges design decisions, hidden assumptions | Always |
 
-**`LEAD` always orchestrates** and produces the final synthesis. Other agents activate based on scope:
+**Activation rules:**
 - Single-file reviews: skip `ARCH`, `ARCH2`, `TECH`
-- Module reviews: skip `TECH` unless dependencies are in scope
+- Module reviews: skip `TECH` unless dependencies in scope
 - Full-codebase reviews: all agents active
-- When the user asks specifically about architecture: delegate to `/arch-review` via chain, not `ARCH2` inline
+- Architecture-specific questions: delegate to `/arch-review`, not `ARCH2` inline
 
-### Agent Model Routing (Claude 4.6 family)
+### Model Routing (Claude 4.6 family)
 
-| Agent | Model family | Rationale |
+| Model | Agents | Rationale |
 |---|---|---|
-| `LEAD` | `opus` (claude-opus-4-6) | Synthesis across 10 parallel finding streams — deepest reasoning |
-| `ARCH`, `SEC`, `SKEPTIC` | `opus` | Structural reasoning + vulnerability analysis + independent challenge |
-| `SMELL`, `DUP`, `ALGO`, `PERF`, `PATTERN`, `TESTING` | `sonnet` (claude-sonnet-4-6) | Pattern-recognition tasks — best coding model |
-| `TECH` | `sonnet` | Dependency and technology evaluation |
+| `opus` | LEAD, ARCH, SEC, SKEPTIC | Synthesis, structural reasoning, vulnerability analysis |
+| `sonnet` | SMELL, DUP, ALGO, PERF, PATTERN, TESTING, TECH | Pattern-recognition tasks |
 
-### Parallel Execution Strategy
-
-All 11 agents execute in a **single parallel wave** during Phase 2:
-- Launch via the Agent tool in ONE message (parallel Agent calls)
-- Each agent receives the Evidence Manifest + only the files relevant to its dimension
-- Use `run_in_background: true` for `TECH` and `PATTERN` (lower criticality)
-- LEAD waits for ALL agents before synthesizing
+### Parallel Execution
 
 ```
-Phase 1: LEAD runs Phase 1 — tools + Evidence Manifest  (sequential, ~15 tool calls)
-    ↓
-Phase 2: 10 analysis agents launch in one message       (parallel, 1 wave)
-    ↓
-Phase 3: LEAD synthesizes scorecard + roadmap           (sequential)
+Phase 1: LEAD runs research + Evidence Manifest  (sequential, ~15 tool calls)
+    |
+Phase 2: 10 analysis agents in one message       (parallel, 1 wave)
+    |
+Phase 3: LEAD synthesizes scorecard + roadmap    (sequential)
 ```
 
-### Parallel Dispatch Template
+Launch all agents in a single message using the Agent tool. Each agent receives: (1) the Evidence Manifest verbatim, (2) their dimension section from `agents/review-dimensions.md`, (3) only the specific files they need, (4) the structured finding format with MANDATORY Evidence field. Use `run_in_background: true` for `TECH` and `PATTERN` (lower criticality). LEAD waits for ALL agents before synthesizing.
 
-When moving from Phase 1 to Phase 2, launch agents using this exact pattern in a single message:
+### Dispatch Template
 
 ```
 Agent(subagent_type="code-reviewer", description="Code smells + SOLID",
       model="sonnet",
-      prompt="<Evidence Manifest> + agents/review-dimensions.md §1-2 + files: [...]")
+      prompt="<Evidence Manifest> + agents/review-dimensions.md S1-2 + files: [...]")
 
 Agent(subagent_type="code-reviewer", description="Duplication detective",
       model="sonnet",
-      prompt="<Evidence Manifest> + agents/review-dimensions.md §3 + files: [...]")
+      prompt="<Evidence Manifest> + agents/review-dimensions.md S3 + files: [...]")
 
 Agent(subagent_type="security-auditor", description="Security review",
       model="opus",
-      prompt="<Evidence Manifest> + agents/review-dimensions.md §5 + files: [...]")
+      prompt="<Evidence Manifest> + agents/review-dimensions.md S5 + files: [...]")
 
 Agent(subagent_type="performance-engineer", description="Performance review",
       model="sonnet",
-      prompt="<Evidence Manifest> + agents/review-dimensions.md §6 + files: [...]")
+      prompt="<Evidence Manifest> + agents/review-dimensions.md S6 + files: [...]")
 
 Agent(subagent_type="quality-engineer", description="Test coverage + quality",
       model="sonnet",
-      prompt="<Evidence Manifest> + agents/review-dimensions.md §11 + files: [...]")
+      prompt="<Evidence Manifest> + agents/review-dimensions.md S11 + files: [...]")
 
 Agent(subagent_type="backend-architect", description="Architecture conformance",
       model="opus",
-      prompt="<Evidence Manifest> + agents/review-dimensions.md §8 + files: [...]")
+      prompt="<Evidence Manifest> + agents/review-dimensions.md S8 + files: [...]")
 
 Agent(subagent_type="general-purpose", description="Devil's advocate",
       model="opus",
-      prompt="<Evidence Manifest> + agents/review-dimensions.md §10 + files: [...]")
+      prompt="<Evidence Manifest> + agents/review-dimensions.md S10 + files: [...]")
 
 # ...plus ALGO, PATTERN, TECH in the same message
 ```
 
-Each agent receives:
-1. The Evidence Manifest verbatim (so they share grounding)
-2. Their dimension section from `agents/review-dimensions.md`
-3. Only the specific files they need (not the full repo dump)
-4. The structured finding format with MANDATORY Evidence field
-
-### Agent Teams Mode (Experimental)
-
-For large codebases (1000+ files), enable Agent Teams for competing-hypothesis investigation:
-- `SMELL` and `SKEPTIC` can challenge each other's findings
-- `SEC` and `PERF` can identify tradeoffs between security and performance
-- Set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` for this mode
-- Higher token cost but better finding quality for complex audits
-
 ---
 
-## 1.5 What This Skill Is NOT
+## 2. Phase 1 -- Deep Research
 
-Frequently confused with `/spec-panel` and `/arch-review`. Distinctions:
+**Phase 1 is non-negotiable and must complete before any agent is dispatched.** Every step uses real tools -- do not fabricate findings from memory.
 
-| Skill | When to use | Input | Output |
-|---|---|---|---|
-| **`/code-audit`** (this) | Reviewing **existing implemented code** across 11 quality dimensions | Files / modules / directories of real code | Multi-dimensional findings report with scorecard and roadmap |
-| `/spec-panel` | Reviewing a **spec before implementation** (PRD, BRD, design doc, RFC) | A markdown spec document | IEEE 830 audit + expert panel findings + pre-impl gate |
-| `/arch-review` | Deep dive on **clean-architecture invariants** (dep direction, tx boundaries, etc.) | A Java/Spring module | Architecture-specific findings + optional ArchUnit setup |
+### 2A: Codebase Investigation (MANDATORY)
 
-**Boundaries**:
-- If the user says "review this spec" → route to `/spec-panel`, not here
-- If the user says "check the architecture of module X" → route to `/arch-review` (or chain: code-audit first, then arch-review for deeper structure)
-- If the user says "does this code follow our patterns" → `/code-audit` with focus on PATTERN + ARCH dimensions
-- If the user says "is this production-ready" → `/code-audit` full run
+Use `Glob`, `Grep`, `Read`, and `Bash(git ...)`. Do not assume -- verify.
 
-**What this skill will refuse**:
-- Generating fixes inline — findings only; fixes go through systematic-debugging → writing-plans → code-generator
-- Auditing without running Phase 1 tools — speculation is a quality failure mode
-- Auditing a spec document — bounce to `/spec-panel` with a note
-
----
-
-## 2. Phase 1 — Deep Research
-
-**Phase 1 is non-negotiable and must complete before any agent is dispatched.** A code audit that reviews without reading the real files is speculation. Every step below uses real tools — don't fabricate findings from memory.
-
-### 2A: Codebase Investigation (MANDATORY — read real files)
-
-Use `Glob`, `Grep`, `Read`, and `Bash(git ...)`. Do not assume — verify.
-
-**Enumerate**:
-```bash
-# Glob every source file in scope
-Glob("<target>/**/*.{java,kt,ts,tsx,js,jsx,py,go,rs,rb,dart}")
-Glob("<target>/**/test/**/*.{java,ts,py}")  # tests
-Glob("<target>/**/*.sql")                    # migrations / DDL
-```
+**Enumerate**: Glob all source files, test files, and SQL/migration files in scope.
 
 **Read targeted files**:
-- Read every source file in scope — don't sample, read all (up to 50; if >50, sample by dependency centrality via reverse-import count)
-- Read every test file — tests encode the team's understanding of requirements
-- Read shared kernel / utility files that this code depends on
-- Read the module's `package-info.java` / `index.ts` / `__init__.py` for public API surface
+- Read every source file in scope (up to 50; if >50, sample by reverse-import count)
+- Read every test file and shared kernel/utility dependencies
+- Read module entry points (`package-info.java` / `index.ts` / `__init__.py`)
 
-**Map dependencies via Grep**:
-- `Grep("import .*<target-package>", "*.java")` → reverse-imports (who uses this code)
-- `Grep("new <ClassName>|<ClassName>\\.", <parent>)` → instantiation sites
-- `Grep("@RestController|@Controller", <target>)` → API surface
-- `Grep("@Entity|@Table|@Document", <target>)` → persistence surface
+**Map dependencies via Grep**: reverse-imports, instantiation sites, API surface (`@RestController`), persistence surface (`@Entity`).
 
-**Git activity** — use `Bash` with explicit git commands:
-- `git log --oneline -30 -- <target>` → recent change frequency (high churn = smell signal)
-- `git shortlog -sn -- <target>` → ownership (one author = bus factor risk; many = coordination cost)
-- `git log --format="%ad %an %s" --date=short -20 -- <target>` → authorship over time
-- `git blame <hotspot-file>` on suspicious files only — overuse wastes tokens
+**Git activity**: `git log --oneline -30`, `git shortlog -sn`, authorship timeline. Use `git blame` only on suspicious hotspot files.
 
-**Convention detection** — read these files if present:
-- `CLAUDE.md` (project root, `.claude/`, and any subdirectory of the target)
-- `README.md` (architecture section)
-- `.editorconfig`, `.prettierrc`, `checkstyle.xml`, `ruff.toml`, `pyproject.toml`
-- `build.gradle*`, `pom.xml`, `package.json` → detect versions, test framework, lint tools
-- ArchUnit test files (`*ArchTest.java`) → codified architecture rules
-- `docs/adr/**/*.md` → architectural decisions that constrain the code
+**Convention detection** -- read if present: `CLAUDE.md`, `README.md`, `.editorconfig`, lint/format configs, build files, ArchUnit tests, ADRs.
 
-**Minimum evidence required before Phase 2** (this is a hard gate):
-- [ ] Glob enumerated — file count and language breakdown known
-- [ ] Build file read — framework versions and dependency versions confirmed
-- [ ] CLAUDE.md read (or noted absent)
-- [ ] ≥ 80% of in-scope source files read (or sampled with rationale if > 50 files)
-- [ ] All in-scope tests read
-- [ ] `git log` run — recent commit count and top contributors known
-- [ ] At least 2 reverse-import searches run
+**Minimum evidence gate before Phase 2**:
+- Glob enumerated -- file count and language breakdown known
+- Build file read -- framework and dependency versions confirmed
+- CLAUDE.md read (or noted absent)
+- >= 80% of in-scope source files read (or sampled with rationale)
+- All in-scope tests read
+- `git log` run -- recent commits and top contributors known
+- At least 2 reverse-import searches run
 
-### 2B: Dependency & Version Research (MANDATORY — context7 FIRST)
+### 2B: Dependency & Version Research (MANDATORY)
 
-Training data goes stale. Use real tools.
+Use **context7** FIRST (`resolve-library-id` + `query-docs`) for every library/framework detected. Required for: Spring Boot, React/Next.js, Temporal SDK, any ORM, any auth library.
 
-**`mcp__context7__resolve-library-id` + `mcp__context7__query-docs`** — use this FIRST for every library/framework the code depends on. Required trigger cases:
+Use **WebSearch/WebFetch** for: CVEs at exact dependency versions, breaking changes in next major versions, OWASP/CWE/NIST references.
 
-- Spring Boot version detected → query context7 for current best practices + deprecations
-- React / Next.js version → query for current patterns (Server Components, `use`, etc.)
-- Temporal SDK version → query for current workflow patterns + retry policy shape
-- Any ORM (JPA, Hibernate, Prisma, SQLAlchemy) → query for idiomatic patterns
-- Any auth library → query for current security posture
-
-**WebSearch / WebFetch** for:
-- Known CVEs at the exact dependency versions (check NVD/GitHub advisories)
-- Breaking changes in the next major version of each dependency (informs `TECH` findings)
-- OWASP Top 10 / CWE references cited in `SEC` findings
-- NIST / RFC / ISO citations for `SEC` and `PERF` findings
-
-**Rules**:
-- Cite every source with a real URL in the final report
-- Never invent URLs
-- When context7 contradicts training data, trust context7 and quote the current version
-- No citations → the finding has no external backing, mark it as "stack heuristic" not "best practice"
+**Rules**: Cite every source with a real URL. Never invent URLs. When context7 contradicts training data, trust context7. No citations = mark finding as "stack heuristic" not "best practice".
 
 ### 2C: Existing Standards & Prior Reviews
 
-- Read `CLAUDE.md` and quote relevant conventions in the final report
-- Read lint/format configs and note which rules exist and which would catch the problems we're about to flag
-- Read ArchUnit rules and note coverage gaps
-- **Read prior audit reports** if present: `claudedocs/*-code-audit.md` — if this code has been audited before, check whether old findings were addressed, reopened, or ignored. Reopened findings are especially valuable signals.
+Read `CLAUDE.md`, lint/format configs, ArchUnit rules. Read prior audit reports (`claudedocs/*-code-audit.md`) -- reopened findings get severity boost.
 
-### 2D: Evidence Manifest (mandatory output of Phase 1)
+### 2D: Evidence Manifest (mandatory Phase 1 output)
 
-Before Phase 2, produce this manifest and include it verbatim in the final report:
+Produce this manifest before Phase 2 and include it verbatim in the final report:
 
 ```
-EVIDENCE MANIFEST — <target>
-==============================
-
-CODEBASE
-  Files enumerated:   <n>  ({<lang>: <n>, <lang>: <n>})
-  Files read:         <n> / <n> in scope  (<%>)
-  Tests read:         <n>
-  Reverse-imports:    <n> callers outside target
-  API surface:        <n> public entrypoints ({<n> REST, <n> events, <n> CLI})
-
-GIT ACTIVITY (30d)
-  Commits on target:   <n>
-  Contributors:        <n>
-  Hotspots (top 3):    <file1> (<n>), <file2> (<n>), <file3> (<n>)
-  Concurrent work:     <yes/no> — flag files in open PRs touching the target
-
-STACK VERIFICATION
-  Language:            <e.g. Java 25>
-  Framework:           <e.g. Spring Boot 4.0.4>
-  Test framework:      <e.g. JUnit 5 + Mockito 5 + Testcontainers>
-  Build tool:          <Gradle / Maven / pnpm>
-  Detected convention sources: [CLAUDE.md, .editorconfig, ArchUnit, ...]
-
-EXTERNAL RESEARCH
-  context7 queries:    [library @ version → key insight]
-  WebSearch queries:   [query → finding]
-  CVEs surfaced:       <n>
-  Standards consulted: [OWASP / CWE / NIST / RFC ...]
-
-PRIOR AUDIT HISTORY
-  Previous audits:     <n> (paths)
-  Reopened findings:   <n>  (these get severity boost)
-  Never-addressed:     <n>
-
-BLOCKERS
-  <anything preventing reliable review — surface here, do not proceed silently>
+EVIDENCE MANIFEST -- <target>
+  Files: <n> ({lang: n, lang: n}) | Read: <n>/<n> (<pct>%) | Tests: <n>
+  API surface: <n> public entrypoints ({REST, events, CLI})
+  Git (30d): <n> commits, <n> contributors
+  Hotspots: <file1> (<n>), <file2> (<n>), <file3> (<n>)
+  Stack: <language version>, <framework version>, <test framework>, <build tool>
+  Conventions: [CLAUDE.md, .editorconfig, ArchUnit, ...]
+  context7 queries: [library @ version -> key insight]
+  WebSearch: [query -> finding]
+  CVEs: <n> | Standards: [OWASP / CWE / NIST / RFC ...]
+  Prior audits: <n> | Reopened: <n> | Never-addressed: <n>
+  BLOCKERS: <anything preventing reliable review>
 ```
 
-**Phase 2 cannot start until the Evidence Manifest is produced.** Findings without manifest-backed evidence are speculation and must be marked `[EVIDENCE: missing]` — a reviewer's failure mode.
+**Phase 2 cannot start until the Evidence Manifest is produced.** Findings without manifest-backed evidence must be marked `[EVIDENCE: missing]`.
 
 ---
 
-## 3. Phase 2 — Multi-Dimensional Analysis
+## 3. Phase 2 -- Multi-Dimensional Analysis
 
-**Read `agents/review-dimensions.md`** for the full 10-dimension protocol. That file defines:
+**Read `agents/review-dimensions.md`** for the full 10-dimension protocol defining: structured finding format (Location, Evidence, Issue, Impact, Recommendation, Rationale, Blast radius, Effort), severity levels (CRITICAL/HIGH/MEDIUM/LOW/POSITIVE), and per-dimension checklists.
 
-- The structured finding format used by every agent (Location, Issue, Impact, Recommendation, Rationale, Effort)
-- Severity levels (CRITICAL / HIGH / MEDIUM / LOW / POSITIVE)
-- Per-dimension checklists for: Code Smells, SOLID, Duplication, Algorithms, Security, Performance, Design Patterns, Architecture, Technology, Skeptic challenges
-
-Dispatch all 10 agents in parallel after loading that file. Each agent uses its relevant sections and produces findings in the standard format.
+Dispatch all 10 agents in parallel after loading that file.
 
 ---
 
-## 4. Phase 3 — Quality Scorecard
+## 4. Phase 3 -- Quality Scorecard
 
-**Read `references/roadmap-templates.md`** for the scorecard template, findings summary format, and scoring guide (1-10 with interpretation). Populate the scorecard from the agent outputs.
-
----
-
-## 5. Phase 4 — Improvement Roadmap
-
-**Read `references/roadmap-templates.md`** for the action-tier tables (Tier 1 — fix now, Tier 2 — this sprint, Tier 3 — schedule) and the refactoring plan template. Group findings into tiers, populate the tables, and produce a concrete refactoring plan for each Tier 1 finding.
+**Read `references/roadmap-templates.md`** for the scorecard template, findings summary format, and scoring guide (1-10). Populate from agent outputs.
 
 ---
 
-## 6. Phase 5 — Save Report
+## 5. Phase 4 -- Improvement Roadmap
 
-Save the full analysis to:
-```
-claudedocs/<target-name>-code-audit.md
-```
+**Read `references/roadmap-templates.md`** for action-tier tables (Tier 1 -- fix now, Tier 2 -- this sprint, Tier 3 -- schedule) and refactoring plan template. Group findings into tiers and produce concrete refactoring plans for each Tier 1 finding.
 
-Use the final report header template from `references/roadmap-templates.md` at the top of the file.
+---
+
+## 6. Phase 5 -- Save Report
+
+Save to `claudedocs/<target-name>-code-audit.md` using the final report header template from `references/roadmap-templates.md`.
 
 Tell the user: "Audit saved to claudedocs/<name>-code-audit.md. Next steps: run superpowers:systematic-debugging on CRITICAL findings, then superpowers:writing-plans to turn findings into tickets, then route to a code-generator skill for fixes, then /finalize to commit."
 
@@ -378,63 +239,24 @@ Tell the user: "Audit saved to claudedocs/<name>-code-audit.md. Next steps: run 
 
 ## Anti-patterns
 
-- **Surface-level review** — Checking only naming and formatting while ignoring architecture, security, and performance. Style is the least important dimension.
-- **Trusting tests exist** — A test file existing does not mean coverage is adequate. Read the tests. Check what they actually verify.
-- **Generic advice** — "Add error handling" is useless. "Add try-catch in PaymentService.processRefund():47 — unhandled NPE when refund amount exceeds original" is useful.
-- **Reviewing without context** — Not reading git history, related modules, or project conventions before judging code.
-- **Bikeshedding** — Spending review time on variable names while a SQL injection sits three lines below.
-- **Rubber-stamping** — Large PRs / complex modules need more scrutiny, not less. Complexity should increase thoroughness.
-- **Pattern worship** — Flagging code for not using a design pattern when the simple approach is correct. Three similar lines are better than a premature abstraction.
-- **Ignoring what's good** — Only reporting problems creates a hostile review. Acknowledge well-written code (POSITIVE findings).
-- **Reviewing to your style, not the project's** — The project's conventions win. Flag deviations from project style, not from your personal preference.
-- **Missing the forest for the trees** — 50 LOW findings about naming but missing the one CRITICAL architectural flaw.
-- **Producing inline fixes** — This skill produces findings. Fixes go through a separate code-generator skill pass.
+- **Surface-level review**: Checking naming/formatting while ignoring architecture, security, and performance.
+- **Generic advice**: "Add error handling" is useless. Cite file:line with a specific fix.
+- **Reviewing without context**: Not reading git history, related modules, or conventions first.
+- **Producing inline fixes**: This skill produces findings only. Fixes go through a separate code-generator pass.
 
 ---
 
 ## Quality bar
 
-- Every finding uses the structured format with Location, Issue, Impact, Recommendation, Rationale, Effort
-- All 10 dimensions were evaluated (or explicitly marked N/A with reason)
-- Internet research was conducted via context7 and cited for the specific technologies in use
-- Project conventions were checked and deviations flagged
-- POSITIVE findings included — good code was acknowledged
-- The Skeptic challenged at least 3 assumptions
-- Quality scorecard was produced with per-dimension scores
-- Tier 1 findings have concrete refactoring plans with steps
-- Security checklist was completed (no unchecked items — mark N/A or flag)
-- Performance checklist was completed
-
----
-
-## Workflow context
-
-**Upstream skills that feed into this:**
-- `/spec-to-impl` — Code produced from spec implementation
-- `/finalize` — Code ready for final review before commit
-- Any implementation work that needs quality verification
-
-**Downstream skills that consume this output:**
-- `superpowers:systematic-debugging` — per CRITICAL finding
-- `superpowers:writing-plans` — remediation plan
-- `api-first` / `temporal-workflow` / `fintech-ledger` — for code-generator fixes
-- `arch-review` — deeper architecture-specific analysis
-- `/test-plan` — Test planning informed by coverage gaps found
-- `/tech-debt-assessment` — Tier 2/3 findings feed debt inventory
-- `/performance-review` — Deep-dive on performance findings
-- `/security-review` — Deep-dive on security findings
-- `superpowers:requesting-code-review` — after fixes, before merging
-- `/finalize` — Commit after fixing Tier 1 findings
-
----
-
-### Learning & Memory
-
-After audit completes, save reusable patterns:
-- Code quality patterns specific to this project's stack
-- Common anti-patterns found that should inform future reviews
-- Effective review checklist items for this technology combination
-- Architecture conformance rules that should be codified as ArchUnit/lint rules
+- Every finding uses structured format with Location, Evidence, Issue, Impact, Recommendation, Rationale, Effort
+- All 10 dimensions evaluated (or explicitly marked N/A with reason)
+- Internet research conducted via context7 and cited for specific technologies in use
+- Project conventions checked and deviations flagged
+- POSITIVE findings included -- good code acknowledged
+- Skeptic challenged at least 3 assumptions
+- Quality scorecard produced with per-dimension scores
+- Tier 1 findings have concrete refactoring plans
+- Security and performance checklists completed
 
 ---
 
@@ -442,8 +264,8 @@ After audit completes, save reusable patterns:
 
 | File | When to read |
 |---|---|
-| `agents/review-dimensions.md` | Phase 2 — dispatching the 10 analysis agents with their dimension-specific checklists |
-| `references/roadmap-templates.md` | Phase 3-5 — scorecard, action tiers, refactoring plan, final report header |
+| `agents/review-dimensions.md` | Phase 2 -- dispatching the 10 analysis agents with dimension-specific checklists |
+| `references/roadmap-templates.md` | Phase 3-5 -- scorecard, action tiers, refactoring plan, final report header |
 
 ---
 
@@ -476,5 +298,5 @@ produces:
       - refactoring-plans
       - recommended-reading
       - action-tracker
-  handoff: "Run superpowers:systematic-debugging per CRITICAL finding. Write claudedocs/handoff-code-audit-<timestamp>.yaml — suggest: superpowers:writing-plans, api-first/temporal-workflow/fintech-ledger (for fixes), arch-review (deeper structure), superpowers:requesting-code-review, /finalize"
+  handoff: "Run superpowers:systematic-debugging per CRITICAL finding. Write claudedocs/handoff-code-audit-<timestamp>.yaml -- suggest: superpowers:writing-plans, api-first/temporal-workflow/fintech-ledger (for fixes), arch-review (deeper structure), superpowers:requesting-code-review, /finalize"
 ```
