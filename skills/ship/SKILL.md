@@ -19,7 +19,7 @@ Read the repo's `## Ship policy` block in CLAUDE.md, or its existing git-workflo
 - **Extras**: ticket updates (e.g. a QA note: how to test, nothing more) · required local pre-push hooks · whether agent files (CLAUDE.md, `.claude/`) may be committed at all.
 
 ## Gate — before any commit
-1. Full verify for the stack (`mvn verify` / `./gradlew build` / `pnpm test`) — show the output tail.
+1. Format, then full verify for the stack (`./gradlew spotlessApply build` / `mvn spotless:apply verify` / `pnpm lint && pnpm test`) — show the output tail. Java formatting happens here, once — not per edit.
 2. Behavior changes have `e2e` evidence; run it if missing.
 3. Diff hygiene: no stale/debug files, no unrelated changes, no secrets; migrations note their rollback story; plan checkboxes complete.
 

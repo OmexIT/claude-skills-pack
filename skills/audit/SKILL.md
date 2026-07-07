@@ -14,6 +14,7 @@ Scope from arguments: a branch/diff, a module path, or a document. Default lense
 ## Finding protocol (references/review-dimensions.md)
 - Every finding: **Location** (file:line) / **Evidence** (exact code quote) / Issue / Impact / Recommendation / Effort.
 - Findings without evidence are rejected. Purely stylistic findings where a linter exists are discarded. Rank by severity: P1 = broken behavior, money, or security.
+- Dispatch: inline for a normal diff — lens fan-out costs more than it returns. For large scopes (multi-module, whole service) run lenses as parallel subagents dispatched in ONE message, each returning at most ~10 protocol-format findings; merge and dedupe before ranking.
 
 ## Simplicity lens (always on)
 Flag speculative abstractions, single-implementation interfaces, unnecessary wrappers/factories, unused flexibility, readiness/ceremony that adds complexity without value, tests that test the framework. Recommend deletions, not only additions — an audit that only adds work has failed half its job.

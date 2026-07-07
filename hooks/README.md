@@ -7,7 +7,7 @@ settings.json editing.
 |---|---|---|
 | `pre-bash.py` | `PreToolUse(Bash)` | Blocks destructive commands: `rm -rf /`, `DROP DATABASE`, `TRUNCATE`, `docker volume rm`, force-push to protected branches. Exit 2 = block. |
 | `pre-edit-guard.py` | `PreToolUse(Edit\|Write\|MultiEdit)` | Non-blocking stderr warning when editing sensitive files (`.env*`, `secrets.*`, `application-prod.*`, keys/keystores). |
-| `post-edit-format.py` | `PostToolUse(Edit\|Write\|MultiEdit)` | Best-effort autoformat: Spotless (Gradle/Maven) for `.java`, Prettier for TS/JS/JSON/CSS/MD. Never blocks. |
+| `post-edit-format.py` | `PostToolUse(Edit\|Write\|MultiEdit)` | Best-effort Prettier autoformat for TS/JS/JSON/CSS/MD (<~300ms, 10s cap). Java is deliberately NOT formatted per edit — a Gradle/Maven invocation costs seconds to minutes; Spotless runs once in the `ship` gate. |
 
 ## Protocol notes
 

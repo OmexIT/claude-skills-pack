@@ -1,78 +1,48 @@
 #!/usr/bin/env python3
-"""Post-Edit Hook — auto-format modified file based on extension + project root.
+"""Post-Edit Hook — auto-format the edited file. Fast path only.
 
-Best-effort: never blocks, never errors. Runs Spotless for Java (Gradle/Maven) and
-Prettier for TS/JS/JSON/CSS/MD. Exits silently on any failure.
+Prettier runs synchronously (typically <300ms, 10s cap) for web-stack files.
+Java is deliberately NOT formatted here: a per-edit Gradle/Maven invocation
+costs seconds to minutes each time; Spotless runs once in the `ship` gate
+instead. Best-effort: never blocks, never errors.
 """
 import json
 import subprocess
 import sys
 from pathlib import Path
 
-
-def read_input() -> dict:
-    try:
-        return json.loads(sys.stdin.read() or "{}")
-    except (json.JSONDecodeError, ValueError):
-        return {}
-
-
-def find_project_root(path: Path):
-    for p in [path] + list(path.parents):
-        for marker in ("build.gradle", "build.gradle.kts", "pom.xml", "package.json", ".git"):
-            if (p / marker).exists():
-                return p
-    return None
-
-
-def format_java(file: Path, root: Path):
-    gradlew = root / "gradlew"
-    mvnw = root / "mvnw"
-    if gradlew.exists():
-        subprocess.run(
-            [str(gradlew), "spotlessApply", f"-PspotlessFiles={file}"],
-            cwd=root, timeout=90, capture_output=True,
-        )
-    elif mvnw.exists():
-        subprocess.run(
-            [str(mvnw), "spotless:apply", f"-DspotlessFiles={file}"],
-            cwd=root, timeout=90, capture_output=True,
-        )
-
-
-def format_js(file: Path, root: Path):
-    prettier = root / "node_modules" / ".bin" / "prettier"
-    if prettier.exists():
-        subprocess.run(
-            [str(prettier), "--write", str(file)],
-            cwd=root, timeout=30, capture_output=True,
-        )
+PRETTIER_EXTS = {".ts", ".tsx", ".js", ".jsx", ".json", ".css", ".md"}
 
 
 def main():
-    data = read_input()
+    try:
+        data = json.loads(sys.stdin.read() or "{}")
+    except (json.JSONDecodeError, ValueError):
+        sys.exit(0)
+
     tool_input = data.get("tool_input", {}) or {}
-    file_path = tool_input.get("file_path") or tool_input.get("path")
+    file_path = tool_input.get("file_path") or tool_input.get("path") or ""
     if not file_path:
         sys.exit(0)
 
     path = Path(file_path)
-    if not path.exists():
+    if path.suffix.lower() not in PRETTIER_EXTS or not path.exists():
         sys.exit(0)
 
-    root = find_project_root(path)
-    if not root:
-        sys.exit(0)
-
-    ext = path.suffix.lower()
-    try:
-        if ext == ".java":
-            format_java(path, root)
-        elif ext in (".ts", ".tsx", ".js", ".jsx", ".json", ".css", ".md"):
-            format_js(path, root)
-    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
-        pass  # best-effort — never block
-
+    # Nearest local prettier install wins; stop at the repo boundary.
+    for parent in path.parents:
+        prettier = parent / "node_modules" / ".bin" / "prettier"
+        if prettier.exists():
+            try:
+                subprocess.run(
+                    [str(prettier), "--write", str(path)],
+                    cwd=parent, timeout=10, capture_output=True,
+                )
+            except (subprocess.TimeoutExpired, OSError):
+                pass  # best-effort — never block
+            break
+        if (parent / ".git").exists():
+            break
     sys.exit(0)
 
 
