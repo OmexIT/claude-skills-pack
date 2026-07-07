@@ -1,0 +1,11 @@
+{
+  "name": "garage",
+  "owner": { "name": "Antony Omeri" },
+  "plugins": [
+    {
+      "name": "garage",
+      "source": "./",
+      "description": "Personal engineering copilot: spec → plan → build → audit → e2e → ship, plus fintech domain law (ledger, temporal, migrations, spring-api, igaming-ui)."
+    }
+  ]
+}

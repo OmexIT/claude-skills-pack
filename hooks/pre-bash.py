@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Pre-Bash Hook — block irreversible or high-blast-radius commands."""
+"""Pre-Bash Hook — block irreversible or high-blast-radius commands.
+
+Reads the PreToolUse JSON payload from stdin (tool_input.command). Exit 2 with a
+stderr message blocks the call; exit 0 allows it. Patterns are tuned for fintech
+work (protects databases, volumes, protected branches).
+"""
+import json
 import re
 import sys
 
@@ -24,7 +30,13 @@ BLOCK_PATTERNS = [
 
 
 def main():
-    cmd = sys.argv[1] if len(sys.argv) > 1 else ""
+    try:
+        data = json.loads(sys.stdin.read() or "{}")
+    except (json.JSONDecodeError, ValueError):
+        data = {}
+    cmd = (data.get("tool_input", {}) or {}).get("command", "")
+    if not cmd and len(sys.argv) > 1:  # legacy argv fallback
+        cmd = sys.argv[1]
     for pat, label in BLOCK_PATTERNS:
         if re.search(pat, cmd, re.IGNORECASE):
             print(
