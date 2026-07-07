@@ -1,8 +1,8 @@
 # Claude Code Skills Pack
 
-**52 ready-to-use skills for Claude Code** covering the entire software development lifecycle — from discovery and planning through design, implementation, verification, quality review, release, and operations. Includes 6 domain skills for Java/Spring Boot fintech and iGaming builds (Temporal workflows, double-entry ledgers, API scaffolding, DB migrations, architecture review) and a meta-skill for keeping custom skills in sync with the superpowers plugin workflow.
+**48 ready-to-use skills for Claude Code** covering the entire software development lifecycle — from discovery and planning through design, implementation, verification, quality review, release, and operations. Includes focused Java/Spring Boot fintech and architecture skills for Temporal workflows, double-entry ledgers, API scaffolding, DB migrations, and architecture review.
 
-Skills range from lightweight methodology guides (~80 lines) to comprehensive multi-agent orchestrators (~1500 lines) that coordinate parallel agent teams with model routing, worktree isolation, and wave-based execution. Every code-generation skill is wired into the [superpowers](https://github.com/anthropics/claude-plugins-official) development workflow (brainstorming → plans → TDD → verification → review), so skills compose cleanly instead of going off on their own.
+Skills range from lightweight methodology guides (~80 lines) to comprehensive multi-agent orchestrators (~1500 lines) that coordinate parallel agent teams with model routing, worktree isolation, and wave-based execution.
 
 ---
 
@@ -48,11 +48,10 @@ When you invoke a skill, Claude loads the methodology, applies structured thinki
 | `/decision-matrix` | Weighted criteria evaluation for complex choices |
 | `/migration-plan` | Safe database/API/infrastructure migration with rollback |
 
-### Implementation & Verification (9 skills)
+### Implementation & Verification (8 skills)
 | Skill | What it does |
 |-------|-------------|
 | `/spec-to-impl` | **Multi-agent orchestrator**: spec → tasks → parallel implementation with 14 agent types, worktree isolation, wave-based dispatch. Stack defaults: Java 25 + Spring Boot 4 + Spring Modulith + Spring Data JDBC / React 19 + Next.js 15. |
-| `/figma-to-code` | Convert Figma designs to production React/TypeScript via Figma MCP |
 | `/verify-impl` | **Parallel verification**: API + DB + UI + Mobile layers run concurrently with evidence collection |
 | `/mobile-dev` | Mobile development patterns — Flutter, React Native, Android (Kotlin) |
 | `/temporal-workflow` | Java Temporal SDK 1.26+ workflow scaffold — SAGA compensation, config-driven state machines, retry profiles, Spring Boot wiring, TestWorkflowEnvironment harness |
@@ -61,12 +60,11 @@ When you invoke a skill, Claude loads the methodology, applies structured thinki
 | `/db-migration` | PostgreSQL migrations for Liquibase (Kifiya) / Flyway 10 (new projects) — audit columns, RLS, destructive-op safety, rollback-tested, CONCURRENTLY indexes |
 | `/finalize` | Post-implementation — parallel lint/test → clean up → commit → PR |
 
-### Quality & Review (13 skills)
+### Quality & Review (12 skills)
 | Skill | What it does |
 |-------|-------------|
-| `/pr-review` | Structured code review — correctness, security, performance, testing |
 | `/evidence-review` | **Default-to-rejection QA gate** — requires proof, not claims |
-| `/spec-panel` | **Multi-expert orchestrator**: IEEE 830 audit + spec smells + cross-cutting concerns + parallel expert panel. Pre-implementation gate — routes to `/spec-update` then `/spec-to-impl` |
+| `/spec-panel` | **Multi-expert orchestrator**: IEEE 830 audit + spec smells + cross-cutting concerns + parallel expert panel. Pre-implementation gate — routes to spec revision, then `/spec-to-impl` |
 | `/code-audit` | **Multi-agent orchestrator**: 10-dimension parallel analysis with model-routed experts and quality scoring |
 | `/arch-review` | Clean architecture review — dependency direction, transaction boundaries, no-business-logic-in-controllers, circuit breaker presence, value-object discipline. Produces findings + optional fix-plan mode |
 | `/test-plan` | Risk-based test strategy with coverage matrix |
@@ -95,52 +93,11 @@ When you invoke a skill, Claude loads the methodology, applies structured thinki
 | `/onboarding-doc` | New team member guide — setup, architecture, tribal knowledge |
 | `/linkedin-post` | LinkedIn post draft — hook, body, CTA optimized for engagement |
 
-### Project Setup (1 skill)
-| Skill | What it does |
-|-------|-------------|
-| `/claude-md` | Generate a CLAUDE.md project config for Claude Code |
-
 ### Auto-guidance (2 skills)
 | Skill | What it does |
 |-------|-------------|
 | `repo-conventions` | Repo-specific conventions applied automatically (not a slash command) |
 | `handoff` | Inter-skill artifact protocol for chaining (not a slash command) |
-
-### Meta / Custom Skill Maintenance (1 skill)
-| Skill | What it does |
-|-------|-------------|
-| `/superpowers-integrator` | **Meta-skill**: audits and upgrades custom skills to integrate with the [superpowers](https://github.com/anthropics/claude-plugins-official) development workflow. Classifies a skill (code-generator / reviewer / refactor / debugger / planner / money-critical / sql), runs a per-class checklist, and inserts the correct "Before You Start" workflow block. Re-runnable — when superpowers evolves, update `references/skill-class-taxonomy.md` + `templates/blocks.md` and re-run against all skills for a single-command pack re-sync. |
-
----
-
-## Superpowers Integration
-
-Every code-generation skill in this pack is wired into the [superpowers](https://github.com/anthropics/claude-plugins-official) plugin's development workflow. Skills don't run in isolation — they chain through a rigid phase sequence:
-
-```
-brainstorming  →  writing-plans  →  using-git-worktrees  →  test-driven-development
-                                                                   │
-                                                                   ▼
-                                                         (invoke domain skill)
-                                                                   │
-                                                                   ▼
-                                                         subagent-driven-development
-                                                         OR dispatching-parallel-agents
-                                                                   │
-                                                                   ▼
-                                                         verification-before-completion
-                                                                   │
-                                                                   ▼
-                                                         requesting-code-review
-```
-
-Different skill classes use different variants of this workflow (money-critical skills make every step mandatory; SQL skills replace TDD with "write verification SQL first"; reviewers skip pre-flight entirely). The full taxonomy lives in `skills/superpowers-integrator/references/skill-class-taxonomy.md` — one source of truth, re-runnable integration audit.
-
-**When superpowers adds a new skill or you learn a better pattern**:
-1. Edit `skills/superpowers-integrator/references/skill-class-taxonomy.md` and/or `templates/blocks.md`
-2. Run `/superpowers-integrator skills/*/ --audit-only` to find drift
-3. Run `/superpowers-integrator skills/*/` to apply upgrades
-4. Re-install to `~/.claude/skills/` — the whole pack is re-synced in one pass.
 
 ---
 
@@ -186,11 +143,11 @@ Skills produce structured output that downstream skills consume automatically:
 ```
 /prd            →  prd                    →  /design-doc, /spec-to-impl, /ui-design
 /design-doc     →  design-doc             →  /spec-to-impl, /test-plan, /security-review
-/ui-design      →  ui-design + testids   →  /spec-to-impl (FE), /verify-impl, /figma-to-code
+/ui-design      →  ui-design + testids   →  /spec-to-impl (FE), /verify-impl
 /data-design    →  data-design           →  /spec-to-impl (DBA), /migration-plan
 /spec-to-impl   →  code + test-plan      →  /verify-impl, /finalize, /code-audit
 /verify-impl    →  verification          →  /finalize, /evidence-review
-/finalize       →  commit + PR           →  /pr-review, /release-notes
+/finalize       →  commit + PR           →  /release-notes
 ```
 
 Each skill writes a handoff artifact to `claudedocs/handoff-<skill>-<timestamp>.yaml` containing: produced artifacts, quality assessment, and context for the next skill.
@@ -340,7 +297,7 @@ Each step discovers the previous step's output automatically (via `claudedocs/ha
 
 ### Comprehensive skills (multi-agent orchestrators)
 
-Six skills orchestrate parallel agent teams:
+Five skills orchestrate parallel agent teams:
 
 | Skill | Agents | Execution Pattern |
 |-------|--------|-------------------|
@@ -349,7 +306,6 @@ Six skills orchestrate parallel agent teams:
 | `/code-audit` | 10 types (LEAD, ARCH, SMELL, DUP, ALGO, SEC, PERF, PATTERN, TECH, SKEPTIC) | Parallel 10-dimension analysis |
 | `/spec-panel` | Variable (fixed + domain-activated experts + devil's advocate) | Parallel expert panel |
 | `/verify-impl` | 4 types (API, DB, UI, Mobile) | Parallel verification layers |
-| `/figma-to-code` | Phase-based (Design Manifest → Code Generation) | Multi-phase with MCP |
 
 ### Evidence-based quality gate
 
@@ -882,10 +838,10 @@ Discover         Plan              Build              Quality            Complet
 ─────────        ──────            ─────              ───────            ────────         ───────
 /opportunity  →  /prd          →  /ui-design       →  /evidence-     →  /finalize     →  /monitoring
 -assessment      /design-doc      /flow-map            review            (commit+PR)      -plan
-/competitive  →  /adr             /spec-to-impl      /pr-review     →  /release-     →  /runbook
--analysis        /flow-map        /figma-to-code     /test-plan        notes         →  /incident-
-                 /ui-design       /mobile-dev        /security-     →  /go-to-          response
-                 /api-design      /verify-impl       review            market        →  /postmortem
+/competitive  →  /adr             /spec-to-impl      /code-audit    →  /release-     →  /runbook
+-analysis        /flow-map        /mobile-dev        /test-plan        notes         →  /incident-
+                 /ui-design       /verify-impl       /security-     →  /go-to-          response
+                 /api-design                         review            market        →  /postmortem
                  /data-design                        /performance-
                  /search-design                      review
                  /infra-design                       /ux-review

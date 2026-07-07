@@ -15,19 +15,19 @@ Generates double-entry ledger operations with compensation, idempotency, multi-c
 
 ---
 
-## Before You Start — Superpowers Workflow
+## Ledger Safety Gates
 
-This skill generates money-moving code. **Every step of the superpowers workflow is mandatory — no exceptions.**
+This skill generates money-moving code. Every gate below is mandatory.
 
-1. **superpowers:brainstorming** — mandatory. Explore: what accounts move, what currency, what FX rate snapshot strategy, what compensation strategy, what invariants (balance sum == posting sum), what idempotency key shape, what happens on partial failure. This is the single highest-ROI step — skipping it leads to unrecoverable balance corruption.
-2. **superpowers:writing-plans** — produce a reviewable plan listing every posting, every account lock order, every reversal path, every reconciliation query. No inline code yet.
-3. **superpowers:using-git-worktrees** — isolate the ledger work in its own branch. Never commingle ledger changes with unrelated refactors.
-4. **superpowers:test-driven-development** — mandatory. Write Testcontainers integration tests FIRST that assert: balanced postings, idempotency (duplicate key returns same result), sorted locking (no deadlocks), reconciliation invariant (`SUM(postings) == materialized_balance`), insufficient-funds rejection, reversal correctness. Then implement. **Do not write ledger code without red tests first.**
-5. Invoke **this skill** in the TDD green phase to produce the service, repository, Liquibase migration (pgledger mode), and domain events. May dispatch via **superpowers:subagent-driven-development** if generating multiple independent operations.
-6. **superpowers:verification-before-completion** — mandatory. Run the integration test suite with real Postgres via Testcontainers. Paste actual output showing all assertions pass. Run a reconciliation query on the test DB and paste the zero-delta result. Claims without command output are rejected.
-7. **superpowers:requesting-code-review** — mandatory for money code. Flag which invariants the reviewer must verify. Link to Blnk API docs (Onbilia mode) or pgledger correctness proof (PayserFlow mode).
+1. Clarify what accounts move, what currency is used, what FX snapshot strategy applies, what compensation strategy is required, what invariants must hold, what idempotency key shape is used, and what happens on partial failure.
+2. Produce a reviewable plan listing every posting, every account lock order, every reversal path, and every reconciliation query. No inline code yet.
+3. Isolate ledger work in its own branch or worktree. Never commingle ledger changes with unrelated refactors.
+4. Write Testcontainers integration tests first that assert balanced postings, idempotency, sorted locking, reconciliation invariant (`SUM(postings) == materialized_balance`), insufficient-funds rejection, and reversal correctness. Then implement.
+5. Use this skill to produce the service, repository, Liquibase migration (pgledger mode), and domain events once the behavior is pinned by tests.
+6. Verify before claiming done: run the integration test suite with real Postgres via Testcontainers and run a reconciliation query on the test DB with a zero-delta result.
+7. Before merging, flag which invariants the reviewer must verify. Link to Blnk API docs (Onbilia mode) or pgledger correctness proof (PayserFlow mode).
 
-**Special rule**: if the user asks to modify an existing ledger service without going through brainstorming → plans → TDD → verify, refuse politely and point them at this workflow. Ledger bugs do not self-correct; they compound into balance mismatches that require manual audit to fix.
+**Special rule**: if the user asks to modify an existing ledger service without planning, tests, and verification, refuse politely and route them through these gates. Ledger bugs do not self-correct; they compound into balance mismatches that require manual audit to fix.
 
 ---
 

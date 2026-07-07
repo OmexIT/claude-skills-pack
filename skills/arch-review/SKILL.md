@@ -15,25 +15,23 @@ Reviews a Java module against clean architecture, hexagonal, and DDD invariants.
 
 ---
 
-## Before You Start — Superpowers Workflow
+## Review Workflow
 
-This skill is read-only — it produces a findings report, never inline fixes. It sits at a specific point in the superpowers workflow.
-
-**Before invoking this skill**: nothing. Reviewers analyze existing work and don't need brainstorming or planning upfront.
+This skill is read-only. It produces a findings report, never inline fixes.
 
 **Invoke this skill** (`arch-review`) to audit a Java module against clean architecture invariants. Produces findings with severity ratings (CRITICAL/HIGH/MEDIUM/LOW) and affected file paths.
 
-**After findings are produced** — for each CRITICAL or HIGH finding, route through the fix workflow:
+**After findings are produced** — for each CRITICAL or HIGH finding:
 
-1. **superpowers:systematic-debugging** — MANDATORY per finding. Understand WHY the violation exists (shortcut? legacy? missing abstraction?) before proposing a fix. Do not skip to fixes from findings alone.
-2. **superpowers:writing-plans** — turn the findings into a reviewable remediation plan with ordered tickets and dependencies. Use fix-plan mode (see Section 4) to auto-generate ticket skeletons.
-3. Chain to a code-generator skill for actual code changes:
+1. Understand why the violation exists: shortcut, legacy constraint, missing abstraction, unclear boundary, or missing test pressure. Do not skip directly from finding to code change.
+2. Turn the findings into a reviewable remediation plan with ordered tickets and dependencies. Use fix-plan mode (see Section 4) to auto-generate ticket skeletons.
+3. Chain to an implementation skill for actual code changes:
    - `api-first` for controller/service/DTO restructuring
    - `temporal-workflow` for saga/orchestration extraction
    - `fintech-ledger` for money-code restructuring
    - (domain-appropriate skill per finding)
-4. **superpowers:requesting-code-review** — after fixes, before merging.
-5. **superpowers:finishing-a-development-branch** — if the remediation spans multiple branches, decide merge strategy (single PR vs. stacked PRs).
+4. Request a focused code review after fixes are in place, before merging.
+5. If remediation spans multiple branches, decide merge strategy (single PR vs. stacked PRs) before implementation starts.
 
 **Hard rule**: this skill NEVER produces inline fixes in the same invocation. It produces findings. Fixes happen in a separate pass through the code-generator workflow. If the user asks "just fix it", refuse and route them through the plan → fix → review chain.
 

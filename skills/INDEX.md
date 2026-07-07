@@ -33,7 +33,7 @@
 
 ## Quality & Review
 - **/evidence-review** — Default-to-rejection quality gate requiring proof, not claims
-- **/spec-panel** — Multi-expert spec analysis: IEEE 830 audit, spec smells scanner, cross-cutting concerns checklist, expert panel with devil's advocate, quality scoring. Pre-implementation gate — routes to `/spec-update` then `/spec-to-impl`
+- **/spec-panel** — Multi-expert spec analysis: IEEE 830 audit, spec smells scanner, cross-cutting concerns checklist, expert panel with devil's advocate, quality scoring. Pre-implementation gate — routes to spec revision, then `/spec-to-impl`
 - **/code-audit** — Multi-agent code review: 10-dimension analysis (smells, SOLID, duplication, algorithms, security, performance, patterns, architecture, tech fitness, devil's advocate) with quality scoring
 - **/arch-review** — Clean architecture invariants: dependency direction, transaction boundaries, circuit breakers, value objects, module boundaries. Report-only or fix-plan mode
 - **/test-plan** — Risk-based test plan (templates/test-plan.md)
@@ -61,11 +61,6 @@
 ## Auto-guidance
 - **repo-conventions** — Repo-specific conventions (**auto guidance; not a slash command**)
 - **handoff** — Inter-skill artifact protocol for chaining (**auto guidance; not a slash command**)
-
-## Meta / Custom Skill Maintenance
-- **/superpowers-integrator** — Audits and upgrades custom skills to integrate with the superpowers plugin workflow. Classifies by skill class, runs integration checklist, inserts the correct "Before You Start" block. Re-runnable — single source of truth for keeping the whole pack in sync with superpowers as it evolves
-
----
 
 ## Claude Code Features Leveraged
 
@@ -137,7 +132,7 @@ SKILL              PRODUCES (type)           CONSUMED BY
 /finalize       →  commit + PR           →  /release-notes
 
 ── Quality ──
-/spec-panel     →  panel-analysis        →  /spec-update (apply recommendations),
+/spec-panel     →  panel-analysis        →  spec revision (apply recommendations),
                                             /spec-to-impl (ONLY after CRITICAL resolved),
                                             /ticket-breakdown, /test-plan
 /code-audit     →  code-audit            →  /finalize, /tech-debt-assessment, /test-plan
@@ -156,8 +151,6 @@ SKILL              PRODUCES (type)           CONSUMED BY
 ── Operations ──
 /monitoring     →  monitoring-plan       →  /runbook, /incident-response
 
-── Meta ──
-/superpowers-integrator →  audit-report + skill-upgrade →  (re-run against pack after changes)
 ```
 
 ## Workflow chain

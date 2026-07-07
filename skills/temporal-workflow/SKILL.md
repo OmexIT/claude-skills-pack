@@ -15,19 +15,19 @@ Generates production-ready Temporal workflows with SAGA compensation, config-dri
 
 ---
 
-## Before You Start — Superpowers Workflow
+## Operating Guardrails
 
-This skill generates production code for durable, money-adjacent orchestrations. It MUST run through the superpowers development workflow — do not invoke it in isolation.
+This skill generates production code for durable, money-adjacent orchestrations. Do not invoke it as a blind scaffold.
 
-1. **superpowers:brainstorming** — mandatory. Explore intent, failure modes, compensation chain, idempotency keys, and state machine shape before any code. Workflow mistakes are expensive to fix after deploy.
-2. **superpowers:writing-plans** — produce a multi-step plan naming each activity, each compensation, each signal/query, and the retry profile per activity. Review the plan before touching code.
-3. **superpowers:using-git-worktrees** — create an isolated worktree so the workflow generation does not collide with other parallel work.
-4. **superpowers:test-driven-development** — write the `TestWorkflowEnvironment` test FIRST (asserting compensation order on failure), then implement. Rigid skill — don't skip.
-5. Invoke **this skill** inside the TDD green phase to scaffold the `@WorkflowInterface`, `@WorkflowImpl`, activities, and Spring wiring. Use **superpowers:dispatching-parallel-agents** if workflow + activities + Spring config can be written by independent agents.
-6. **superpowers:verification-before-completion** — run `./gradlew test` (or `./mvnw test`) and paste the output showing compensation order. Do not claim done without proof.
-7. **superpowers:requesting-code-review** — before merging. Temporal workflows are hard to review blindly — be explicit about what reviewer must check.
+1. Clarify intent, failure modes, compensation chain, idempotency keys, and state machine shape before any code. Workflow mistakes are expensive to fix after deploy.
+2. Produce a multi-step plan naming each activity, each compensation, each signal/query, and the retry profile per activity. Review the plan before touching code.
+3. Prefer an isolated branch or worktree so workflow generation does not collide with other parallel work.
+4. Write the `TestWorkflowEnvironment` test first, including compensation order on failure, then implement.
+5. Use this skill to scaffold the `@WorkflowInterface`, `@WorkflowImpl`, activities, and Spring wiring once the behavior is pinned by tests.
+6. Verify before claiming done: run `./gradlew test` or `./mvnw test` and capture output showing compensation order.
+7. Before merging, be explicit about what reviewers must check. Temporal workflows are hard to review blindly.
 
-**Non-negotiable**: brainstorming and TDD are mandatory here. Workflow determinism bugs, missing compensation, and non-idempotent activities are the top three failure modes — all caught by proper brainstorming + TDD.
+**Non-negotiable**: planning and TDD are mandatory here. Workflow determinism bugs, missing compensation, and non-idempotent activities are the top three failure modes.
 
 ---
 

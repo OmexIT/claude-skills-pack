@@ -2,7 +2,7 @@
 name: code-audit
 description: >
   Use this skill whenever existing implementation code needs a rigorous multi-dimensional review — covering code smells, SOLID violations, duplication, algorithm efficiency, security, performance, design pattern fitness, architecture conformance, technology fitness, and a devil's advocate challenge. ALWAYS trigger on: "code audit", "code review", "review this code", "code quality", "code smells", "design patterns review", "architecture review", "is this code good", "review the implementation", "audit this module", "quality check", "assess this codebase". Implicit triggers: user asks whether code is "production-ready", user wants a second opinion on a module, user suspects tech debt but wants specifics, user is onboarding and wants a map of problem areas, user needs evidence for a refactoring ticket.
-  Orchestrates a multi-agent expert panel with model routing (opus for LEAD/ARCH/SEC/SKEPTIC, sonnet for SMELL/DUP/ALGO/PERF/PATTERN/TECH). Reviews **code that exists** — for reviewing **specs before implementation**, use `/spec-panel` instead. Produces a findings report with severity ratings, a quality scorecard, and an ordered improvement roadmap. Does NOT modify code inline — findings route through the fix workflow (systematic-debugging → writing-plans → code-generator skill → requesting-code-review).
+  Orchestrates a multi-agent expert panel with model routing (opus for LEAD/ARCH/SEC/SKEPTIC, sonnet for SMELL/DUP/ALGO/PERF/PATTERN/TECH). Reviews **code that exists** — for reviewing **specs before implementation**, use `/spec-panel` instead. Produces a findings report with severity ratings, a quality scorecard, and an ordered improvement roadmap. Does NOT modify code inline — findings route through root-cause analysis, remediation planning, implementation, and review.
 argument-hint: "[file, module, directory, or feature path]"
 context: fork
 agent: general-purpose
@@ -17,27 +17,25 @@ This skill reviews **code that exists** (implementation). For reviewing **specs 
 
 ---
 
-## Before You Start — Superpowers Workflow
+## Review Workflow
 
-This skill is read-only — it produces a findings report, never inline fixes. It sits at a specific point in the superpowers workflow.
-
-**Before invoking this skill**: nothing. Reviewers analyze existing work and don't need brainstorming or planning upfront.
+This skill is read-only. It produces a findings report, never inline fixes.
 
 **Invoke this skill** (`code-audit`) to audit existing code across 10 dimensions. Produces findings with severity ratings (CRITICAL/HIGH/MEDIUM/LOW/POSITIVE), quality scorecard, and improvement roadmap.
 
-**After findings are produced** — for each CRITICAL or HIGH finding, route through the fix workflow:
+**After findings are produced** — for each CRITICAL or HIGH finding:
 
-1. **superpowers:systematic-debugging** — MANDATORY per finding. Understand the root cause before proposing a fix. Do not skip to fixes.
-2. **superpowers:writing-plans** — turn findings into a reviewable remediation plan with ordered tickets and dependencies.
-3. Chain to a code-generator skill for actual code changes:
+1. Understand the root cause before proposing a fix. Do not skip directly from finding to code change.
+2. Turn findings into a reviewable remediation plan with ordered tickets and dependencies.
+3. Chain to an implementation skill for actual code changes:
    - `api-first` for controller/service/DTO restructuring
    - `temporal-workflow` for saga/orchestration extraction
    - `fintech-ledger` for money-code restructuring
    - `arch-review` (paired with this skill for deeper architecture analysis)
-4. **superpowers:requesting-code-review** — after fixes are in place, before merging.
-5. **superpowers:finishing-a-development-branch** — if remediation spans multiple branches, decide merge strategy.
+4. Request a focused code review after fixes are in place, before merging.
+5. If remediation spans multiple branches, decide merge strategy before implementation starts.
 
-**Hard rule**: this skill NEVER produces inline fixes. It produces findings. Fixes happen in a separate pass through the code-generator workflow.
+**Hard rule**: this skill NEVER produces inline fixes. It produces findings. Fixes happen in a separate pass through the implementation workflow.
 
 ---
 
@@ -204,7 +202,7 @@ Frequently confused with `/spec-panel` and `/arch-review`. Distinctions:
 - If the user says "is this production-ready" → `/code-audit` full run
 
 **What this skill will refuse**:
-- Generating fixes inline — findings only; fixes go through systematic-debugging → writing-plans → code-generator
+- Generating fixes inline — findings only; fixes go through root-cause analysis, remediation planning, and an implementation skill
 - Auditing without running Phase 1 tools — speculation is a quality failure mode
 - Auditing a spec document — bounce to `/spec-panel` with a note
 
@@ -372,7 +370,7 @@ claudedocs/<target-name>-code-audit.md
 
 Use the final report header template from `references/roadmap-templates.md` at the top of the file.
 
-Tell the user: "Audit saved to claudedocs/<name>-code-audit.md. Next steps: run superpowers:systematic-debugging on CRITICAL findings, then superpowers:writing-plans to turn findings into tickets, then route to a code-generator skill for fixes, then /finalize to commit."
+Tell the user: "Audit saved to claudedocs/<name>-code-audit.md. Next steps: analyze root cause for CRITICAL findings, turn findings into tickets, route to an implementation skill for fixes, then /finalize to commit."
 
 ---
 
@@ -415,15 +413,14 @@ Tell the user: "Audit saved to claudedocs/<name>-code-audit.md. Next steps: run 
 - Any implementation work that needs quality verification
 
 **Downstream skills that consume this output:**
-- `superpowers:systematic-debugging` — per CRITICAL finding
-- `superpowers:writing-plans` — remediation plan
-- `api-first` / `temporal-workflow` / `fintech-ledger` — for code-generator fixes
+- `debug-triage` — root-cause analysis for CRITICAL/HIGH findings
+- `ticket-breakdown` — remediation plan and implementation tickets
+- `api-first` / `temporal-workflow` / `fintech-ledger` — for implementation fixes
 - `arch-review` — deeper architecture-specific analysis
 - `/test-plan` — Test planning informed by coverage gaps found
 - `/tech-debt-assessment` — Tier 2/3 findings feed debt inventory
 - `/performance-review` — Deep-dive on performance findings
 - `/security-review` — Deep-dive on security findings
-- `superpowers:requesting-code-review` — after fixes, before merging
 - `/finalize` — Commit after fixing Tier 1 findings
 
 ---
@@ -476,5 +473,5 @@ produces:
       - refactoring-plans
       - recommended-reading
       - action-tracker
-  handoff: "Run superpowers:systematic-debugging per CRITICAL finding. Write claudedocs/handoff-code-audit-<timestamp>.yaml — suggest: superpowers:writing-plans, api-first/temporal-workflow/fintech-ledger (for fixes), arch-review (deeper structure), superpowers:requesting-code-review, /finalize"
+  handoff: "Write claudedocs/handoff-code-audit-<timestamp>.yaml — suggest: debug-triage (root cause), ticket-breakdown (remediation plan), api-first/temporal-workflow/fintech-ledger (for fixes), arch-review (deeper structure), code review, /finalize"
 ```

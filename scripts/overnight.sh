@@ -31,6 +31,32 @@ SINGLE_TASK=""
 # Tools to allow without prompting
 ALLOWED_TOOLS="Read,Write,Edit,Bash,Glob,Grep,Agent,WebSearch,WebFetch"
 
+run_with_timeout() {
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "$TIMEOUT" "$@"
+  elif command -v gtimeout >/dev/null 2>&1; then
+    gtimeout "$TIMEOUT" "$@"
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 - "$TIMEOUT" "$@" <<'PY'
+import subprocess
+import sys
+
+timeout_s = float(sys.argv[1])
+cmd = sys.argv[2:]
+
+try:
+    completed = subprocess.run(cmd, timeout=timeout_s)
+except subprocess.TimeoutExpired:
+    raise SystemExit(124)
+
+raise SystemExit(completed.returncode)
+PY
+  else
+    echo "No timeout command found. Install GNU coreutils or python3." >&2
+    return 127
+  fi
+}
+
 # ── Parse Arguments ────────────────────────────────────────────────────────────
 
 while [[ $# -gt 0 ]]; do
@@ -119,6 +145,7 @@ for i in "${!TASKS[@]}"; do
   CMD=(claude -p "$TASK"
     --allowedTools "$ALLOWED_TOOLS"
     --max-turns "$MAX_TURNS"
+    --max-budget-usd "$MAX_BUDGET"
     --output-format json
   )
 
@@ -128,7 +155,7 @@ for i in "${!TASKS[@]}"; do
   # Execute with timeout
   START_TIME=$(date +%s)
 
-  if timeout "$TIMEOUT" "${CMD[@]}" > "$TASK_LOG" 2>&1; then
+  if run_with_timeout "${CMD[@]}" > "$TASK_LOG" 2>&1; then
     DURATION=$(( $(date +%s) - START_TIME ))
     log "  ✅ PASSED (${DURATION}s)"
     PASSED=$((PASSED + 1))

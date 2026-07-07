@@ -474,7 +474,7 @@ TASK-002 (BE: Auth Service)
 
 **Seed the test plan into `e2e/test-plan.yaml` at the start of Wave 1** so it exists on disk before any implementation agent starts. Implementation agents can read it to understand what "done" looks like for their task.
 
-See `references/test-plan-schema.md` (in verify-impl skill) for the full YAML schema.
+See `references/test-plan-schema.md` for the full YAML schema.
 
 ### 3.4 Dependency Graph
 
@@ -711,7 +711,7 @@ Low-priority agents (TECH_WRITER, OBS) can run in background while critical-path
 ### 4.1 Agent Dispatch Protocol
 
 For each agent, construct a prompt using `templates/dispatch-prompt.md` that includes:
-1. Their **agent persona** (from `agents/<role>.md`)
+1. Their **agent persona** from the matching file in `agents/` (`agents/arch.md`, `agents/design.md`, or `agents/be-fe-qa-dba-devops.md`)
 2. The **relevant spec sections** (not the full doc unless needed)
 3. Their **specific task(s)** with inputs and expected outputs
 4. **Tech stack context** (language, framework, conventions)

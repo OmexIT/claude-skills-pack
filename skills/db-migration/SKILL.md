@@ -15,16 +15,16 @@ Generates safe, reversible PostgreSQL migrations for Liquibase or Flyway with na
 
 ---
 
-## Before You Start — Superpowers Workflow
+## Migration Safety Gates
 
-This skill generates SQL migrations. Migrations have no classical TDD but they have strict verification requirements.
+This skill generates SQL migrations. Migrations have no classical TDD, but they have strict verification requirements.
 
-1. **superpowers:brainstorming** — recommended for destructive operations (DROP, rename, column type change). Explore blast radius, rollback plan, estimated downtime, lock behavior under load, backfill strategy.
-2. **superpowers:writing-plans** — mandatory for multi-phase migrations (add column → backfill → switch reads → drop old). Each phase is a separate changeset.
-3. **Write verification SQL first** — assertions about the expected post-migration state (rows exist, constraints applied, index present, RLS enabled). This REPLACES `superpowers:test-driven-development` for the SQL class.
-4. Invoke **this skill** (`db-migration`) to generate the migration changeset. Sequential execution only — migrations have strict ordering; never parallel.
-5. **superpowers:verification-before-completion** — MANDATORY. Run the migration against a test database (Testcontainers or dedicated test DB). Paste output. Then run rollback. Then re-run the migration. Paste all output.
-6. **superpowers:requesting-code-review** — MANDATORY for schema changes. Reviewer focuses on: rollback safety, lock behavior, index strategy (`CONCURRENTLY` on populated tables), audit column discipline.
+1. For destructive operations (`DROP`, rename, column type change), clarify blast radius, rollback plan, estimated downtime, lock behavior under load, and backfill strategy before writing SQL.
+2. For multi-phase migrations (add column -> backfill -> switch reads -> drop old), produce a plan first. Each phase is a separate changeset.
+3. Write verification SQL first: assertions about the expected post-migration state (rows exist, constraints applied, index present, RLS enabled).
+4. Use this skill to generate the migration changeset. Sequential execution only; migrations have strict ordering and should not be parallelized.
+5. Verify before claiming done: run the migration against a test database (Testcontainers or dedicated test DB), run rollback, then re-run the migration.
+6. Before merge, review rollback safety, lock behavior, index strategy (`CONCURRENTLY` on populated tables), and audit column discipline.
 
 **Destructive operation gate**: this skill must never generate `DROP TABLE`, `DROP COLUMN`, column renames, or type changes without explicit user confirmation shown as a prompt. If the user tries to bypass the prompt, the skill refuses.
 

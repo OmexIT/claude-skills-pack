@@ -2,7 +2,7 @@
 name: spec-panel
 description: >
   Use this skill whenever a specification, PRD, BRD, design doc, or RFC needs rigorous multi-expert review BEFORE implementation begins. ALWAYS trigger on: "spec panel", "expert review", "panel analysis", "spec analysis", "expert panel review", "review this spec", "audit the PRD", "spec quality check", "is this spec complete", "IEEE 830 audit", "spec smells", "devil's advocate on this spec", "review before we build". Implicit triggers: user pastes a PRD/BRD/spec and asks "what do you think", "any gaps", "is this ready to build", "should we implement this", "am I missing anything"; user wants a second opinion before committing engineering effort; user is deciding whether to proceed to spec-to-impl; user mentions specific concerns about requirements quality, ambiguity, or feasibility; user shows a spec with TBDs, "handle this somehow", or other vague language.
-  Produces a structured findings report with IEEE 830 quality scoring (8 attributes), a spec-smells scan for red-flag language, a cross-cutting concerns checklist (security, performance, observability, compliance), and a multi-expert panel critique with a devil's advocate. Combines codebase investigation, internet research, and domain expertise. This is the gate BEFORE `spec-to-impl` — run this when the spec is drafted but not yet being implemented. Does NOT write code. Does NOT modify the spec in place — produces a separate analysis report that feeds `spec-update` (for spec rewrites) or `spec-to-impl` (for implementation).
+  Produces a structured findings report with IEEE 830 quality scoring (8 attributes), a spec-smells scan for red-flag language, a cross-cutting concerns checklist (security, performance, observability, compliance), and a multi-expert panel critique with a devil's advocate. Combines codebase investigation, internet research, and domain expertise. This is the gate BEFORE `spec-to-impl` — run this when the spec is drafted but not yet being implemented. Does NOT write code. Does NOT modify the spec in place — produces a separate analysis report that feeds a spec revision pass or `spec-to-impl` (for implementation).
 argument-hint: "[spec document or @file]"
 context: fork
 agent: general-purpose
@@ -11,25 +11,23 @@ effort: high
 
 # Spec Panel Analysis
 
-## Before You Start — Superpowers Workflow
+## Review Workflow
 
-This skill is read-only — it reviews an existing spec/PRD and produces a findings report, never inline fixes or implementation code. It sits at a specific point in the superpowers workflow, immediately before implementation begins.
+This skill is read-only. It reviews an existing spec/PRD and produces a findings report, never inline fixes or implementation code.
 
-**Before invoking this skill**: nothing. Reviewers analyze existing work and don't need brainstorming or planning upfront.
-
-**Invoke this skill** (`spec-panel`) to audit a specification document through an expert panel lens — IEEE 830 attributes, spec smells, cross-cutting concerns, and domain-expert critique with a devil's advocate. Produces findings with severity ratings and specific line references.
+**Invoke this skill** (`spec-panel`) to audit a specification document through an expert panel lens: IEEE 830 attributes, spec smells, cross-cutting concerns, and domain-expert critique with a devil's advocate. Produces findings with severity ratings and specific line references.
 
 **After findings are produced**:
 
-1. **superpowers:systematic-debugging** — MANDATORY per CRITICAL/HIGH finding. Understand WHY the gap exists (missing context? unclear stakeholder? legacy assumption?) before proposing a fix. Do not skip to recommendations from findings alone.
-2. **superpowers:writing-plans** — turn the findings into an ordered remediation plan: which spec sections to rewrite first, which ambiguities to resolve with stakeholders, which gaps to defer.
-3. **Chain to `/spec-update`** to apply the agreed changes to the spec document (preserves spec-panel output contract).
-4. **Chain to `/spec-to-impl`** only AFTER the spec has been updated and all CRITICAL findings are resolved. Do NOT proceed to implementation with unresolved CRITICAL findings.
-5. **superpowers:verification-before-completion** — quality gate. Re-run spec-panel after spec-update to confirm findings are closed.
+1. For each CRITICAL/HIGH finding, identify why the gap exists before proposing a fix: missing context, unclear stakeholder, legacy assumption, or conflicting source material.
+2. Turn the findings into an ordered remediation plan: which spec sections to rewrite first, which ambiguities to resolve with stakeholders, and which gaps to defer.
+3. Use the remediation plan to update the spec document in a separate pass (preserves spec-panel output contract).
+4. Chain to `/spec-to-impl` only after the spec has been updated and all CRITICAL findings are resolved. Do not proceed to implementation with unresolved CRITICAL findings.
+5. Re-run spec-panel after the spec revision to confirm findings are closed.
 
 **Hard rule**: this skill NEVER produces implementation code in the same invocation. It produces spec-review findings. Implementation happens in a separate pass through `/spec-to-impl` — and only after the spec has passed the quality gate.
 
-**Pre-implementation gate**: if the user tries to invoke `/spec-to-impl` on a spec that has unresolved CRITICAL findings from spec-panel, refuse politely and route them back to spec-update first. Specs with critical ambiguities produce ambiguous implementations.
+**Pre-implementation gate**: if the user tries to invoke `/spec-to-impl` on a spec that has unresolved CRITICAL findings from spec-panel, refuse politely and route them back to spec revision first. Specs with critical ambiguities produce ambiguous implementations.
 
 ---
 
@@ -384,7 +382,7 @@ Include a recommendation tracker at the top:
 
 Set all statuses to `PENDING`.
 
-Tell the user: "Analysis saved to claudedocs/<name>-panel-analysis.md. To action recommendations, run: /spec-update @claudedocs/<name>-panel-analysis.md"
+Tell the user: "Analysis saved to claudedocs/<name>-panel-analysis.md. Next step: update the source spec from the recommendation tracker, then re-run spec-panel before implementation."
 
 ## Anti-patterns
 - **Skipping Phase 0** — Jumping straight into analysis without understanding context
@@ -424,7 +422,6 @@ Tell the user: "Analysis saved to claudedocs/<name>-panel-analysis.md. To action
 - `/ui-design` — UI design artifacts to review
 
 **Downstream skills that consume this output:**
-- `/spec-update` — Action recommendations from panel analysis
 - `/spec-to-impl` — Implementation from analyzed spec
 - `/ticket-breakdown` — Break analyzed spec into tickets
 - `/test-plan` — Test planning informed by expert findings
@@ -463,7 +460,7 @@ produces:
       - recommended-priority
       - recommended-reading
       - recommendation-tracker
-  handoff: "Run superpowers:systematic-debugging per CRITICAL finding. Write claudedocs/handoff-spec-panel-<timestamp>.yaml — suggest: spec-update (apply recommendations), spec-to-impl (ONLY after CRITICAL findings are resolved), ticket-breakdown (turn analysis into tickets), superpowers:writing-plans (remediation plan)"
+  handoff: "Write claudedocs/handoff-spec-panel-<timestamp>.yaml — suggest: spec revision (apply recommendations), spec-to-impl (ONLY after CRITICAL findings are resolved), ticket-breakdown (turn analysis into tickets), remediation plan"
 ```
 
 ## Anti-patterns (never do these)
@@ -471,7 +468,7 @@ produces:
 - Producing implementation code inline — this skill reviews, never implements
 - Skipping clarification questions and guessing stakeholder intent
 - Rubber-stamping a spec — if everything scores 9/10, re-examine; specs almost always have hidden gaps
-- Chaining directly to `/spec-to-impl` when CRITICAL findings exist — route through `/spec-update` first
-- Writing a remediation plan without first running `superpowers:systematic-debugging` on each CRITICAL finding to understand root cause
+- Chaining directly to `/spec-to-impl` when CRITICAL findings exist — route through spec revision first
+- Writing a remediation plan without first understanding the root cause of each CRITICAL finding
 - Running this skill on an incomplete or clearly-draft spec — request the user finish the draft first, then review
 - Modifying the spec file in place — always produce a separate analysis document that the user can review before applying changes
