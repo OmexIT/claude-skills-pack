@@ -14,7 +14,7 @@ argument-hint: "[change to migrate]"
 - **Money**: `NUMERIC(20,2)` fiat / `NUMERIC(20,8)` crypto. **Time**: `TIMESTAMPTZ` only.
 - **Enums**: `TEXT` + `CHECK` constraint — never native Postgres enums.
 - **Multi-tenant tables**: full RLS — `ENABLE` + `FORCE ROW LEVEL SECURITY`, policy on `current_setting('app.tenant_id')`.
-- **Naming**: `<scope>-<NNN>-<description>.sql` (Liquibase — Kifiya) / timestamp versions (Flyway — newer services; avoids merge conflicts).
+- **Naming**: `<scope>-<NNN>-<description>.sql` (Liquibase, established services) / timestamp versions (Flyway, newer services; avoids merge conflicts). Match what the repo already uses.
 
 ## Zero-downtime rules
 - Two-phase renames (add → dual-write → switch → drop later).

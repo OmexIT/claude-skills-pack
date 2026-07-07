@@ -27,7 +27,7 @@ Answer in five lines; recommend kill or shrink when answers are weak:
 - Clarify only what's genuinely missing — one question at a time, multiple-choice where possible (persona, problem, success measure, constraints).
 - Find the repo's PRD home (`docs/prd/`, `docs/prd.md`, `PRODUCT.md`) and match its structure; otherwise use `references/prd-template.md`.
 - Every P0 requirement: Given/When/Then acceptance criteria + ≥2 edge cases. NFRs per feature, not global. Non-goals are mandatory.
-- State system-of-record and ownership boundaries explicitly ("IFSP is the system of record for loans; this service must not evolve into an LMS").
+- State system-of-record and ownership boundaries explicitly ("Service A is the system of record for loans; this service must not evolve into a loan-management system").
 - Include a negative-constraints section: what must NOT be built or changed.
 
 ## Update mode

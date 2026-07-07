@@ -11,12 +11,12 @@ argument-hint: "[target: commit | pr | merge | promote]"
 
 Encodes each repo's delivery policy so branch choreography is one word instead of twenty prompts.
 
-## Repo policy (read first)
-From the repo CLAUDE.md `## Ship policy` section — offer to add one if missing:
-- **Host + CLI**: `gh` (GitHub) vs `glab` (GitLab — kifiya). Never the wrong one.
-- **Branch flow**: feature → `develop-candidate` (kifiya) · feature → `develop`, promotion PR → `main` (onbilia, payser, gaming-hub) · ticket branch → MR only, NEVER merge — peer review is manual (logifuture).
-- **Attribution**: employer repos — no AI/Claude mention anywhere: commits, PR bodies, branch names, comments; no generated-with footers. Personal repos: per repo preference (default: none).
-- **Extras**: QA testing note on the ticket (logifuture: how to test the API, nothing more) · local pre-push hooks must pass · agent files (CLAUDE.md, .claude/) never committed where the repo bans them.
+## Repo policy (read first — never assume)
+Read the repo's `## Ship policy` block in CLAUDE.md, or its existing git-workflow section (CLAUDE.md / AGENTS.md); offer to add a `## Ship policy` block if none exists. It defines:
+- **Host + CLI**: `gh` (GitHub) vs `glab` (GitLab). Never the wrong one.
+- **Branch flow**: which integration branch (`develop`, `develop-candidate`, ...), whether merging is allowed or MRs are handed off for manual peer review, and how promotion to `main` happens (its own PR).
+- **Attribution**: default none — no AI/Claude mention in commits, PR bodies, branch names, or comments; no generated-with footers. Some repos ban it outright; respect stricter local rules.
+- **Extras**: ticket updates (e.g. a QA note: how to test, nothing more) · required local pre-push hooks · whether agent files (CLAUDE.md, `.claude/`) may be committed at all.
 
 ## Gate — before any commit
 1. Full verify for the stack (`mvn verify` / `./gradlew build` / `pnpm test`) — show the output tail.

@@ -17,6 +17,8 @@ Read the repo's verification config: CLAUDE.md, `TESTING-NOTES.md`, `docs/operat
 - **DB**: psql/mongosh state checks after writes — rows exist, balances reconcile. Ledger changes must run the zero-row invariant queries from the `ledger` references.
 - **UI**: Playwright against the running app — real login with configured credentials, the changed flows, screenshot evidence. Use `data-testid` selectors per `references/data-testid-conventions.md`.
 
+Resources: `references/test-plan-schema.md` (structured test-plan format for features that warrant one) · `scripts/playwright-setup.sh` (bootstrap Playwright in a repo that lacks it).
+
 ## Evidence rules (default-to-reject)
 - "Tests pass" without runner output = not verified. A design-tool screenshot ≠ evidence from the running app. Every claim needs the command plus its actual output.
 - Auto-FAIL: zero issues reported on a non-trivial change · requirements marked done without a verification command · UI change without a responsive/mobile check.

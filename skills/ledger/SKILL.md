@@ -18,9 +18,9 @@ argument-hint: "[operation or service]"
 6. `materialized_balance == SUM(postings)` — the reconciliation queries in the references must return zero rows.
 
 ## Mode detection
-Check the service's dependencies, then read the matching reference before writing code:
-- **Blnk (Onbilia)** → `references/blnk-api-contract.md` — hold = `inflight:true`, commit/void semantics, `available = balance − inflight`, timeout ⇒ `PENDING_RECONCILIATION` (reconcile before compensating).
-- **pgledger (PayserFlow)** → `references/pgledger-invariants.md` — schema law (append-only trigger, `balance_after`), sorted `FOR UPDATE` locking, zero-row verification queries.
+Detect which ledger backs the service from its dependencies/config, then read the matching reference before writing code:
+- **Blnk-backed service** → `references/blnk-api-contract.md` — hold = `inflight:true`, commit/void semantics, `available = balance − inflight`, timeout ⇒ `PENDING_RECONCILIATION` (reconcile before compensating).
+- **pgledger-backed service** → `references/pgledger-invariants.md` — schema law (append-only trigger, `balance_after`), sorted `FOR UPDATE` locking, zero-row verification queries.
 
 ## Required tests before a ledger change ships
 - Balance invariant holds under the new operation.

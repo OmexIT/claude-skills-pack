@@ -3,7 +3,8 @@
 import json, os, glob, re, collections
 
 ROOT = os.path.expanduser('~/.claude/projects')
-SCRATCH = os.path.dirname(os.path.abspath(__file__))
+SCRATCH = os.path.join(os.path.expanduser('~/.claude'), 'usage-audit')
+os.makedirs(SCRATCH, exist_ok=True)
 
 skill_use = collections.Counter()
 skill_by_proj = collections.defaultdict(collections.Counter)
@@ -132,3 +133,4 @@ for s, n in agent_use.most_common(30):
     print(f'{n:5d}  {s}')
 
 print(f'\nTotal captured prompts: transcripts={len(prompts)} history={len(hist_prompts)}')
+print(f'Corpus files written to {SCRATCH}')
