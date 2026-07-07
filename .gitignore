@@ -4,3 +4,4 @@
 .worktrees/
 claudedocs/
 logs/
+__pycache__/

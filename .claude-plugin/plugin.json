@@ -1,6 +1,9 @@
 {
   "name": "garage",
   "description": "Antony's engineering workflow + fintech domain skills",
-  "version": "1.0.2",
-  "author": { "name": "Antony Omeri", "email": "antonyomeri@gmail.com" }
+  "version": "1.0.3",
+  "author": {
+    "name": "Antony Omeri",
+    "email": "antonyomeri@gmail.com"
+  }
 }
