@@ -15,24 +15,29 @@ KISS, DRY, YAGNI, SOLID, composition over inheritance, separation of concerns. P
 when they solve a present problem. Nothing speculative: no abstractions, interfaces, wrappers,
 factories, hooks, providers, utility classes, configuration, extension points, or feature
 flags without a consumer today. Every new piece of code has a clear, immediate purpose.
+Success is a focused product solving the core problem with the simplest correct
+implementation — never feature, class, service, or pattern count. When a sophisticated
+solution and a simpler one both fully satisfy the requirements, the simpler one wins.
 
 ## Backend
 - Business logic in the domain/service layer; controllers thin (parse, call, map); repositories persist only; infrastructure stays out of the domain; constructor injection.
 - APIs: follow the house style (`spring-api` skill); reuse existing request/response models; no duplicate endpoints; validation and error handling consistent across the service.
 - Database: normalize appropriately; reuse existing tables and relationships; migrations minimal and clean (`migrations` skill governs the how); greenfield repos edit the existing changeset instead of stacking migration history; drop obsolete tables, columns, indexes, and constraints as part of the change.
 - Performance: no N+1 queries (check repository call sites when adding loops over aggregates); no premature optimization. Optimize only on profiling or real usage evidence.
+- Asynchronous processing (queues, events, scheduled jobs) only when a synchronous flow demonstrably cannot meet the need — async is complexity, not a default.
 
 ## Frontend
 - Components: small, focused, reusable; no pass-through wrappers that add no value; composition over deep nesting; eliminate duplicated UI.
-- State: local by default; global only when genuinely shared; derive instead of storing computed values; never duplicate state.
+- State: local by default; global only when genuinely shared; derive instead of storing computed values; never duplicate state; minimize prop drilling (compose or colocate instead).
 - UI: reuse the design system; consistent spacing, typography, colors, interaction patterns; no animation or visual complexity that doesn't improve usability.
 - Forms: reuse existing form components and validation; validation consistent with the backend contract.
 - API integration: one shared client, centralized networking, consistent loading/success/error handling, no redundant calls.
 
 ## Refactoring (part of every change)
-Remove dead code, unused components, obsolete utilities, duplicated logic. Consolidate similar
-implementations. No temporary implementations left behind. Every change leaves the codebase
-simpler than it was.
+Remove dead code, unused components, obsolete utilities, duplicated logic and validation,
+stale configuration, unused feature flags, and deprecated APIs. Consolidate similar
+implementations. No temporary implementations, placeholder code, or compatibility layers
+unless explicitly required. Every change leaves the codebase simpler than it was.
 
 ## Tests
 - Verify business behavior through the public surface. Backend: business rules, minimal mocking, no framework tests. Frontend: user-visible behavior and interactions; no implementation details, snapshot abuse, or brittle DOM assertions.

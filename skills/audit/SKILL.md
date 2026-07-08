@@ -25,6 +25,9 @@ Dependency direction · `@Transactional` pitfalls (private methods, `this.` prox
 ## Doc/spec audit mode
 For PRDs, specs, and plans: spec-smells scan (vague metrics, solution-as-requirement, missing non-goals, untestable criteria, TBD without owner), requirement-coverage check, and — when requested — a panel of named domain experts. Findings must quote the document.
 
+## Simplification sweep mode
+"simplification sweep", "what can we remove", "product simplification review": removal-first review of the whole application (or a named area). Hunt across features (speculative, partial, duplicate capabilities, low-value settings), user journeys (steps, decisions, and forms that can collapse), backend (duplicate logic, unnecessary abstractions, unjustified async, redundant persistence, excessive config), frontend (duplicate components, screens, state), and database (redundant tables, unused columns and indexes). Output a ranked remove / simplify / consolidate list — each item with evidence, user or business impact, effort, and risk — plus remaining-debt notes. Descoping flows through `spec` (PRD updates), execution through `build`.
+
 ## Output
 Ranked findings, each independently actionable. Close with: fix-now (P1/P2) vs ticket-for-later. When asked to "fix all findings": convert to a plan and execute via `build` — never fix silently inside the audit.
 

@@ -65,6 +65,7 @@ Skills fire on natural phrasing; force one explicitly with `/garage:<skill>`.
 "start slice 2b"                                                          -> build (resumes at that slice)
 "review this diff against our standards"                                  -> audit
 "audit the payments module, include a DDD expert"                         -> audit (expert panel)
+"simplification sweep: what can we remove from this product?"             -> audit (removal-first, whole app)
 "run and test orders end to end, api and ui"                              -> e2e (newman + Playwright + DB proof)
 "why is the balance negative after a refund?"                             -> debug (diagnosis only, no fix yet)
 "commit and merge to develop-candidate"                                   -> ship (repo's branch policy)

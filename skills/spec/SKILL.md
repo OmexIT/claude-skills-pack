@@ -20,7 +20,7 @@ Answer in five lines; recommend kill or shrink when answers are weak:
 1. What user problem does this solve — who, doing what, blocked how?
 2. What is the smallest version that solves it? Everything else goes to "later".
 3. Can existing functionality already do this?
-4. Cost: implementation + operational + maintenance.
+4. Cost vs measurable business value: implementation + operational + maintenance, against what it directly contributes to the core product.
 5. Why now?
 
 ## Create mode
