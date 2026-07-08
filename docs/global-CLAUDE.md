@@ -20,6 +20,7 @@
 - No leftovers: stale files, commented-out code, unused imports, dead tables. Cleanup is part of the task.
 - No drive-by refactors, no CI/settings changes, no touching curated content (menu text, product copy) unless asked.
 - When instructions conflict with reality: stop and flag. Don't improvise silently.
+- Comments and JavaDocs explain why (business rules, constraints), never restate code; delete stale ones with every change; no TODOs without a tracked follow-up.
 
 ## Testing
 - Test business behavior only. No DTO/getter tests, no framework tests, no log-assertion tests, no snapshot abuse.
