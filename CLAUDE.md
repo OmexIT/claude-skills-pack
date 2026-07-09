@@ -11,7 +11,7 @@ workflow spine (spec, plan, build, audit, e2e, ship, debug) and 5 domain-law ski
 ```
 .claude-plugin/        marketplace.json + plugin.json (bump version on every change)
 skills/<name>/         SKILL.md (+ references/ for heavy knowledge, scripts/ for tools)
-hooks/                 hooks.json + 3 python hooks (stdin JSON protocol)
+hooks/                 hooks.json + 3 python hooks (stdin JSON protocol) + test_hooks.py
 docs/                  non-loaded knowledge: global-CLAUDE.md (canonical), ops.md,
                        mobile-defaults.md
 scripts/usage-audit.py transcript miner for the quarterly usage review
@@ -26,6 +26,8 @@ scripts/usage-audit.py transcript miner for the quarterly usage review
   "Learning & Memory" sections, "Workflow context" webs, model-routing tables, multi-agent
   rosters, ASCII wave diagrams.
 - Every `references/` path cited in a SKILL.md must exist. Grep before committing.
+- House style applies to pack files too: no em-dashes (use commas, colons, or hyphens) and no emoji, in skills, references, and docs alike.
+- Hook pattern changes require `python3 hooks/test_hooks.py` to pass (paired should-block / should-pass cases).
 
 ## Rules
 - This repo is PUBLIC. Never commit client or employer names, credentials, internal branch
