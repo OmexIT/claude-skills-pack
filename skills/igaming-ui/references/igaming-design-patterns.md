@@ -6,10 +6,11 @@ Patterns specific to sports betting and casino products.
 
 ## Odds Display
 
-- Use **monospaced font** for odds numbers (prevents layout shift when odds update)
-- Always show odds with **consistent decimal places** (1.50 not 1.5)
+- Use **`font-variant-numeric: tabular-nums`** (or a monospaced font if the brand font lacks tabular figures) for odds numbers (prevents layout shift when odds update)
+- Odds format (decimal/fractional/American) follows the user's odds-format setting; for decimal odds, use **consistent decimal places** (1.50 not 1.5)
 - Flash **green** briefly when odds increase (#22C55E, 300ms fade)
 - Flash **red** briefly when odds decrease (#EF4444, 300ms fade)
+- Pair every flash with a direction glyph (▲/▼): red/green hue alone is not colorblind-safe
 - Selected odds state: filled background with brand primary color
 - Minimum tap target for odds buttons: **44x44px** (48px preferred on mobile)
 - Odds button layout: use CSS Grid for consistent sizing regardless of value length
@@ -22,6 +23,15 @@ Patterns specific to sports betting and casino products.
 --color-odds-selected:    <brand primary>
 --color-odds-suspended:   <muted, with "SUSP" text>
 ```
+
+### Market/Event State Tokens
+```
+--color-market-open:      <default surface>
+--color-market-suspended: <muted, with lock treatment>
+--color-market-settled:   <neutral, de-emphasized>
+--color-market-void:      <gray>
+```
+`--color-market-suspended` styles the market-level lock treatment (banner/overlay); `--color-odds-suspended` styles the individual odds button.
 
 ---
 
@@ -57,6 +67,15 @@ Patterns specific to sports betting and casino products.
 
 ---
 
+## Wallet & Balance
+
+- On fetch failure: show **last-known balance** with a staleness indicator, never a permanent error state
+- While loading: skeleton matching the tile dimensions, never a blank tile
+- Failure state includes an **inline retry affordance**
+- Amounts use **tabular numerals** with currency symbol
+
+---
+
 ## Casino Grid
 
 - Game cards: aspect ratio **3:4** (portrait) or **16:9** (landscape)
@@ -69,7 +88,7 @@ Patterns specific to sports betting and casino products.
 
 ### Jackpot Display
 ```
---color-jackpot: <gold — #F59E0B or similar>
+--color-jackpot: <gold - #F59E0B or similar>
 ```
 - Jackpot amount: large, monospaced, with currency symbol
 - Counter animation: count up to current value on first appearance
@@ -78,7 +97,7 @@ Patterns specific to sports betting and casino products.
 
 ## Responsible Gambling
 
-- Always place **limits/help link in footer** — never hidden
+- Always place **limits/help link in footer** - never hidden
 - **Never use urgency language** in UI ("Last chance!", "Hurry!", "Don't miss out!")
 - **Deposit limits UI**: clear, prominent, never buried in settings
 - **Self-exclusion**: always accessible from account settings, one-click
@@ -90,7 +109,7 @@ Patterns specific to sports betting and casino products.
 
 ## Mobile-First Rules for iGaming
 
-- **Bottom navigation** (not top) — thumbs reach bottom naturally
+- **Bottom navigation** (not top) - thumbs reach bottom naturally
 - Bet slip accessible via **bottom sheet**, not full-page nav
 - **Swipeable card stacks** for quick game/event browsing
 - Large, thumb-friendly odds buttons (min **48px height** on mobile)

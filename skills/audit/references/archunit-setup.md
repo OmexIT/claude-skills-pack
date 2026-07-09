@@ -33,8 +33,8 @@ class ArchitectureTest {
   @ArchTest
   static final ArchRule controllers_do_not_access_repositories =
       noClasses()
-          .that().resideInAPackage("..web..")
-          .should().accessClassesThat().resideInAPackage("..repository..");
+          .that().resideInAPackage("..api..")
+          .should().accessClassesThat().resideInAPackage("..infrastructure..");
 }
 ```
 

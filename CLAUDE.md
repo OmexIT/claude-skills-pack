@@ -13,7 +13,7 @@ workflow spine (spec, plan, build, audit, e2e, ship, debug) and 5 domain-law ski
 skills/<name>/         SKILL.md (+ references/ for heavy knowledge, scripts/ for tools)
 hooks/                 hooks.json + 3 python hooks (stdin JSON protocol)
 docs/                  non-loaded knowledge: global-CLAUDE.md (canonical), ops.md,
-                       frontend-mobile-defaults.md
+                       mobile-defaults.md
 scripts/usage-audit.py transcript miner for the quarterly usage review
 ```
 

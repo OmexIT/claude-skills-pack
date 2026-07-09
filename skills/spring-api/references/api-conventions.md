@@ -27,7 +27,7 @@ List responses add pagination inside `meta`:
 }
 ```
 
-## Errors — RFC 9457 Problem Details
+## Errors - RFC 9457 Problem Details
 ```json
 {
   "type": "https://errors.<org>.com/validation-failed",
@@ -44,14 +44,15 @@ List responses add pagination inside `meta`:
 Field-level `errors[]` array and `traceId` are mandatory on validation failures.
 
 ## Money
-`{ "amount": "150.00", "currency": "USD" }` — never a float. 2-decimal string (fiat),
-8-decimal string (crypto). Parsed into `BigDecimal` server-side.
+`{ "amount": "150.00", "currency": "USD" }` - never a float. Decimal string scaled to the
+currency's ISO 4217 minor units (2 for most fiat, 0 for JPY, 3 for KWD); 8-decimal string
+(crypto). Parsed into `BigDecimal` server-side.
 
 ## IDs & timestamps
-- External: UUID v7 (time-sortable), exposed as string. Internal: TSID (64-bit) — still exposed as string. Never expose auto-increment IDs.
-- Timestamps: `Instant`/`OffsetDateTime`, serialized ISO 8601 UTC (`2026-04-15T10:00:00.000Z`).
+- External: UUID v7 (time-sortable), exposed as string. Internal: TSID (64-bit) - still exposed as string. Never expose auto-increment IDs.
+- Timestamps: `Instant`/`OffsetDateTime`, serialized ISO 8601 UTC (`2026-04-15T10:00:00Z`).
 
-## Code layout — package-by-feature
+## Code layout - package-by-feature
 ```
 src/main/java/.../paymentlink/
 ├── api/            controller + request/response records
@@ -64,24 +65,28 @@ integration. New/changed endpoints update the OpenAPI fragment in the same PR.
 
 ## Cursor pagination repository (fetch pageSize+1)
 ```java
-@Query("""
-    SELECT * FROM payment_links
-    WHERE (:cursor IS NULL OR id < :cursor)
-    ORDER BY id DESC
-    LIMIT :pageSize
-""")
-List<PaymentLink> findPage(@Param("cursor") String cursor, @Param("pageSize") int pageSize);
+interface PaymentLinkRepository extends ListCrudRepository<PaymentLink, Long> {
 
-default CursorPage<PaymentLink> findPage(String cursor, int pageSize) {
-    var items = findPage(cursor, pageSize + 1);
-    var hasMore = items.size() > pageSize;
-    var trimmed = hasMore ? items.subList(0, pageSize) : items;
-    var nextCursor = hasMore ? trimmed.get(trimmed.size() - 1).id() : null;
-    return new CursorPage<>(trimmed, cursor, nextCursor, hasMore);
+    @Query("""
+        SELECT * FROM payment_links
+        WHERE (:cursor IS NULL OR id < :cursor)
+        ORDER BY id DESC
+        LIMIT :pageSize
+    """)
+    List<PaymentLink> findSlice(@Param("cursor") Long cursor, @Param("pageSize") int pageSize);
+
+    default CursorPage<PaymentLink> findPage(Long cursor, int pageSize) {
+        var items = findSlice(cursor, pageSize + 1);
+        var hasMore = items.size() > pageSize;
+        var trimmed = hasMore ? items.subList(0, pageSize) : items;
+        var nextCursor = hasMore ? String.valueOf(trimmed.get(trimmed.size() - 1).id()) : null;
+        return new CursorPage<>(trimmed, cursor, nextCursor, hasMore);
+    }
 }
 ```
+The API layer base64-encodes/decodes the opaque `{"id": ...}` cursor; the repository sees only the raw last-seen id.
 
 ## House anti-patterns
-- `RestTemplate` — use `RestClient`.
-- String concatenation for messages — use `.formatted()`.
-- Exposing auto-increment IDs externally — UUIDv7/TSID strings only.
+- `RestTemplate` - use `RestClient`.
+- String concatenation for messages - use `.formatted()`.
+- Exposing auto-increment IDs externally - UUIDv7/TSID strings only.

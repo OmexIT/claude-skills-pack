@@ -1,22 +1,22 @@
-# Code Audit — Review Dimensions
+# Code Audit - Review Dimensions
 
-Detailed per-dimension analysis protocols for the 10 agents dispatched during Phase 2 of `/code-audit`. Read this file when dispatching review agents or interpreting their findings.
+Per-dimension analysis protocols for the review lenses used by `audit`; read when dispatching lens subagents or interpreting findings. Lens map: correctness → Code Smells, SOLID Violations, Code Duplication, Algorithm & Data Structure Analysis; simplicity → Design Pattern Fitness, The Skeptic; architecture → Architecture Conformance (plus arch-invariants.md); security → Security Review; perf → Performance Review; debt → Technology Evaluation & Deprecation Audit; tests → Test Coverage & Quality; api, db, ddd → arch-invariants.md plus the spring-api and migrations skills.
 
-All agents use this **structured finding format**. **Every finding MUST include an `Evidence` field** quoting the actual code — findings without evidence are rejected at the LEAD synthesis stage.
+All findings use this **structured finding format**. **Every finding MUST include an `Evidence` field** quoting the actual code - findings without evidence are rejected during merge/dedupe.
 
 ```
 [SEVERITY] Finding title
 ├─ Location: file:line (or file:class:method)
 ├─ Evidence: <direct quote from the code, 1-5 lines, exact characters>
-├─ Issue: What's wrong — specific, not vague
+├─ Issue: What's wrong - specific, not vague
 ├─ Impact: What happens if not addressed (bugs, perf, security, maintenance)
 ├─ Recommendation: Concrete fix with code example
-├─ Rationale: Why this matters (cite pattern, research, principle, or context7 doc URL)
-├─ Blast radius: Which other parts of the system are affected (callers, tests, downstream services)
+├─ Rationale (optional): Why this matters (cite pattern, research, principle, or context7 doc URL)
+├─ Blast radius (optional): Which other parts of the system are affected (callers, tests, downstream services)
 └─ Effort: XS | S | M | L | XL
 ```
 
-**Rejection rules** — LEAD discards any finding that:
+**Rejection rules** - discard any finding that:
 - Has no `Location` with file:line
 - Has no `Evidence` quoting actual code
 - Uses vague language in `Issue` ("this is bad", "needs improvement", "could be better")
@@ -32,13 +32,15 @@ All agents use this **structured finding format**. **Every finding MUST include 
 | **HIGH** | Will cause bugs, performance degradation, or significant maintenance burden | Must fix before merge/release |
 | **MEDIUM** | Tech debt, testing gaps, or deviation from best practices | Should fix, schedule if time-constrained |
 | **LOW** | Polish, naming, documentation, minor style | Nice-to-have |
-| **POSITIVE** | Acknowledge good code — not just problems | Note and encourage |
+| **POSITIVE** | Acknowledge good code - not just problems | Note and encourage |
+
+Mapping to the `audit` skill's output ranking: CRITICAL → P1, HIGH → P2 (together the fix-now bucket), MEDIUM/LOW → P3 (ticket-for-later); POSITIVE is noted, not ranked. The same mapping applies wherever CRITICAL/HIGH/MEDIUM/LOW appear in this skill's other references (arch-invariants.md, clean-architecture-patterns.md).
 
 ---
 
 ## Dimension 1: Code Smells (`SMELL` agent)
 
-**Fowler/Martin Catalog — scan for these systematically**:
+**Fowler/Martin Catalog - scan for these systematically**:
 
 **Bloaters**:
 - Long Method (>50 lines or cyclomatic complexity >10)
@@ -73,33 +75,33 @@ All agents use this **structured finding format**. **Every finding MUST include 
 
 ## Dimension 2: SOLID Violations (`SMELL` agent)
 
-**Every file in scope must be checked against all 5 SOLID principles.** This is the structural health check of the codebase — SOLID violations are what make code hard to change, test, and reason about. Do not skim this dimension.
+**Every file in scope must be checked against all 5 SOLID principles.** This is the structural health check of the codebase - SOLID violations are what make code hard to change, test, and reason about. Do not skim this dimension.
 
 For each principle, check specific measurable indicators:
 
-**S — Single Responsibility**:
+**S - Single Responsibility**:
 - Class has multiple reasons to change (check git history: modified in unrelated commits?)
 - Class name includes "Manager", "Handler", "Processor", "Utils" (vague responsibility)
 - Mixed abstraction levels (HTTP handling + SQL in same class)
 - High import count (>15 imports = probable SRP violation)
 
-**O — Open/Closed**:
+**O - Open/Closed**:
 - Long if/else or switch chains checking object type
 - Same class modified every time a new feature variant is added (check git history)
 - Missing strategy/template pattern where polymorphism would eliminate conditionals
 
-**L — Liskov Substitution**:
+**L - Liskov Substitution**:
 - Methods throw `UnsupportedOperationException` / `NotImplementedException`
 - Subclass methods enforce stricter preconditions than parent
 - `instanceof` checks before calling methods on a type hierarchy
 - Empty method overrides
 
-**I — Interface Segregation**:
+**I - Interface Segregation**:
 - Interfaces with >10 methods
 - Implementing classes that leave methods unimplemented
 - Clients using only a subset of interface methods
 
-**D — Dependency Inversion**:
+**D - Dependency Inversion**:
 - `new ConcreteClass()` in business logic (not factories)
 - Importing concrete implementations instead of interfaces
 - Field injection (`@Autowired` on fields) instead of constructor injection
@@ -107,22 +109,22 @@ For each principle, check specific measurable indicators:
 
 ## Dimension 3: Code Duplication / DRY (`DUP` agent)
 
-**DRY — Don't Repeat Yourself.** This dimension enforces it. DRY violations are not just aesthetic — duplicated business rules diverge silently, duplicated validation leaks when only one site is fixed, duplicated magic numbers are a guaranteed bug-breeding ground.
+**DRY - Don't Repeat Yourself.** This dimension enforces it. DRY violations are not just aesthetic - duplicated business rules diverge silently, duplicated validation leaks when only one site is fixed, duplicated magic numbers are a guaranteed bug-breeding ground.
 
 **Detection approach**: three levels.
 
-1. **Syntactic clones** — the four clone types below (Fowler / Roy-Cordy CCFinder taxonomy)
-2. **Semantic duplication** — same business rule expressed differently across modules
-3. **Knowledge duplication** — the same constant, enum value, or magic string defined in multiple places
+1. **Syntactic clones** - the four clone types below (Fowler / Roy-Cordy CCFinder taxonomy)
+2. **Semantic duplication** - same business rule expressed differently across modules
+3. **Knowledge duplication** - the same constant, enum value, or magic string defined in multiple places
 
 Detect all four clone types:
 
 | Type | What to Look For | How to Detect |
 |---|---|---|
-| **Type 1** — Exact clones | Identical code blocks | Direct text comparison |
-| **Type 2** — Parameterized | Same structure, different names/literals | Normalize identifiers, compare structure |
-| **Type 3** — Near-miss | Similar blocks with added/removed/changed lines | AST-level structural comparison |
-| **Type 4** — Semantic | Different syntax, same behavior | Functional equivalence analysis (e.g., iterative vs recursive same algorithm) |
+| **Type 1** - Exact clones | Identical code blocks | Direct text comparison |
+| **Type 2** - Parameterized | Same structure, different names/literals | Normalize identifiers, compare structure |
+| **Type 3** - Near-miss | Similar blocks with added/removed/changed lines | AST-level structural comparison |
+| **Type 4** - Semantic | Different syntax, same behavior | Functional equivalence analysis (e.g., iterative vs recursive same algorithm) |
 
 **Also detect feature-level duplication**:
 - API endpoints with overlapping functionality
@@ -138,7 +140,7 @@ Example finding:
 ├─ Issue: Amount validation (>0, max limit, currency check) duplicated in 2 services
 ├─ Impact: Bug fix in one location won't propagate to the other
 ├─ Recommendation: Extract to AmountValidator or shared validation method
-├─ Rationale: DRY — same business rule in 2+ places must be extracted (Fowler)
+├─ Rationale: DRY - same business rule in 2+ places must be extracted (Fowler)
 └─ Effort: S
 ```
 
@@ -159,7 +161,6 @@ Example finding:
 
 **Wrong data structure checks**:
 - `LinkedList` for random access (should be `ArrayList`)
-- `ArrayList` for frequent middle insertions (should be `LinkedList`)
 - `List.contains()` for uniqueness (should be `Set`)
 - `HashMap` where `ConcurrentHashMap` needed (thread safety)
 - Unbounded collections that grow without limit
@@ -169,16 +170,16 @@ Example finding:
 ```
 [MEDIUM] Quadratic search in transaction matching
 ├─ Location: ReconciliationService.java:112
-├─ Issue: Nested for-loop matching transactions by ID — O(n²)
+├─ Issue: Nested for-loop matching transactions by ID - O(n²)
 ├─ Impact: With 10K transactions, this takes ~100M comparisons
-├─ Recommendation: Index transactions in HashMap<String, Transaction> first — O(n) total
+├─ Recommendation: Index transactions in HashMap<String, Transaction> first - O(n) total
 ├─ Rationale: n² on unbounded input is a latency bomb (currently works because n < 100)
 └─ Effort: S
 ```
 
 ## Dimension 5: Security Review (`SEC` agent)
 
-**OWASP-aligned checklist — check every item**:
+**OWASP-aligned checklist - check every item**:
 
 **Injection**:
 - [ ] SQL/NoSQL: All queries parameterized? No string concatenation?
@@ -247,7 +248,7 @@ Example finding:
 
 ## Dimension 7: Design Pattern Fitness (`PATTERN` agent)
 
-**Pattern fitness evaluation — for every pattern in use, ask**:
+**Pattern fitness evaluation - for every pattern in use, ask**:
 
 1. **Problem-Pattern Match**: Does the actual problem match the pattern's intent?
 2. **Complexity Justified**: Does the pattern's overhead earn its keep through actual variation?
@@ -306,14 +307,14 @@ Example finding:
 - Dependencies in "Hold" status on ThoughtWorks Technology Radar
 - Custom code that reimplements library functionality
 
-**Deprecation & EOL audit (MANDATORY)** — this is where silent rot lives:
+**Deprecation & EOL audit (MANDATORY)** - this is where silent rot lives:
 
 ### 9.1 Language-level deprecation
 - Grep for language features that are deprecated in the project's language version:
   - Java: `finalize()`, `Thread.stop()`, `Class.newInstance()`, `@SuppressWarnings("deprecation")`, `javax.*` imports on Jakarta projects, `new Integer(...)` boxing constructors
   - JavaScript/TypeScript: `var` in modern TS, `new Buffer(...)`, `substr(...)`, legacy decorators syntax, `any` where `unknown` fits
   - Python: `imp` module, `distutils`, `asyncio.coroutine`, old-style classes, `dict.iteritems()` (py2 holdovers)
-  - Kotlin: `!!` overuse, `synchronized` on multiplatform, `Coroutines.launch` without scope
+  - Kotlin: `!!` overuse, `synchronized` on multiplatform, `GlobalScope.launch` (unstructured concurrency)
 - Flag every instance as HIGH if the deprecation is already removed in the next language version, MEDIUM otherwise
 
 ### 9.2 Framework / library deprecation
@@ -331,15 +332,15 @@ Grep("@Deprecated|@deprecated") → list deprecated symbols
 # Check if still called
 Grep("<symbol>") excluding the declaration site
 ```
-- Every deprecated internal API still being called is a HIGH finding — someone deprecated it for a reason and nobody removed callers
-- Check deprecation age via `git blame` — deprecated for >6 months and still used = debt
+- Every deprecated internal API still being called is a HIGH finding - someone deprecated it for a reason and nobody removed callers
+- Check deprecation age via `git blame` - deprecated for >6 months and still used = debt
 
 ### 9.4 EOL framework / runtime versions
 - Cross-reference detected versions against these lifecycles (verify via context7):
 
 | Runtime/Framework | Detect | Status to flag |
 |---|---|---|
-| Java ≤ 11 | `sourceCompatibility` / `java.version` | HIGH (non-LTS / EOL community support) |
+| Java ≤ 11 | `sourceCompatibility` / `java.version` | HIGH (8/11 are LTS but past Oracle premier support; free community builds wind down 2026-2027, upgrade to 21/25) |
 | Java 17 | detected | MEDIUM (still supported, but Java 21/25 available) |
 | Spring Boot ≤ 2.7 | `spring-boot-starter-parent` version | CRITICAL (EOL Nov 2023) |
 | Spring Boot 3.0-3.2 | detected | HIGH (out of standard support) |
@@ -376,7 +377,7 @@ Must produce at least 3 challenges, including at least 1 that questions whether 
 
 ## Dimension 11: Test Coverage & Quality (`TESTING` agent)
 
-The scorecard has a "Test Coverage & Quality" row. This dimension produces the findings for it. A codebase with zero tests scores 0; a codebase with 80% branch coverage AND stable assertions scores 9-10. Coverage numbers alone mean nothing — **read the tests**.
+Coverage numbers alone mean nothing - **read the tests**.
 
 **Coverage signals**:
 - Branch / line coverage from existing reports (`build/reports/jacoco/**`, `coverage/**`, `.nyc_output`)
@@ -384,20 +385,20 @@ The scorecard has a "Test Coverage & Quality" row. This dimension produces the f
 - Critical paths with no tests (money movement, auth, data mutation)
 - Edge cases mentioned in spec but absent from tests
 
-**Test smells** — scan the test files directly:
+**Test smells** - scan the test files directly:
 
 | Smell | Detection | Severity |
 |---|---|---|
-| **Assertion Roulette** | Multiple `assert` calls in one test with no message — which one failed? | MEDIUM |
+| **Assertion Roulette** | Multiple `assert` calls in one test with no message - which one failed? | MEDIUM |
 | **Eager Test** | Single test method verifies 10+ things, can't tell what broke | MEDIUM |
-| **Conditional Test Logic** | `if`/`for` in a test — tests should be linear | HIGH |
+| **Conditional Test Logic** | `if`/`for` in a test - tests should be linear | HIGH |
 | **Mystery Guest** | Test depends on external file/DB/service without explicit setup | HIGH |
-| **Test Code Duplication** | Same setup repeated — extract to helper or `@BeforeEach` | LOW |
+| **Test Code Duplication** | Same setup repeated - extract to helper or `@BeforeEach` | LOW |
 | **Fragile Test** | Test breaks on unrelated refactors (over-mocking, implementation-coupled) | MEDIUM |
 | **Hidden Randomness** | `UUID.randomUUID()` or `Instant.now()` without fixed seed / clock | HIGH |
 | **Sleep-based tests** | `Thread.sleep(...)` instead of `Awaitility` / synchronization | HIGH |
 | **Silent catch** | `try { ... } catch (Exception e) { /* ignored */ }` in a test | CRITICAL |
-| **Disabled tests** | `@Disabled` / `@Ignore` / `xit(...)` / `.skip()` — tech debt in disguise | HIGH |
+| **Disabled tests** | `@Disabled` / `@Ignore` / `xit(...)` / `.skip()` - tech debt in disguise | HIGH |
 | **No assertions** | Test calls the code but never asserts the result | CRITICAL |
 | **Wrong isolation** | Unit tests that hit real DB, or integration tests that mock the DB | MEDIUM |
 
@@ -409,7 +410,7 @@ The scorecard has a "Test Coverage & Quality" row. This dimension produces the f
 - Tests that share mutable state via static fields
 
 **Assertion quality**:
-- Prefer AssertJ `assertThat(x).isEqualTo(y)` over JUnit `assertEquals(x, y)` — better failure messages
+- Prefer AssertJ `assertThat(x).isEqualTo(y)` over JUnit `assertEquals(x, y)` - better failure messages
 - Prefer structural assertions (`.containsExactly`, `.hasSize`) over manual loops
 - Prefer `assertThatThrownBy` over try/catch/fail
 - Mock verification should use `inOrder()` when ordering matters
@@ -417,15 +418,15 @@ The scorecard has a "Test Coverage & Quality" row. This dimension produces the f
 **Stack-specific checks**:
 
 *Java / Spring Boot*:
-- Unit tests use `@ExtendWith(MockitoExtension.class)` — no Spring context
+- Unit tests use `@ExtendWith(MockitoExtension.class)` - no Spring context
 - Integration tests use `@SpringBootTest` + Testcontainers with real Postgres
 - Controller tests use `@WebMvcTest` slice, not full context
-- `@MockBean` overuse is a smell — prefer constructor-injected test doubles
+- `@MockBean` overuse is a smell - prefer constructor-injected test doubles
 - Repository tests use `@DataJpaTest` or real DB via Testcontainers, never in-memory H2 if prod uses Postgres (migration compatibility gap)
 
 *TypeScript / React*:
 - Vitest + React Testing Library (not Enzyme)
-- No `data-testid` means no stable E2E target — flag it
+- No `data-testid` means no stable E2E target - flag it
 - Mocking `fetch` directly is worse than using MSW
 - Snapshot tests without explicit assertions are smells
 
@@ -437,13 +438,13 @@ The scorecard has a "Test Coverage & Quality" row. This dimension produces the f
 **Output**:
 
 ```
-[HIGH] Critical path untested — money movement
+[HIGH] Critical path untested - money movement
 ├─ Location: LedgerService.java:134 (postTransfer method)
 ├─ Evidence: `public TransferId postTransfer(PostCommand cmd) { ... }`
 ├─ Issue: 47-line method handles double-entry posting. No test file references postTransfer directly. Grep of test/ returned 0 matches.
-├─ Impact: Money-moving code untested — balance invariants unchecked, idempotency unverified, reversal path unverified
-├─ Recommendation: Add Testcontainers integration test asserting (a) balanced postings, (b) idempotency on duplicate key, (c) insufficient-funds rejection, (d) reversal correctness. See `/fintech-ledger` skill for the expected test harness.
-├─ Rationale: Money code without Testcontainers tests is an uncovered invariant — the primary failure mode of ledger bugs is silent balance corruption. See `fintech-ledger` taxonomy entry.
-├─ Blast radius: Every caller of postTransfer — currently 4 services
+├─ Impact: Money-moving code untested - balance invariants unchecked, idempotency unverified, reversal path unverified
+├─ Recommendation: Add Testcontainers integration test asserting (a) balanced postings, (b) idempotency on duplicate key, (c) insufficient-funds rejection, (d) reversal correctness. See the `ledger` skill for the expected test harness.
+├─ Rationale: Money code without Testcontainers tests is an uncovered invariant - the primary failure mode of ledger bugs is silent balance corruption. See the `ledger` skill's invariants.
+├─ Blast radius: Every caller of postTransfer - currently 4 services
 └─ Effort: M
 ```

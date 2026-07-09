@@ -1,6 +1,6 @@
-# Ops quick tables — incidents, postmortems, runbooks
+# Ops quick tables - incidents, postmortems, runbooks
 
-Reference knowledge (not a skill — read when production is on fire or when writing ops docs).
+Reference knowledge (not a skill - read when production is on fire or when writing ops docs).
 
 ## Severity & comms
 
@@ -32,5 +32,5 @@ or revenue impact confirmed.
 ## Runbook rules
 - Organize by symptom ("error rate alert fired"), not cause ("connection exhaustion").
 - Every action has a verification step ("restart, then confirm health returns 200").
-- Every section ends with an escalation path — no dead ends.
+- Every section ends with an escalation path - no dead ends.
 - Copy-pasteable commands with realistic values; "last verified" date or delete the runbook.

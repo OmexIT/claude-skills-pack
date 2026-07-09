@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# playwright-setup.sh - install browser dependencies for verify-impl UI checks.
+# playwright-setup.sh - install Playwright browser dependencies for e2e UI checks.
 
 set -euo pipefail
 

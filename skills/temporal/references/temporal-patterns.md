@@ -37,11 +37,11 @@ For config-driven state machines:
 - Parse config outside workflow code or pass immutable config into the workflow input.
 - Map config transitions to explicit activity calls.
 - Keep unknown transition handling fail-closed.
-- Emit searchable attributes for workflow type, business ID, and current state.
+- Emit search attributes (`Workflow.upsertTypedSearchAttributes`) for workflow type, business ID, and current state.
 
 ## Determinism Checklist
 
-- No `Instant.now()`, random UUID generation, direct threads, or direct I/O in workflow code.
+- No `Instant.now()` (use `Workflow.currentTimeMillis()`), random UUID generation, direct threads, or direct I/O in workflow code.
 - All external side effects happen in activities.
 - Activity inputs include idempotency keys.
 - Compensation is registered before the forward activity runs.
@@ -51,10 +51,10 @@ For config-driven state machines:
 | Symptom | Diagnosis | Fix |
 |---|---|---|
 | Workflow replay fails after redeploy | Non-deterministic code path added | Move to activity; gate with `Workflow.getVersion()` |
-| Activity hangs forever | Missing StartToCloseTimeout | Set explicit timeout in `ActivityOptions` |
-| Compensation doesn't run | Exception caught and swallowed | Catch only `ActivityFailure`/`ApplicationFailure`; let others propagate |
+| Activity stuck for hours after worker crash | Long StartToCloseTimeout, no HeartbeatTimeout | Set `HeartbeatTimeout` in `ActivityOptions` and call `Activity.getExecutionContext().heartbeat(...)` in long-running activities |
+| Compensation doesn't run | Exception caught and swallowed | Catch only `ActivityFailure`/`ChildWorkflowFailure`/`ApplicationFailure`; let others propagate |
 | Duplicate side-effects on retry | Activity not idempotent | Idempotency key at entry; dedupe at DB layer |
-| Signal race with completion | Signal arrives after `@WorkflowMethod` returns | Drain first: `Workflow.await(() -> pendingSignals.isEmpty())` |
+| Signal race with completion | Signal arrives after `@WorkflowMethod` returns | Drain first: `Workflow.await(() -> pendingSignals.isEmpty())`; plus `Workflow.await(Workflow::isEveryHandlerFinished)` (SDK >=1.25) for in-flight handlers |
 | History grows unbounded | Long-running loop without continueAsNew | `Workflow.continueAsNew(...)` at checkpoint |
 
 ## Never inside a workflow

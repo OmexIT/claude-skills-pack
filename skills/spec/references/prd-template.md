@@ -155,22 +155,20 @@ For each significant UI component:
 
 ## 10. Data model (sketch)
 
-Key entities and relationships — enough for the design-doc and data-design skills to build on.
+Key entities and relationships: enough for the `plan` and `migrations` skills to build on.
 
 | Entity | Key fields | Relationships | Storage |
 |---|---|---|---|
 | <entity> | <id, name, status, ...> | <belongs to X, has many Y> | <Postgres / Mongo / Elastic> |
 
-> This is a sketch, not a schema. The `/data-design` skill will produce the full schema.
+> This is a sketch, not a schema. The full schema is defined at plan time (`plan` skill); the `migrations` skill governs how it changes.
 
-## 11. Non-functional requirements (global)
+## 11. Cross-cutting non-functional requirements
 
-Requirements that apply across the entire feature.
+Only constraints that genuinely apply everywhere (availability, PII handling, browser support); feature-specific NFRs belong in each FR (section 8).
 
 | Category | Requirement | Target | Measurement |
 |---|---|---|---|
-| **Performance** | Page load time | < 2s (p95) | Lighthouse / RUM |
-| **Performance** | API response time | < 200ms (p95) | Server metrics |
 | **Reliability** | Availability | 99.9% | Uptime monitoring |
 | **Security** | Authentication | JWT + refresh token | Auth service |
 | **Security** | Authorization | Role-based per endpoint | Integration tests |
@@ -219,7 +217,7 @@ Requirements that apply across the entire feature.
 |---|---|---|---|---|
 | 1. Internal | Team only | 1 week | No P0 bugs | Any P0 bug |
 | 2. Beta | 5% of users | 1 week | <metric> within 10% of target | <metric> drops below <threshold> |
-| 3. GA | 100% | — | <metric> hits target | — |
+| 3. GA | 100% | - | <metric> hits target | - |
 
 ### Rollback plan
 - How to roll back: <flag off / revert deploy / database rollback>
@@ -262,7 +260,7 @@ Before this PRD moves to implementation, confirm:
 - [ ] Non-functional requirements specified per feature (performance, security, a11y)
 - [ ] UI screens listed with states (default, loading, empty, error)
 - [ ] Dependencies identified with owners and status
-- [ ] Rollout plan includes feature flag, staged rollout, and rollback
+- [ ] Rollout plan includes a rollback path; feature flag + staged rollout where risk warrants it (or a stated reason direct deploy is safe)
 - [ ] Instrumentation plan covers key events and dashboards
 - [ ] Open questions have owners and due dates
 - [ ] Non-goals section is substantive (not empty)

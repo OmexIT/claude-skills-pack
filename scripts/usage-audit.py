@@ -98,7 +98,7 @@ if os.path.exists(hp):
             if not d:
                 continue
             if d.startswith('/'):
-                hist_cmds[d.split()[0]] += 1
+                hist_cmds[d.split()[0].lstrip('/')] += 1
             else:
                 hist_prompts.append({'p': rec.get('project', '?'), 'ts': rec.get('timestamp'), 't': d[:1500]})
 

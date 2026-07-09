@@ -4,33 +4,33 @@
 
 **1. Dependency direction (non-negotiable)**
 `api → application → domain ← infrastructure`
-- `domain` imports NOTHING from application/infrastructure/api/Spring.
+- `domain` imports NOTHING from application/infrastructure/api/Spring (sole exception: Spring Data JDBC mapping annotations `org.springframework.data.annotation` / `org.springframework.data.relational.core.mapping` on aggregate roots, per the spring-api house layout).
 - `application` imports domain only (plus Spring for `@Service`, `@Transactional`).
 - `infrastructure` implements domain/application ports; never referenced the other way.
 - `api` imports application only; never touches domain or infrastructure directly.
 
 **2. Transaction boundaries**
-- `@Transactional` only on application-layer service methods — never repositories or controllers.
+- `@Transactional` only on application-layer service methods - never repositories or controllers.
 - Reads marked `@Transactional(readOnly = true)`.
 - Never on private methods (Spring can't proxy them).
-- `this.otherMethod()` where the callee is `@Transactional` bypasses the proxy — flag it.
+- `this.otherMethod()` where the callee is `@Transactional` bypasses the proxy - flag it.
 
-**3. Thin controllers** — parse request, call service, map response. No loops over entities,
+**3. Thin controllers** - parse request, call service, map response. No loops over entities,
 no aggregation, no business decisions. ~15 lines max per handler.
 
-**4. No entity exposure** — request/response DTOs are separate records; never bind to or
+**4. No entity exposure** - request/response DTOs are separate records; never bind to or
 return an entity/aggregate from a `@RestController`. MapStruct or manual mapping.
 
-**5. Circuit breakers on external calls** — every external HTTP/queue/DB call wrapped in
+**5. Circuit breakers on external calls** - every external HTTP/queue/DB call wrapped in
 Resilience4j `@CircuitBreaker` with a deterministic fallback (cached value or fast 503).
 
-**6. Value objects over primitives** — Money, Email, PhoneNumber, TenantId, typed IDs
+**6. Value objects over primitives** - Money, Email, PhoneNumber, TenantId, typed IDs
 (`PaymentId` not raw `Long`). Primitives allowed only at the infrastructure boundary.
 
-**7. Domain events for state changes** — aggregate changes emit events; cross-module
+**7. Domain events for state changes** - aggregate changes emit events; cross-module
 consumers use `@ApplicationModuleListener`, in-module use `@EventListener`.
 
-**8. Modulith boundaries enforced** — `@ApplicationModule` declares dependencies;
+**8. Modulith boundaries enforced** - `@ApplicationModule` declares dependencies;
 `ApplicationModules.verify()` runs in a test that fails the build; `package-info.java`
 documents each module's purpose and ports.
 
@@ -51,6 +51,8 @@ documents each module's purpose and ports.
 | Raw `Long id`/`String id` in domain | grep | MEDIUM |
 | `catch (Exception e)` in services | grep | MEDIUM |
 
+Exception to the two import rows: `org.springframework.data.annotation.*` and `org.springframework.data.relational.core.mapping.*` in `domain/` are allowed, since Spring Data JDBC aggregates require `@Id`/`@Table` (see spring-api).
+
 ## ArchUnit starter (adapt package root)
 
 ```java
@@ -60,7 +62,9 @@ class ArchitectureTest {
     static final ArchRule domain_is_framework_free =
         classes().that().resideInAPackage("..domain..")
             .should().onlyDependOnClassesThat().resideInAnyPackage(
-                "..domain..", "java..", "org.slf4j..");
+                "..domain..", "java..", "org.slf4j..",
+                "org.springframework.data.annotation..",
+                "org.springframework.data.relational.core.mapping..");
 
     @ArchTest
     static final ArchRule controllers_only_in_api =

@@ -38,7 +38,7 @@ Skills, references, and hooks all ship together. No copy scripts.
 | `igaming-ui` | Odds/betslip/live-state patterns, data-testid contract |
 
 **Hooks** (`hooks/hooks.json`): destructive-command blocker, sensitive-file warning,
-Spotless/Prettier autoformat.
+Prettier autoformat (web files only; Java/Spotless runs once in the `ship` gate).
 
 ## The golden path
 
@@ -68,7 +68,7 @@ Skills fire on natural phrasing; force one explicitly with `/garage:<skill>`.
 "simplification sweep: what can we remove from this product?"             -> audit (removal-first, whole app)
 "run and test orders end to end, api and ui"                              -> e2e (newman + Playwright + DB proof)
 "why is the balance negative after a refund?"                             -> debug (diagnosis only, no fix yet)
-"commit and merge to develop-candidate"                                   -> ship (repo's branch policy)
+"commit and merge to release-candidate"                                   -> ship (repo's branch policy)
 "promote develop to main"                                                 -> ship (promotion PR)
 ```
 
@@ -120,7 +120,7 @@ block that the `ship` skill reads. Template:
 ```markdown
 ## Ship policy
 - CLI: glab                                # or gh
-- Flow: feature -> develop-candidate; promotion by MR
+- Flow: feature -> release-candidate; promotion by MR
 - Merge: MR only, peer review is manual    # or: merge allowed after checks pass
 - Attribution: none                        # never mention AI in commits/PRs
 - Verify: mvn -q verify && newman run postman/regression.json
