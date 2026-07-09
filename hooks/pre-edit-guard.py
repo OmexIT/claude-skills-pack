@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pre-Edit Hook — warn on editing sensitive files (non-blocking).
+"""Pre-Edit Hook - warn on editing sensitive files (non-blocking).
 
 NOTE: on exit 0, Claude Code sends hook stderr to the debug log only; it is never
 shown to the user or Claude. For a non-blocking warning, print a JSON object on

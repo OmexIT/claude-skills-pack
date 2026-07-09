@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pre-Bash Hook — block irreversible or high-blast-radius commands.
+"""Pre-Bash Hook - block irreversible or high-blast-radius commands.
 
 Reads the PreToolUse JSON payload from stdin (tool_input.command). Exit 2 with a
 stderr message blocks the call; exit 0 allows it. Patterns are tuned for fintech

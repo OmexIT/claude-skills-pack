@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Post-Edit Hook — auto-format the edited file. Fast path only.
+"""Post-Edit Hook - auto-format the edited file. Fast path only.
 
 Prettier runs synchronously (typically <300ms, 10s cap) for web-stack files.
 Java is deliberately NOT formatted here: a per-edit Gradle/Maven invocation
@@ -39,7 +39,7 @@ def main():
                     cwd=parent, timeout=10, capture_output=True,
                 )
             except (subprocess.TimeoutExpired, OSError):
-                pass  # best-effort — never block
+                pass  # best-effort - never block
             break
         if (parent / ".git").exists():
             break
