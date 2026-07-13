@@ -23,8 +23,12 @@ SENSITIVE_NAMES = frozenset({
     "terraform.tfvars",
     "credentials.json",
     "id_rsa",
+    "id_dsa",
+    "id_ecdsa",
+    "id_ed25519",
+    "service-account.json",
 })
-SENSITIVE_SUFFIXES = (".pem", ".p12", ".keystore")
+SENSITIVE_SUFFIXES = (".pem", ".key", ".p12", ".pfx", ".jks", ".keystore")
 TEMPLATE_SUFFIXES = (".example", ".sample", ".template")
 
 

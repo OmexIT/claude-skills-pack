@@ -1,81 +1,91 @@
-# Clean-architecture invariants (Java + Spring + Modulith)
+# Java and Spring architecture review heuristics
 
-## Invariants
+Apply these rules after reading the repository's accepted architecture. Package names and patterns
+are evidence leads, not universal findings.
 
-**1. Dependency direction (non-negotiable)**
-`api → application → domain ← infrastructure`
-- `domain` imports NOTHING from application/infrastructure/api/Spring (sole exception: Spring Data JDBC mapping annotations `org.springframework.data.annotation` / `org.springframework.data.relational.core.mapping` on aggregate roots, per the spring-api house layout).
-- `application` imports domain only (plus Spring for `@Service`, `@Transactional`).
-- `infrastructure` implements domain/application ports; never referenced the other way.
-- `api` imports application only; never touches domain or infrastructure directly.
+## Dependency direction
 
-**2. Transaction boundaries**
-- `@Transactional` only on application-layer service methods - never repositories or controllers.
-- Reads marked `@Transactional(readOnly = true)`.
-- Never on private methods (Spring can't proxy them).
-- `this.otherMethod()` where the callee is `@Transactional` bypasses the proxy - flag it.
+A clean package-by-feature service commonly uses:
 
-**3. Thin controllers** - parse request, call service, map response. No loops over entities,
-no aggregation, no business decisions. ~15 lines max per handler.
-
-**4. No entity exposure** - request/response DTOs are separate records; never bind to or
-return an entity/aggregate from a `@RestController`. MapStruct or manual mapping.
-
-**5. Circuit breakers on external calls** - every external HTTP/queue/DB call wrapped in
-Resilience4j `@CircuitBreaker` with a deterministic fallback (cached value or fast 503).
-
-**6. Value objects over primitives** - Money, Email, PhoneNumber, TenantId, typed IDs
-(`PaymentId` not raw `Long`). Primitives allowed only at the infrastructure boundary.
-
-**7. Domain events for state changes** - aggregate changes emit events; cross-module
-consumers use `@ApplicationModuleListener`, in-module use `@EventListener`.
-
-**8. Modulith boundaries enforced** - `@ApplicationModule` declares dependencies;
-`ApplicationModules.verify()` runs in a test that fails the build; `package-info.java`
-documents each module's purpose and ports.
-
-## Greppable anti-pattern table
-
-| Pattern | Detection | Severity |
-|---|---|---|
-| Spring imports in `domain/` | grep `org.springframework` | CRITICAL |
-| JPA/JDBC imports in `domain/` | grep `jakarta.persistence` / `org.springframework.data` | CRITICAL |
-| `@Transactional` on controllers | grep in api package | CRITICAL |
-| Repository injected in controller | grep `Repository` in api package | CRITICAL |
-| Controller returning entities | grep `return <entity>` in `@RestController` classes | HIGH |
-| `@Transactional` on private methods | grep `private.*@Transactional` (adjacent lines) | HIGH |
-| Proxy bypass via `this.` to transactional method | static read | HIGH |
-| Missing circuit breaker on `RestClient`/`WebClient` | HTTP call without `@CircuitBreaker` | HIGH |
-| Cross-module static calls | grep static calls across module packages | HIGH |
-| `BigDecimal amount` in domain signatures | grep | MEDIUM |
-| Raw `Long id`/`String id` in domain | grep | MEDIUM |
-| `catch (Exception e)` in services | grep | MEDIUM |
-
-Exception to the two import rows: `org.springframework.data.annotation.*` and `org.springframework.data.relational.core.mapping.*` in `domain/` are allowed, since Spring Data JDBC aggregates require `@Id`/`@Table` (see spring-api).
-
-## ArchUnit starter (adapt package root)
-
-```java
-@AnalyzeClasses(packages = "<root-package>")
-class ArchitectureTest {
-    @ArchTest
-    static final ArchRule domain_is_framework_free =
-        classes().that().resideInAPackage("..domain..")
-            .should().onlyDependOnClassesThat().resideInAnyPackage(
-                "..domain..", "java..", "org.slf4j..",
-                "org.springframework.data.annotation..",
-                "org.springframework.data.relational.core.mapping..");
-
-    @ArchTest
-    static final ArchRule controllers_only_in_api =
-        classes().that().areAnnotatedWith(RestController.class)
-            .should().resideInAPackage("..api..");
-
-    @ArchTest
-    static final ArchRule no_module_cycles =
-        slices().matching("<root-package>.(*)..").should().beFreeOfCycles();
-}
+```text
+api -> application -> domain
+infrastructure -> application or domain ports
 ```
 
-Setup: see `archunit-setup.md`. Per-invariant good/bad examples: `clean-architecture-patterns.md`.
-Repeat offenders → propose the matching ArchUnit rule so CI enforces the invariant permanently.
+- Domain behavior should not depend on HTTP, persistence clients, messaging, provider clients, or
+  framework configuration.
+- Application use cases coordinate domain behavior and depend on ports for external systems.
+- Infrastructure implements ports and owns provider, database, queue, and framework details.
+- API code validates transport input, calls a use case, and maps the result.
+
+Some repositories deliberately use Spring Data annotations on aggregates. Treat that as an
+accepted pragmatic boundary only when the local architecture says so. Do not report it as both an
+allowed exception and a critical violation.
+
+## Transactions and external effects
+
+- Put database transaction boundaries around application use cases, not controllers or private
+  helper methods.
+- Verify Spring proxy behavior: private methods and self-invocation do not create a new proxied
+  transaction boundary.
+- Keep remote calls outside database transactions unless the design explicitly handles the
+  coupling with an outbox, saga, durable operation record, or equivalent mechanism.
+- A timed-out remote mutation has an unknown result. Persist that state, retain the same
+  idempotency key, and reconcile before retrying or compensating.
+- Reads may use an explicitly stale cache. Mutations must not return a cached or fabricated success.
+
+## Resilience controls
+
+Choose controls per operation and failure mode:
+
+- Timeouts on all remote calls.
+- Bounded retries only for retryable and idempotent operations, with backoff and jitter where
+  appropriate.
+- Bulkheads or concurrency limits for shared-resource protection.
+- Circuit breakers when repeated failures would otherwise amplify load and an open-circuit result
+  has safe semantics.
+- Fallbacks only when the result is honest, such as a clearly marked stale read or a fast explicit
+  failure.
+
+A circuit breaker annotation is not required on every HTTP, queue, or database call.
+
+## API and persistence boundaries
+
+- Do not bind request bodies directly to persistence entities or return entities from controllers.
+- Keep controllers focused on transport concerns. Judge thinness by responsibilities, not a line
+  limit.
+- Repositories persist and retrieve data. Business decisions and cross-aggregate orchestration
+  belong in use cases or domain services.
+- Public identifiers must not expose internal storage keys.
+
+## Value objects
+
+Use value objects when a concept has validation, units, comparison rules, formatting, security, or
+repeated business meaning. `Money`, `Currency`, tenant IDs, and operation references often qualify.
+Do not wrap every primitive solely to satisfy a pattern.
+
+## Events and modules
+
+- Use domain or application events when consumers cross a real boundary, need independent
+  lifecycle or delivery, or when the event itself is part of the domain audit trail.
+- Prefer a direct call for simple in-process coordination with one owner.
+- Apply Spring Modulith rules only when the repository uses Modulith. Then verify declared module
+  dependencies, cycles, public interfaces, and `ApplicationModules.verify()` coverage.
+
+## Greppable evidence leads
+
+| Lead | What to verify |
+|---|---|
+| Spring or provider imports in `domain/` | Whether domain behavior now depends on infrastructure rather than an accepted mapping annotation. |
+| Repository injected into a controller | Whether the API bypasses authorization, use-case rules, or transaction ownership. |
+| Entity returned by a controller | Whether persistence fields or internal IDs leak into the public contract. |
+| `@Transactional` near a private method | Whether the annotation is ineffective under the configured proxy mode. |
+| `this.` call to a transactional method | Whether self-invocation bypasses the required boundary. |
+| Remote client call inside a transaction | Whether lock duration and partial failure are explicitly designed. |
+| `catch (Exception)` | Whether the code hides an unknown state or maps errors too broadly. |
+| Raw amount or ID primitives | Whether repeated business rules justify a value object. |
+| Static calls across feature modules | Whether ownership or module boundaries are bypassed. |
+
+Assign severity only after proving the reachable impact. For accepted recurring boundaries, see
+`archunit-setup.md`. For good and bad dependency examples, see
+`clean-architecture-patterns.md`.

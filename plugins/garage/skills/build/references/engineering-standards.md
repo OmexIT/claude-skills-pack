@@ -7,7 +7,7 @@ carries the judgment calls.
 
 ## Before writing code
 - Review what you will touch: architecture, schema, APIs, UI components, existing tests. Never implement blind.
-- If 80% or more of what's needed exists, extend or refactor it. Never a parallel implementation; duplicate detection is part of recon.
+- If most of what's needed exists, extend or refactor it. Treat 80% as a rough recon heuristic, not arithmetic. Never create a parallel implementation.
 - Match existing naming, structure, style, and error handling. Consistency beats personal preference.
 - Refactor existing code when that simplifies the design; don't build alongside it.
 
@@ -23,7 +23,7 @@ solution and a simpler one both fully satisfy the requirements, the simpler one 
 ## Backend
 - Business logic in the domain/service layer; controllers thin (parse, call, map); repositories persist only; infrastructure stays out of the domain; constructor injection.
 - APIs: follow the house style (`spring-api` skill); reuse existing request/response models; no duplicate endpoints; validation and error handling consistent across the service.
-- Database: normalize appropriately; reuse existing tables and relationships; migrations minimal and clean (`migrations` skill governs the how); greenfield repos edit the existing changeset instead of stacking migration history; drop obsolete tables, columns, indexes, and constraints as part of the change.
+- Database: normalize appropriately; reuse existing tables and relationships; migrations minimal and clean (`migrations` skill governs the how); greenfield repos edit the existing changeset instead of stacking migration history. Plan removal of obsolete structures, but perform destructive database changes only with explicit approval, a safe deployment sequence, and a restore or forward-fix story.
 - Performance: no N+1 queries (check repository call sites when adding loops over aggregates); no premature optimization. Optimize only on profiling or real usage evidence.
 - Asynchronous processing (queues, events, scheduled jobs) only when a synchronous flow demonstrably cannot meet the need - async is complexity, not a default.
 
@@ -34,11 +34,12 @@ solution and a simpler one both fully satisfy the requirements, the simpler one 
 - Forms: reuse existing form components and validation; validation consistent with the backend contract.
 - API integration: one shared client, centralized networking, consistent loading/success/error handling, no redundant calls.
 
-## Refactoring (part of every change)
+## Refactoring within the touched scope
 Remove dead code, unused components, obsolete utilities, duplicated logic and validation,
-stale configuration, unused feature flags, and deprecated APIs. Consolidate similar
-implementations. No temporary implementations, placeholder code, or compatibility layers
-unless explicitly required. Every change leaves the codebase simpler than it was.
+stale configuration, unused feature flags, and deprecated APIs made obsolete by the requested
+change. Consolidate similar implementations when the shared rule is stable. No temporary
+implementations, placeholder code, or compatibility layers unless explicitly required. Do not
+turn cleanup into an unrelated refactor.
 
 ## Tests
 - Verify business behavior through the public surface. Backend: business rules, minimal mocking, no framework tests. Frontend: user-visible behavior and interactions; no implementation details, snapshot abuse, or brittle DOM assertions.
@@ -57,5 +58,5 @@ unless explicitly required. Every change leaves the codebase simpler than it was
 - [ ] Dead code, unused components, and obsolete tests deleted with the change.
 - [ ] JavaDocs/comments updated or removed; none stale or narrating mechanics.
 - [ ] Frontend and backend contracts consistent (validation, error shapes).
-- [ ] Database delta minimal; obsolete structures dropped.
+- [ ] Database delta minimal; obsolete structures removed when approved, otherwise tracked with an owner and safe removal plan.
 - [ ] The result is simpler than or equal to what preceded it, and understandable by another engineer within minutes.

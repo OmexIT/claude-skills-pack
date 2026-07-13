@@ -1,136 +1,276 @@
 #!/usr/bin/env python3
-"""Mine Claude Code usage: skill invocations, slash commands, user prompts, per-project activity."""
-import json, os, glob, re, collections
+"""Summarize local Claude Code skill, command, prompt, and project usage."""
 
-ROOT = os.path.expanduser('~/.claude/projects')
-SCRATCH = os.path.join(os.path.expanduser('~/.claude'), 'usage-audit')
-os.makedirs(SCRATCH, exist_ok=True)
+import argparse
+import collections
+import glob
+import json
+import os
+import re
 
-skill_use = collections.Counter()
-skill_by_proj = collections.defaultdict(collections.Counter)
-cmd_use = collections.Counter()
-agent_use = collections.Counter()
-proj_stats = collections.defaultdict(lambda: {'sessions': 0, 'user_msgs': 0, 'first': None, 'last': None})
-prompts = []
 
-def note_ts(p, ts):
-    if not ts:
+def parse_args():
+    home = os.path.expanduser("~")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Summarize local Claude Code transcripts. The default run is read-only and "
+            "does not persist prompt text."
+        )
+    )
+    parser.add_argument(
+        "--projects-root",
+        default=os.path.join(home, ".claude", "projects"),
+        help="Claude Code projects directory (default: ~/.claude/projects)",
+    )
+    parser.add_argument(
+        "--history-file",
+        default=os.path.join(home, ".claude", "history.jsonl"),
+        help="Claude Code history file (default: ~/.claude/history.jsonl)",
+    )
+    parser.add_argument(
+        "--corpus-dir",
+        help=(
+            "Explicitly write raw prompt excerpts to this directory. Treat the output as "
+            "sensitive and never commit it."
+        ),
+    )
+    parser.add_argument(
+        "--max-prompt-chars",
+        type=int,
+        default=1500,
+        help="Maximum characters per prompt when --corpus-dir is used (default: 1500)",
+    )
+    args = parser.parse_args()
+    if args.max_prompt_chars < 1:
+        parser.error("--max-prompt-chars must be positive")
+    return args
+
+
+def empty_project_stats():
+    return {"sessions": 0, "user_msgs": 0, "first": None, "last": None}
+
+
+def note_timestamp(project_stats, project, timestamp):
+    if not timestamp:
         return
-    st = proj_stats[p]
-    if not st['first'] or ts < st['first']:
-        st['first'] = ts
-    if not st['last'] or ts > st['last']:
-        st['last'] = ts
+    stats = project_stats[project]
+    if not stats["first"] or timestamp < stats["first"]:
+        stats["first"] = timestamp
+    if not stats["last"] or timestamp > stats["last"]:
+        stats["last"] = timestamp
 
-for f in glob.glob(ROOT + '/*/*.jsonl'):
-    proj = os.path.basename(os.path.dirname(f))
-    proj_stats[proj]['sessions'] += 1
-    try:
-        fh = open(f, 'r', errors='replace')
-    except OSError:
-        continue
-    with fh:
-        for line in fh:
-            if len(line) > 3_000_000:
-                continue
-            try:
-                rec = json.loads(line)
-            except Exception:
-                continue
-            ts = rec.get('timestamp')
-            t = rec.get('type')
-            if t == 'assistant':
-                msg = rec.get('message') or {}
-                content = msg.get('content')
-                if not isinstance(content, list):
+
+def message_text(content):
+    if isinstance(content, str):
+        return content
+    if not isinstance(content, list):
+        return None
+    parts = [
+        item.get("text", "")
+        for item in content
+        if isinstance(item, dict) and item.get("type") == "text"
+    ]
+    return "\n".join(part for part in parts if part)
+
+
+def mine_transcripts(projects_root, max_prompt_chars, capture_prompts):
+    skill_use = collections.Counter()
+    command_use = collections.Counter()
+    agent_use = collections.Counter()
+    project_stats = collections.defaultdict(empty_project_stats)
+    prompts = []
+    prompt_count = 0
+
+    pattern = os.path.join(os.path.expanduser(projects_root), "*", "*.jsonl")
+    for path in glob.glob(pattern):
+        project = os.path.basename(os.path.dirname(path))
+        project_stats[project]["sessions"] += 1
+        try:
+            handle = open(path, "r", errors="replace", encoding="utf-8")
+        except OSError:
+            continue
+
+        with handle:
+            for line in handle:
+                if len(line) > 3_000_000:
                     continue
-                for c in content:
-                    if isinstance(c, dict) and c.get('type') == 'tool_use':
-                        nm = c.get('name')
-                        inp = c.get('input') or {}
-                        if nm == 'Skill':
-                            sk = inp.get('skill') or inp.get('command') or '?'
-                            skill_use[sk] += 1
-                            skill_by_proj[proj][sk] += 1
-                            note_ts(proj, ts)
-                        elif nm in ('Task', 'Agent'):
-                            agent_use[inp.get('subagent_type') or 'general-purpose'] += 1
-            elif t == 'user' and not rec.get('isSidechain'):
-                msg = rec.get('message') or {}
-                content = msg.get('content')
-                text = None
-                if isinstance(content, str):
-                    text = content
-                elif isinstance(content, list):
-                    parts = [c.get('text', '') for c in content
-                             if isinstance(c, dict) and c.get('type') == 'text']
-                    text = '\n'.join(p for p in parts if p)
+                try:
+                    record = json.loads(line)
+                except (json.JSONDecodeError, TypeError, ValueError):
+                    continue
+
+                timestamp = record.get("timestamp")
+                record_type = record.get("type")
+                message = record.get("message") or {}
+                content = message.get("content")
+
+                if record_type == "assistant" and isinstance(content, list):
+                    for item in content:
+                        if not isinstance(item, dict) or item.get("type") != "tool_use":
+                            continue
+                        name = item.get("name")
+                        tool_input = item.get("input") or {}
+                        if name == "Skill":
+                            skill = tool_input.get("skill") or tool_input.get("command") or "?"
+                            skill_use[skill] += 1
+                            note_timestamp(project_stats, project, timestamp)
+                        elif name in ("Task", "Agent"):
+                            agent = tool_input.get("subagent_type") or "general-purpose"
+                            agent_use[agent] += 1
+                    continue
+
+                if record_type != "user" or record.get("isSidechain"):
+                    continue
+
+                text = message_text(content)
                 if not text or not text.strip():
                     continue
-                note_ts(proj, ts)
-                m = re.search(r'<command-name>\s*(/?[\w.:_-]+)\s*</command-name>', text)
-                if m:
-                    cmd_use[m.group(1).lstrip('/')] += 1
+                note_timestamp(project_stats, project, timestamp)
+
+                command_match = re.search(
+                    r"<command-name>\s*(/?[\w.:_-]+)\s*</command-name>", text
+                )
+                if command_match:
+                    command_use[command_match.group(1).lstrip("/")] += 1
                     continue
-                if rec.get('isMeta'):
+                if record.get("isMeta"):
                     continue
+
                 head = text[:80]
-                if head.startswith('<') and any(k in head for k in
-                        ('system-reminder', 'local-command', 'command-name', 'task-notification', 'bash-')):
+                ignored_markers = (
+                    "system-reminder",
+                    "local-command",
+                    "command-name",
+                    "task-notification",
+                    "bash-",
+                )
+                if head.startswith("<") and any(marker in head for marker in ignored_markers):
                     continue
-                if 'Caveat: The messages below' in head:
+                if "Caveat: The messages below" in head:
                     continue
-                proj_stats[proj]['user_msgs'] += 1
-                prompts.append({'p': proj, 'ts': ts, 't': text[:1500]})
 
-# ---- history.jsonl: what the user actually TYPES ----
-hist_cmds = collections.Counter()
-hist_prompts = []
-hp = os.path.expanduser('~/.claude/history.jsonl')
-if os.path.exists(hp):
-    with open(hp, 'r', errors='replace') as fh:
-        for line in fh:
+                project_stats[project]["user_msgs"] += 1
+                prompt_count += 1
+                if capture_prompts:
+                    prompts.append(
+                        {"p": project, "ts": timestamp, "t": text[:max_prompt_chars]}
+                    )
+
+    return {
+        "skill_use": skill_use,
+        "command_use": command_use,
+        "agent_use": agent_use,
+        "project_stats": project_stats,
+        "prompts": prompts,
+        "prompt_count": prompt_count,
+    }
+
+
+def mine_history(history_file, max_prompt_chars, capture_prompts):
+    commands = collections.Counter()
+    prompts = []
+    prompt_count = 0
+    path = os.path.expanduser(history_file)
+    if not os.path.exists(path):
+        return commands, prompts, prompt_count
+
+    try:
+        handle = open(path, "r", errors="replace", encoding="utf-8")
+    except OSError:
+        return commands, prompts, prompt_count
+
+    with handle:
+        for line in handle:
             try:
-                rec = json.loads(line)
-            except Exception:
+                record = json.loads(line)
+            except (json.JSONDecodeError, TypeError, ValueError):
                 continue
-            d = (rec.get('display') or '').strip()
-            if not d:
+            display = (record.get("display") or "").strip()
+            if not display:
                 continue
-            if d.startswith('/'):
-                hist_cmds[d.split()[0].lstrip('/')] += 1
+            if display.startswith("/"):
+                commands[display.split()[0].lstrip("/")] += 1
             else:
-                hist_prompts.append({'p': rec.get('project', '?'), 'ts': rec.get('timestamp'), 't': d[:1500]})
+                prompt_count += 1
+                if capture_prompts:
+                    prompts.append(
+                        {
+                            "p": record.get("project", "?"),
+                            "ts": record.get("timestamp"),
+                            "t": display[:max_prompt_chars],
+                        }
+                    )
+    return commands, prompts, prompt_count
 
-with open(os.path.join(SCRATCH, 'corpus_transcripts.jsonl'), 'w') as f:
-    for p in prompts:
-        f.write(json.dumps(p) + '\n')
-with open(os.path.join(SCRATCH, 'corpus_history.jsonl'), 'w') as f:
-    for p in hist_prompts:
-        f.write(json.dumps(p) + '\n')
 
-def fmt_ts(ts):
-    return (ts or '?')[:10]
+def write_jsonl(path, records):
+    with open(path, "w", encoding="utf-8") as handle:
+        for record in records:
+            handle.write(json.dumps(record) + "\n")
 
-print('== PER-PROJECT ACTIVITY (sessions / user msgs / first..last) ==')
-for p, st in sorted(proj_stats.items(), key=lambda kv: -kv[1]['user_msgs']):
-    print(f"{st['sessions']:4d} sess {st['user_msgs']:5d} msgs  {fmt_ts(st['first'])}..{fmt_ts(st['last'])}  {p}")
 
-print('\n== SKILL TOOL INVOCATIONS (all time, all projects) ==')
-for s, n in skill_use.most_common(80):
-    print(f'{n:5d}  {s}')
+def format_timestamp(timestamp):
+    return str(timestamp or "?")[:10]
 
-print('\n== SLASH COMMANDS SEEN IN TRANSCRIPTS ==')
-for s, n in cmd_use.most_common(60):
-    print(f'{n:5d}  {s}')
 
-print('\n== SLASH COMMANDS TYPED (history.jsonl) ==')
-for s, n in hist_cmds.most_common(60):
-    print(f'{n:5d}  {s}')
+def print_summary(results, history_commands, history_prompt_count):
+    print("== PER-PROJECT ACTIVITY (sessions / user msgs / first..last) ==")
+    project_stats = results["project_stats"]
+    for project, stats in sorted(
+        project_stats.items(), key=lambda item: -item[1]["user_msgs"]
+    ):
+        print(
+            f"{stats['sessions']:4d} sess {stats['user_msgs']:5d} msgs  "
+            f"{format_timestamp(stats['first'])}..{format_timestamp(stats['last'])}  "
+            f"{project}"
+        )
 
-print('\n== AGENT/TASK SUBAGENT TYPES ==')
-for s, n in agent_use.most_common(30):
-    print(f'{n:5d}  {s}')
+    print("\n== SKILL TOOL INVOCATIONS (all time, all projects) ==")
+    for skill, count in results["skill_use"].most_common(80):
+        print(f"{count:5d}  {skill}")
 
-print(f'\nTotal captured prompts: transcripts={len(prompts)} history={len(hist_prompts)}')
-print(f'Corpus files written to {SCRATCH}')
+    print("\n== SLASH COMMANDS SEEN IN TRANSCRIPTS ==")
+    for command, count in results["command_use"].most_common(60):
+        print(f"{count:5d}  {command}")
+
+    print("\n== SLASH COMMANDS TYPED (history.jsonl) ==")
+    for command, count in history_commands.most_common(60):
+        print(f"{count:5d}  {command}")
+
+    print("\n== AGENT/TASK SUBAGENT TYPES ==")
+    for agent, count in results["agent_use"].most_common(30):
+        print(f"{count:5d}  {agent}")
+
+    print(
+        "\nTotal prompt records: "
+        f"transcripts={results['prompt_count']} history={history_prompt_count}"
+    )
+
+
+def main():
+    args = parse_args()
+    capture_prompts = bool(args.corpus_dir)
+    results = mine_transcripts(
+        args.projects_root, args.max_prompt_chars, capture_prompts
+    )
+    history_commands, history_prompts, history_prompt_count = mine_history(
+        args.history_file, args.max_prompt_chars, capture_prompts
+    )
+    print_summary(results, history_commands, history_prompt_count)
+
+    if args.corpus_dir:
+        corpus_dir = os.path.abspath(os.path.expanduser(args.corpus_dir))
+        os.makedirs(corpus_dir, exist_ok=True)
+        write_jsonl(
+            os.path.join(corpus_dir, "corpus_transcripts.jsonl"), results["prompts"]
+        )
+        write_jsonl(
+            os.path.join(corpus_dir, "corpus_history.jsonl"), history_prompts
+        )
+        print(f"Sensitive corpus files written to {corpus_dir}")
+    else:
+        print("Prompt corpus not written; use --corpus-dir for an explicit sensitive export.")
+
+
+if __name__ == "__main__":
+    main()

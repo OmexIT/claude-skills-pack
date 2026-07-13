@@ -1,55 +1,91 @@
-# pgledger Invariants
+# pgledger and PostgreSQL ledger invariants
 
-Generated pgledger-mode code must preserve these invariants.
+This reference covers two related modes:
 
-The tables described here are the domain wrapper tables layered over pgledger; native pgledger objects are `pgledger_accounts` / `pgledger_transfers` / `pgledger_entries` (query via `pgledger_entries_view` and `account_current_balance`).
+1. The upstream `pgr0ss/pgledger` SQL project.
+2. A service-owned PostgreSQL double-entry schema sometimes called pgledger locally.
 
-## Transaction Invariants
+Do not mix their object names. Detect which mode the repository actually installs.
 
-- Every ledger transaction is balanced: total debits equal total credits.
-- Postings are inserted atomically in one database transaction.
-- Postings are append-only. Corrections are represented by new reversing postings.
-- Each domain operation has a unique idempotency key.
+## Upstream pgledger
 
-## Account Invariants
+Upstream pgledger is an evolving SQL implementation distributed from
+<https://github.com/pgr0ss/pgledger>. Pin the exact revision in the application and inspect its
+installed SQL before writing queries or migrations.
 
-- Account balances are derived from postings or updated from postings in the same transaction.
-- Account locks are acquired via `SELECT ... FOR UPDATE` in canonical (ascending) account ID order.
-- Currency is part of the account identity; do not post cross-currency entries without an FX transaction model.
-- Negative balances are rejected unless the account type explicitly allows overdraft.
+At the reviewed revision, public usage is based on functions and views such as
+`pgledger_create_account`, `pgledger_create_transfer`, `pgledger_accounts_view`,
+`pgledger_transfers_view`, and `pgledger_entries_view`. Underlying table names and signatures are
+not a stable contract unless the pinned revision says they are.
 
-## Schema Requirements
+- Use upstream creation functions rather than direct inserts.
+- Keep transfers in the same database transaction as related application state when atomicity is
+  the reason for choosing pgledger.
+- Each account is single-currency. Currency conversion uses balanced transfers for each currency,
+  with an explicit snapshotted rate in the application operation record.
+- Upstream uses its own prefixed identifiers. Do not rewrite them to the pack's TSID convention.
+- Verify upgrade scripts and compatibility against the pinned revision; do not patch upstream
+  tables with generic house migrations.
 
-- `ledger_accounts`: immutable account identity, owner reference, currency, account type.
-- `ledger_transactions`: domain operation ID, idempotency key, status, created timestamp.
-- `ledger_postings`: transaction ID, account ID, direction, amount, currency, `balance_after` (snapshot of the account balance after the posting), immutable audit fields.
-- Append-only is enforced by a database trigger that rejects UPDATE and DELETE on `ledger_postings`.
-- Unique constraint on idempotency key.
-- Check constraints for positive posting amounts and valid directions.
+## Service-owned ledger schema
 
-## Verification Queries
+For a local schema, names vary but these invariants do not:
 
-Balanced transaction:
+- Every transaction balances per currency: total debits equal total credits.
+- Posting insertion and any materialized balance update are atomic.
+- Entries are append-only. Corrections use new linked reversal entries.
+- A unique domain idempotency key identifies the complete intended operation.
+- Lock all affected accounts in a canonical ascending order before balance mutation.
+- Each account has one currency and a defined normal balance direction.
+- Negative available balances are rejected unless an explicit account policy allows them.
+- Positive posting amounts and explicit debit or credit direction are enforced by constraints.
+- Append-only behavior and idempotency are protected in the database, not only in application code.
+
+`balance_after` can aid audit and historical reconstruction, but concurrency and ordering must make
+it trustworthy. If the schema stores it, verify every entry's previous and next balance chain.
+
+## Verification query patterns
+
+Adapt names and normal-balance rules to the installed schema. These queries must return zero rows.
+
+Unbalanced transactions:
 
 ```sql
-SELECT transaction_id
+SELECT transaction_id, currency
 FROM ledger_postings
 GROUP BY transaction_id, currency
 HAVING SUM(CASE WHEN direction = 'DEBIT' THEN amount ELSE -amount END) <> 0;
 ```
 
-Materialized balance drift (assumes balances are stored credit-normal; for debit-normal account types flip the sign, or join account type into the CASE):
+Materialized balance drift with account-aware sign:
 
 ```sql
+WITH derived AS (
+  SELECT p.account_id,
+         SUM(
+           CASE
+             WHEN a.normal_balance = p.direction THEN p.amount
+             ELSE -p.amount
+           END
+         ) AS balance
+  FROM ledger_postings p
+  JOIN ledger_accounts a ON a.id = p.account_id
+  GROUP BY p.account_id
+)
 SELECT a.id
 FROM ledger_accounts a
-LEFT JOIN (
-  SELECT account_id,
-         SUM(CASE WHEN direction = 'CREDIT' THEN amount ELSE -amount END) AS derived_balance
-  FROM ledger_postings
-  GROUP BY account_id
-) p ON p.account_id = a.id
-WHERE a.balance <> COALESCE(p.derived_balance, 0);
+LEFT JOIN derived d ON d.account_id = a.id
+WHERE a.balance <> COALESCE(d.balance, 0);
 ```
 
-Both queries must return zero rows.
+Duplicate operation keys with different intent:
+
+```sql
+SELECT idempotency_key
+FROM ledger_transactions
+GROUP BY idempotency_key
+HAVING COUNT(*) > 1;
+```
+
+A unique constraint should normally make the last query impossible. Add operation-specific checks
+for reversal linkage, currency, and `balance_after` chain continuity where those fields exist.

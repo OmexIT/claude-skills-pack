@@ -8,18 +8,18 @@ description: >
 # Temporal workflows (Java SDK)
 
 ## House patterns
-- **SAGA**: register each compensation BEFORE executing its forward step. Catch only `ActivityFailure | ChildWorkflowFailure | ApplicationFailure`; run compensations in reverse order.
+- **SAGA**: register each compensation before its forward step, reconcile unknown financial outcomes before reversing, and run compensations in reverse order. Catch the SDK failures produced by the actual call path; never swallow replay or cancellation failures.
 - **Retry profiles** - choose by side-effect class, not by service:
-  - `LIMITED` - external-API writes (payments, KYC, provider calls): few attempts, short cap.
-  - `DEFAULT` - internal idempotent operations.
-  - `AGGRESSIVE` - reads and queries.
-- **State machines**: when transitions already live in config (multi-brand/multi-jurisdiction tables), drive them from YAML per Dynamic Dispatch in the reference; otherwise plain code.
-- **Spring wiring**: temporal-spring-boot-starter with `@WorkflowImpl`/`@ActivityImpl` on beans; Spring beans are touched only from activities.
-- **Versioning**: `Workflow.getVersion` around every behavior change while executions are open. `continueAsNew` carries forward only durable state.
-- **Signal races**: drain with `Workflow.await(() -> pendingSignals.isEmpty())` before completing.
+  - `LIMITED` - external-API writes: a small bounded attempt count, provider-aware backoff, and durable idempotency.
+  - `DEFAULT` - internal idempotent operations, still bounded by workflow deadlines.
+  - `READ` - transient reads only when retries cannot amplify load or violate provider limits.
+- **State machines**: when several real brands or jurisdictions share a proven configurable shape, pass a validated immutable versioned config snapshot into the workflow; otherwise use plain code.
+- **Spring wiring**: use the repository's version-compatible Temporal Spring integration and worker registration. Workflow code never touches Spring beans directly; activities may.
+- **Versioning**: use `Workflow.getVersion` for command-producing behavior changes that old histories can replay through. `continueAsNew` carries forward only durable state.
+- **Signal races**: wait for domain queues to drain and, when handlers can block, `Workflow.await(Workflow::isEveryHandlerFinished)` before completing or continuing as new.
 
 ## Before writing code
 Read `references/temporal-patterns.md` - versioning rules, continueAsNew criteria, child-workflow vs activity decision rule, fail-closed dynamic dispatch, and the failure-modes table (symptom → diagnosis → fix).
 
 ## Tests
-`TestWorkflowEnvironment` with time-skipping; assert compensation order with Mockito `inOrder`; replay test against recorded histories for versioned changes.
+Use `TestWorkflowEnvironment` for changed workflow behavior, ordering assertions for sagas, and recorded-history replay for command-affecting version changes. Add only the proof relevant to the change.

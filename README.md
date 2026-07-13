@@ -32,7 +32,7 @@ manifest intentionally does not declare them.
 | Skill | Use when |
 |---|---|
 | `spec` | Defining or changing WHAT to build; PRD create/update; challenging scope |
-| `plan` | Turning an approved spec or ticket into a sliced, verifiable plan doc in `docs/` |
+| `plan` | Turning an approved spec, ticket, or explicit request into a sliced, verifiable plan doc in `docs/` |
 | `build` | Executing a plan ("implement docs/...plan.md", "start slice SP-2b") |
 | `audit` | Reviewing code, diffs, or docs against house standards; expert panels |
 | `e2e` | Live verification: boot the stack, newman, Playwright, DB checks. Evidence, not claims |
@@ -47,7 +47,7 @@ manifest intentionally does not declare them.
 | `migrations` | TSID PKs, audit columns, RLS recipe, zero-downtime rules, throttled backfills |
 | `temporal` | SAGA compensation, retry profiles, versioning, failure-mode table |
 | `spring-api` | Response envelope, RFC 9457, package-by-feature layout, cursor pagination |
-| `igaming-ui` | Odds/betslip/live-state patterns, data-testid contract |
+| `igaming-ui` | Odds/betslip/live-state patterns, accessible selector contract |
 
 **Claude Code hooks** (`plugins/garage/hooks/hooks.json`): destructive-command blocker,
 sensitive-file warning, Prettier autoformat (web files only; Java/Spotless runs once in the
@@ -143,13 +143,15 @@ Delivery rules stay out of the plugin: each repo's own AGENTS.md or CLAUDE.md ca
 
 ## Global rules
 
-`docs/global-CLAUDE.md` is the canonical copy of `~/.claude/CLAUDE.md`: the standing
-voice, simplicity, testing, and verification rules for Claude Code. It is repository
-maintenance material, not part of either installed plugin.
+`docs/global-CLAUDE.md` is an optional reference for personal Claude Code instructions: standing
+voice, simplicity, testing, and verification rules. It is repository maintenance material, not
+part of either installed plugin, and local global instructions may deliberately differ.
 
 ## Evolution policy
 
-- Quarterly: run `python3 scripts/usage-audit.py`; skills unused for two quarters get deleted.
+- Quarterly: run `python3 scripts/usage-audit.py`; skills unused for two quarters get deleted. The
+  default run is read-only. Use `--corpus-dir <private-path>` only when raw prompt excerpts are
+  genuinely needed, and never commit that sensitive output.
 - When an official plugin reaches parity with a skill here, delete the skill the same week.
 - New domain skills require at least 3 real uses of the pattern first. No speculative skills.
 - Bump both `plugins/garage/.claude-plugin/plugin.json` and

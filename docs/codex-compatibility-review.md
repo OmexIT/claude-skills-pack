@@ -32,8 +32,9 @@ Passed against the 2026-07-13 checkout:
 - `claude --plugin-dir plugins/garage --help` loaded the nested plugin successfully.
 - JSON parsing, manifest-version parity, and `git diff --check` passed.
 
-The local checkout is proven installable. The documented `OmexIT/claude-skills-pack` Git install
-will expose this version after these changes are committed and pushed.
+Version 1.1.0 was committed and pushed on 2026-07-13, so both local-path and documented Git
+installation are available. The later 1.2.0 content review is tracked separately in
+`docs/skills-content-review-2026-07-13.md`.
 
 ## Deliberate non-parity
 
@@ -41,3 +42,11 @@ will expose this version after these changes are committed and pushed.
   plugin manifest.
 - `scripts/usage-audit.py` remains a repository-maintenance tool for Claude Code history. It is
   outside the installed plugin and must not be treated as cross-client usage telemetry.
+
+## Version 1.2.0 content follow-up
+
+The full skill-content review in `docs/skills-content-review-2026-07-13.md` removed contradictory
+and unsafe guidance while preserving the same 12-skill topology. A fresh isolated Codex home
+installed and enabled version 1.2.0, cached all 12 skills, and produced a cache identical to the
+plugin checkout. Claude marketplace/plugin validation, all Codex skill/plugin validators, 33 hook
+tests, JSON parsing, shell syntax, usage-audit fixtures, and `git diff --check` passed.

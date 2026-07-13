@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Smoke tests for the garage hooks. Run after any pattern change:
 
-    python3 hooks/test_hooks.py
+    python3 plugins/garage/hooks/test_hooks.py
 
 Each case pipes a real PreToolUse payload through the hook and asserts the
 block/warn decision. Keep should-block and should-pass cases paired.
@@ -41,15 +41,24 @@ results += [
     # must block
     bash_case(fork_bomb, True),
     bash_case('rm -rf ~/', True),
+    bash_case('rm -fr /', True),
+    bash_case('rm -r -f -- /', True),
+    bash_case('rm --force --recursive ${HOME}', True),
     bash_case('git push origin main --force', True),
+    bash_case('git reset --hard prod', True),
     bash_case('TRUNCATE TABLE public.users', True),
     bash_case('docker volume prune -f', True),
+    bash_case('docker system prune -f', True),
+    bash_case('docker system prune -af', True),
     bash_case(dd_device, True),
     bash_case('DROP SCHEMA IF EXISTS ledger CASCADE', True),
     bash_case("git commit -m 'safe note' && docker volume prune -f", True),
     # must pass
     bash_case('ls -la', False),
     bash_case('dd if=/dev/zero of=testfile bs=1M count=1', False),
+    bash_case('rm -rf /tmp/project', False),
+    bash_case('rm -rf ./build', False),
+    bash_case('docker system prune', False),
     bash_case('git push --force-with-lease origin main', False),
     bash_case('git push -f origin feature-x', False),
     bash_case("git commit -m 'hooks: docker volume prune and TRUNCATE TABLE notes'", False),
@@ -58,11 +67,16 @@ results += [
     # must warn
     guard_case('/x/application-prod.properties', True),
     guard_case('/x/.env', True),
+    guard_case('/x/.env.local', True),
     guard_case('/x/secrets.yaml', True),
+    guard_case('/x/signing.key', True),
+    guard_case('/x/release.jks', True),
+    guard_case('/x/id_ed25519', True),
     # must stay silent
     guard_case('/x/.env.example', False),
     guard_case('/x/app.environment.ts', False),
     guard_case('/x/id_rsa.pub', False),
+    guard_case('/x/signing.key.example', False),
 ]
 
 print(f"\n{sum(results)}/{len(results)} hook smoke tests passed")

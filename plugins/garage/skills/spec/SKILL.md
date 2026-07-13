@@ -7,7 +7,7 @@ description: >
 
 # Product spec (PRD-first)
 
-PRDs are law in these repos: code follows the PRD, and divergence found later is a bug to flag - not a precedent to follow.
+An approved PRD records intended behavior. Live implementation, decisions, and external source-of-truth contracts can reveal that it is stale. Classify divergence before editing: code defect, undocumented approved change, stale spec, or unresolved decision. Reconcile the authoritative artifact instead of copying drift silently.
 
 ## Mode detection
 - **Challenge** - user is unsure whether to build: run only the scope gate, report, stop.
@@ -24,8 +24,8 @@ Answer in five lines; recommend kill or shrink when answers are weak:
 
 ## Create mode
 - Clarify only what's genuinely missing - one question at a time, multiple-choice where possible (persona, problem, success measure, constraints).
-- Find the repo's PRD home (`docs/prd/`, `docs/prd.md`, `PRODUCT.md`) and match its structure; otherwise use `references/prd-template.md`.
-- Every P0 requirement: Given/When/Then acceptance criteria + ≥2 edge cases. NFRs per feature, not global. Non-goals are mandatory.
+- Find the repo's PRD home (`docs/prd/`, `docs/prd.md`, `PRODUCT.md`) and match its structure; otherwise use `assets/prd-template.md`.
+- Every non-trivial P0 requirement: Given/When/Then acceptance criteria plus at least two materially different edge cases. Do not invent filler for a genuinely atomic rule. NFRs are feature-specific; non-goals are mandatory.
 - State system-of-record and ownership boundaries explicitly ("Service A is the system of record for loans; this service must not evolve into a loan-management system").
 - Include a negative-constraints section: what must NOT be built or changed.
 
@@ -37,4 +37,4 @@ Answer in five lines; recommend kill or shrink when answers are weak:
 ## Self-review - spec smells
 Flag before presenting: solution masquerading as requirement · vague metric ("improve UX") · missing non-goals · requirement without testable criteria · TBD without owner · "while we're at it" scope creep.
 
-Run the Definition-of-Ready checklist from the template. Present for approval - implementation starts only from an approved spec, via `plan`.
+Run the Definition-of-Ready checklist from the template. Present for approval when approval is part of the repository workflow; implementation proceeds via `plan` once scope is explicit and authorized.

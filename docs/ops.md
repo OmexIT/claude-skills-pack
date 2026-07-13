@@ -1,12 +1,14 @@
 # Ops quick tables - incidents, postmortems, runbooks
 
 Reference knowledge (not a skill - read when production is on fire or when writing ops docs).
+The organization's incident policy, regulator, customer contracts, and incident commander are the
+source of truth. The table below is a starting point, not authority to contact external parties.
 
 ## Severity & comms
 
 | SEV | Meaning | Response | Internal updates |
 |---|---|---|---|
-| 1 | Service down or data loss | All hands; external comms required | every 15 min |
+| 1 | Service down or data loss | Dedicated incident command; coordinate authorized external comms | every 15 min |
 | 2 | Major degradation, many users | Dedicated response team | every 30 min |
 | 3 | Partial impact, workaround exists | Normal priority | on progress |
 | 4 | Minor | Normal workflow | ticket |

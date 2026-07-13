@@ -1,66 +1,79 @@
-# Blnk API Contract
+# Blnk adapter contract
 
-This is the adapter contract expected by generated Blnk-mode code. Confirm endpoint paths and payload fields against the deployed Blnk version before implementation.
+Blnk evolves independently of this pack. Confirm request fields, endpoint paths, response states,
+and deployed version against the current Blnk documentation and the target environment before
+implementation. Do not generate an adapter solely from this reference.
 
-## Required Capabilities
+## Adapter responsibilities
 
-- Create or resolve ledger accounts by stable external reference.
-- Post balanced transfers with an idempotency key.
-- Place holds and release or capture those holds.
-- Reverse a completed transfer with an explicit reversal reference.
-- Query balances and transaction history for reconciliation.
+- Create or resolve balances by a stable domain reference.
+- Record transfers with a domain-owned unique transaction `reference`.
+- Create inflight holds and commit or void them.
+- Record reversals as new immutable transactions.
+- Query by transaction ID and reference, follow parent transactions, and reconcile state.
+- Persist enough operation evidence to recover after a timeout or webhook gap.
 
-## Generated Client Shape
+Keep provider terminology inside the adapter. The application port should express domain
+operations and explicit outcomes such as applied, inflight, rejected, and pending reconciliation.
 
-```java
-interface BlnkLedgerClient {
-  LedgerAccountRef ensureAccount(AccountRequest request);
-  LedgerTransferRef postTransfer(TransferRequest request);
-  LedgerHoldRef placeHold(HoldRequest request);
-  LedgerTransferRef captureHold(CaptureRequest request);
-  LedgerTransferRef releaseHold(ReleaseRequest request);
-  LedgerTransferRef reverseTransfer(ReversalRequest request);
-  LedgerBalance getBalance(LedgerAccountRef accountRef);
-}
-```
+## Transaction and inflight mapping
 
-## Inflight (Holds) Mapping
+- A transaction request uses `reference` for provider idempotency and includes the authoritative
+  source, destination, amount, currency, and precision.
+- `inflight: true` reserves funds and yields an `INFLIGHT` transaction once processed.
+- Committing an inflight transaction creates an immutable `APPLIED` child; voiding creates a
+  `VOID` child. Follow `parent_transaction` rather than mutating local history.
+- Partial commit and scheduled inflight behavior are version-dependent. Use them only when the
+  deployed version and business flow explicitly require them.
+- Available funds account for inflight debit balance. Never authorize spend from the posted
+  balance alone.
+- Queue and `skip_queue` modes have different response timing. A queued acknowledgement is not an
+  applied transaction.
 
-- `placeHold` = `POST /transactions` with `inflight: true`.
-- `captureHold` = `PUT /transactions/inflight/{transaction_id}` with status `commit` (partial commits pass an amount).
-- `releaseHold` = `PUT /transactions/inflight/{transaction_id}` with status `void`.
-- Available balance to spend = `balance − inflight_debit_balance`.
-- An inflight transaction unresolved past its expiry falls under `PENDING_RECONCILIATION` (see Failure Handling).
+Current upstream overview:
+<https://docs.blnkfinance.com/transactions/introduction> and
+<https://docs.blnkfinance.com/transactions/transaction-lifecycle>.
 
-## Required Headers
+## Authentication and transport
 
-- `X-blnk-key`: provider credential from configuration or secret storage (required when the Blnk server runs in secure mode).
-- `Content-Type: application/json`.
+- Read the base URL, authentication mode, key, and timeouts from secure configuration.
+- `X-Blnk-Key` is used when the deployed Blnk instance enables secure mode.
+- Never log credentials or unredacted sensitive metadata.
+- Bound calls with operation-appropriate timeouts and record request start, response, and error
+  classification for reconciliation.
 
-Blnk has no idempotency header; the idempotency key travels in the transaction body `reference` field (see Idempotency Rules).
+## Idempotency and duplicate references
 
-## Idempotency Rules
+- The domain service creates one stable reference per business operation. A retry reuses it.
+- A duplicate-reference response is not sufficient proof that this request already succeeded.
+- Fetch the original transaction by reference and compare at least the business operation,
+  source, destination, amount or precise amount, currency, and intended operation type.
+- If every invariant matches, return or reconcile to the original provider result.
+- If any invariant differs, fail closed as an idempotency conflict and alert. Never accept a
+  different transaction merely because the reference collides.
+- Do not mint a new reference after a timeout or duplicate response.
 
-- Idempotency is enforced by the unique `reference` field in the transaction body, not an HTTP header. Map the domain-generated idempotency key to `reference` (this is the same "Idempotency key" persisted under Reconciliation Fields). A duplicate reference is rejected (409 `TXN_DUPLICATE_REFERENCE`) or deduplicated in the queue; treat it as already-applied and fetch the original transaction by reference.
-- Idempotency keys are generated by the domain service, not the HTTP client.
-- Retrying the same key must return the original provider reference.
-- Provider conflicts must be mapped to a deterministic domain error.
+## Durable operation record
 
-## Reconciliation Fields
+Persist before or atomically with dispatch, as the architecture allows:
 
-Persist these fields for every provider operation:
+- Domain operation ID and stable Blnk reference.
+- Provider transaction and parent IDs when known.
+- Source and destination references.
+- Amount, precision, and currency.
+- Intended operation: transfer, hold, commit, void, or reversal.
+- Provider and domain status, attempts, and timestamps.
+- A hash or canonical snapshot of the identity fields used for duplicate comparison.
 
-- Domain operation ID.
-- Provider transfer or hold ID.
-- Debit account reference.
-- Credit account reference.
-- Amount and currency.
-- Idempotency key.
-- Provider status.
-- Provider request/response timestamps.
+## Unknown and reconciliation behavior
 
-## Failure Handling
+- A timeout, connection reset, ambiguous 5xx, or missing webhook after dispatch can mean the
+  provider applied the mutation. Mark it `PENDING_RECONCILIATION`.
+- Reconcile by stable reference and transaction lineage before retrying, compensating, or telling
+  the caller the operation failed.
+- Reconciliation is idempotent and can transition only from observed provider evidence.
+- A compensation is a new referenced transaction. It never edits or deletes provider history.
+- Alert on unresolved inflight operations, mismatched duplicate references, and reconciliation age.
 
-- Treat unknown provider result after timeout as `PENDING_RECONCILIATION`.
-- Never retry a mutating call with a new idempotency key.
-- Reconcile before issuing a compensating transfer.
+Provider docs describe lookup by reference and transaction lineage; adapter tests should exercise
+the exact behavior of the deployed Blnk version.

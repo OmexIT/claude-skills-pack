@@ -6,8 +6,8 @@ the shared skills but does not load these hooks.
 
 | Hook | Event | Purpose |
 |---|---|---|
-| `pre-bash.py` | `PreToolUse(Bash)` | Blocks destructive commands: `rm -rf /` and `rm -rf ~`, fork bombs, `dd` to raw devices, `DROP DATABASE` / `DROP SCHEMA ... CASCADE`, `TRUNCATE` (incl. schema-qualified and TABLE-less forms), `docker volume rm`/`prune`, force-push and hard-reset on protected branches. `git commit/tag -m` message payloads are exempt (data, not commands); `--force-with-lease` is allowed. Exit 2 = block. |
-| `pre-edit-guard.py` | `PreToolUse(Edit\|Write\|MultiEdit)` | Non-blocking `systemMessage` warning (stdout JSON) when editing sensitive files (`.env*`, `secrets.*`, `application-prod.*`, keys/keystores). |
+| `pre-bash.py` | `PreToolUse(Bash)` | Blocks destructive commands: recursive forced removal of root/home across common option forms, fork bombs, raw-device writes, `DROP DATABASE` / `DROP SCHEMA ... CASCADE`, `TRUNCATE` (including schema-qualified and TABLE-less forms), destructive Docker pruning/volume removal, force-push and hard-reset on protected branches. `git commit/tag -m` message payloads are exempt because they are data; `--force-with-lease` is allowed. Exit 2 means block. |
+| `pre-edit-guard.py` | `PreToolUse(Edit\|Write\|MultiEdit)` | Non-blocking `systemMessage` warning (stdout JSON) when editing sensitive files (`.env*`, `secrets.*`, production config, private-key files, and common keystores). |
 | `post-edit-format.py` | `PostToolUse(Edit\|Write\|MultiEdit)` | Best-effort Prettier autoformat for TS/JS/JSON/CSS/MD (<~300ms, 10s cap). Java is deliberately NOT formatted per edit - a Gradle/Maven invocation costs seconds to minutes; Spotless runs once in the `ship` gate. |
 
 ## Protocol notes

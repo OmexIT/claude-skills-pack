@@ -8,11 +8,14 @@ description: >
 # Database migrations
 
 ## House law (Postgres)
-- **PKs**: `BIGINT` app-generated TSID. Never `SERIAL` / `IDENTITY` / UUID PKs. External identifiers: UUIDv7 in a separate column.
-- **Audit quartet** on every table: `created_at`/`updated_at` (`TIMESTAMPTZ`), `created_by`/`updated_by` (actor ID, matching the actor's PK type).
-- **Money**: `NUMERIC(20,2)` fiat / `NUMERIC(20,8)` crypto. **Time**: `TIMESTAMPTZ` only.
-- **Enums**: `TEXT` + `CHECK` constraint - never native Postgres enums.
-- **Multi-tenant tables**: full RLS - `ENABLE` + `FORCE ROW LEVEL SECURITY`, policy on `current_setting('app.tenant_id')`.
+These defaults apply to service-owned schemas. Third-party and provider-managed schemas keep their
+own versioned contract.
+
+- **PKs**: `BIGINT` app-generated TSID, with UUIDv7 as a separate public identifier. Do not retrofit upstream package schemas or expose storage keys.
+- **Audit fields by lifecycle**: every business row records creation time and actor when an actor exists. Mutable rows also record update time and actor. Append-only rows do not pretend to update.
+- **Money**: `NUMERIC(precision, scale)` derived from the supported currency or asset contract; common two-decimal fiat may use `NUMERIC(20,2)`, but not when the asset set needs another scale. **Time**: `TIMESTAMPTZ` for instants.
+- **Closed enums**: `TEXT` + `CHECK`; use a reference table when values evolve independently. Avoid native Postgres enums when rolling change is required.
+- **Multi-tenant tables**: use tested RLS when the service relies on database tenant enforcement, including `ENABLE`, normally `FORCE ROW LEVEL SECURITY`, and a policy based on the correctly typed `current_setting('app.tenant_id', true)` value.
 - **Naming**: `<scope>-<NNN>-<description>.sql` (Liquibase, established services) / timestamp versions (Flyway, newer services; avoids merge conflicts). Match what the repo already uses. Greenfield (unreleased) repos: edit the existing changeset instead of stacking history.
 
 ## Zero-downtime rules
@@ -22,7 +25,7 @@ description: >
 - Destructive ops (`DROP`, `TRUNCATE`, column removal) require explicit user confirmation and a documented rollback story.
 
 ## Backfills
-Batched `DO` loop with `pg_sleep` throttle, `--runInTransaction:false` (Flyway: `executeInTransaction=false` in the migration's script config file); when rollback is `SELECT 1`, mark the changeset irreversible and say so in the plan/PR. Pattern: `references/backfill-pattern.md`.
+Prefer a resumable application job for complex or long backfills. A PostgreSQL `DO` loop with per-batch commits is valid only when the exact runner executes it at top level outside a transaction: Liquibase puts `runInTransaction:false` on the `--changeset` line; Flyway uses `executeInTransaction=false` in script configuration. Irreversible changes have no fake rollback and must state restore or forward-fix steps. Pattern: `references/backfill-pattern.md`.
 
 ## Verification
 Fresh-container run must apply cleanly from scratch; rollback tested where reversible; ledger-table changes also satisfy the `ledger` skill invariants.

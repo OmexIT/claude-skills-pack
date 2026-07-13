@@ -10,21 +10,27 @@ import re
 import sys
 
 BLOCK_PATTERNS = [
-    (r"\brm\s+-rf\s+/($|\s)", "rm -rf /"),
-    (r"\brm\s+-rf\s+~/?($|\s)", "rm -rf ~"),
-    (r"\brm\s+-rf\s+/\*", "rm -rf /*"),
+    (
+        r"\brm\s+(?=[^;&|\n]*(?:-[A-Za-z]*r|--recursive))"
+        r"(?=[^;&|\n]*(?:-[A-Za-z]*f|--force))[^;&|\n]*"
+        r"(?:--\s+)?(?:/|/\*|~/?|~/\*|\$HOME/?|\$\{HOME\}/?)"
+        r"(?=$|[\s;&|])",
+        "recursive forced removal of root or home",
+    ),
     (r"\bdd\s+.*\bof=/dev/(?!null\b)", "dd writing to raw device"),
     (r":\(\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:", "fork bomb"),
     (r"\bmkfs\.", "mkfs"),
-    (r">\s*/dev/sd[a-z]", "direct disk write"),
+    (r">\s*/dev/(?:sd[a-z]|nvme\w+|mmcblk\w+|r?disk\w+|mapper/\S+)",
+     "direct disk write"),
     (r"\bgit\s+push\b(?=.*\s(-f|--force)(\s|$))(?=.*\b(main|master|production|prod)\b)",
      "force push protected branch"),
-    (r"\bgit\s+reset\s+--hard\s+origin/(main|master|production)",
+    (r"\bgit\s+reset\s+--hard\s+(?:origin/)?(main|master|production|prod)(?:\s|$)",
      "hard reset protected branch"),
     (r"\bDROP\s+DATABASE\b", "DROP DATABASE"),
     (r'\bDROP\s+SCHEMA\s+(IF\s+EXISTS\s+)?[\w"]+\s+CASCADE', "DROP SCHEMA CASCADE"),
     (r'\bTRUNCATE\s+(TABLE\s+)?[\w."]+', "TRUNCATE TABLE (use tenant-scoped delete instead)"),
-    (r"\bdocker\s+system\s+prune\s+(-a|--all|--force)", "docker system prune -a"),
+    (r"\bdocker\s+system\s+prune\b(?=[^;&|\n]*(?:--all|--force|-[A-Za-z]*[af]))",
+     "forced or all-data docker system prune"),
     (r"\bdocker\s+volume\s+rm\s+", "docker volume rm (data loss)"),
     (r"\bdocker\s+(volume\s+prune|system\s+prune\s+.*--volumes)", "docker volume prune (data loss)"),
 ]

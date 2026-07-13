@@ -14,9 +14,11 @@ workflow spine (spec, plan, build, audit, e2e, ship, debug) and 5 domain-law ski
 plugins/garage/        shared installable plugin
   .claude-plugin/      Claude Code plugin manifest
   .codex-plugin/       Codex plugin manifest
-  skills/<name>/       SKILL.md (+ references/ for heavy knowledge, scripts/ for tools)
+  skills/<name>/       SKILL.md (+ references/ for knowledge, assets/ for output templates,
+                        scripts/ for tools)
+  references/          shared cross-skill references
   hooks/               Claude Code hooks + tests (not loaded by Codex)
-docs/                  non-loaded knowledge: global-CLAUDE.md (canonical), ops.md,
+docs/                  non-loaded knowledge: optional global-CLAUDE.md reference, ops.md,
                        mobile-defaults.md
 scripts/usage-audit.py transcript miner for the quarterly usage review
 ```
@@ -42,7 +44,8 @@ scripts/usage-audit.py transcript miner for the quarterly usage review
 - Hooks read JSON on stdin; block = exit 2 + stderr; warn = stderr + exit 0; side-effect
   hooks exit 0 silently.
 - Quarterly: run `scripts/usage-audit.py`; delete skills unused for two quarters; when an
-  official plugin reaches parity with a skill, delete the skill.
+  official plugin reaches parity with a skill, delete the skill. Raw prompt export is opt-in via
+  `--corpus-dir` and its output is sensitive, local-only data.
 - New domain skills require at least 3 real uses of the pattern first. No speculative skills.
 - Bump both plugin manifests on every plugin change.
 - Validate before shipping:
