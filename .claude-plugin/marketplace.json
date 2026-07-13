@@ -1,10 +1,11 @@
 {
   "name": "garage",
+  "description": "Antony's cross-client engineering copilot for Claude Code and Codex.",
   "owner": { "name": "Antony Omeri" },
   "plugins": [
     {
       "name": "garage",
-      "source": "./",
+      "source": "./plugins/garage",
       "description": "Personal engineering copilot: spec → plan → build → audit → e2e → ship, plus fintech domain law (ledger, temporal, migrations, spring-api, igaming-ui)."
     }
   ]

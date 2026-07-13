@@ -1,0 +1,37 @@
+{
+  "name": "garage",
+  "version": "1.1.0",
+  "description": "Engineering workflow and fintech domain skills for Codex.",
+  "author": {
+    "name": "Antony Omeri",
+    "email": "antonyomeri@gmail.com",
+    "url": "https://github.com/OmexIT"
+  },
+  "homepage": "https://github.com/OmexIT/claude-skills-pack",
+  "repository": "https://github.com/OmexIT/claude-skills-pack",
+  "license": "MIT",
+  "keywords": [
+    "engineering",
+    "workflow",
+    "fintech",
+    "spring",
+    "temporal"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Garage",
+    "shortDescription": "Engineering workflow and fintech domain skills.",
+    "longDescription": "A 12-skill engineering copilot for specification, planning, implementation, review, live verification, shipping, debugging, and fintech domain work.",
+    "developerName": "Antony Omeri",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Turn this approved spec into a verifiable plan.",
+      "Audit this change against our engineering standards.",
+      "Verify this implementation against the live stack."
+    ]
+  }
+}

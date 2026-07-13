@@ -1,0 +1,20 @@
+{
+  "name": "garage",
+  "interface": {
+    "displayName": "Garage"
+  },
+  "plugins": [
+    {
+      "name": "garage",
+      "source": {
+        "source": "local",
+        "path": "./plugins/garage"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

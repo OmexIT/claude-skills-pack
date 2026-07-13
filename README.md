@@ -1,4 +1,4 @@
-# garage: engineering copilot plugin for Claude Code
+# garage: engineering copilot for Claude Code and Codex
 
 A 12-skill plugin encoding one engineer's actual workflow and house engineering law, rebuilt
 2026-07-07 from usage evidence (2,597 real prompts) after the previous 48-skill generation
@@ -6,12 +6,24 @@ recorded zero invocations. The old pack lives at tag `pre-redesign`.
 
 ## Install
 
+### Claude Code
+
 ```bash
 claude plugin marketplace add OmexIT/claude-skills-pack   # or the local repo path
 # in Claude Code: /plugin, enable "garage", restart session
 ```
 
-Skills, references, and hooks all ship together. No copy scripts.
+### Codex
+
+```bash
+codex plugin marketplace add OmexIT/claude-skills-pack   # or the local repo path
+codex plugin add garage@garage
+# start a new Codex thread so the installed skills are loaded
+```
+
+Both clients install the same 12 skills, references, and skill scripts. The three lifecycle
+hooks use Claude Code's hook protocol and are loaded only by Claude Code; Codex's plugin
+manifest intentionally does not declare them.
 
 ## The skills
 
@@ -37,8 +49,9 @@ Skills, references, and hooks all ship together. No copy scripts.
 | `spring-api` | Response envelope, RFC 9457, package-by-feature layout, cursor pagination |
 | `igaming-ui` | Odds/betslip/live-state patterns, data-testid contract |
 
-**Hooks** (`hooks/hooks.json`): destructive-command blocker, sensitive-file warning,
-Prettier autoformat (web files only; Java/Spotless runs once in the `ship` gate).
+**Claude Code hooks** (`plugins/garage/hooks/hooks.json`): destructive-command blocker,
+sensitive-file warning, Prettier autoformat (web files only; Java/Spotless runs once in the
+`ship` gate).
 
 ## The golden path
 
@@ -52,7 +65,8 @@ Plans live in each repo's `docs/.../plans/` with checkboxes as durable session s
 
 ## Usage samples
 
-Skills fire on natural phrasing; force one explicitly with `/garage:<skill>`.
+Skills fire on natural phrasing. Force one explicitly with `/garage:<skill>` in Claude Code
+or `$garage:<skill>` in Codex.
 
 **Single skills**
 
@@ -114,8 +128,8 @@ core user flows live. Ranked findings only, fix nothing."
 
 ## Per-repo ship policy
 
-Delivery rules stay out of the plugin: each repo's own CLAUDE.md carries a `## Ship policy`
-block that the `ship` skill reads. Template:
+Delivery rules stay out of the plugin: each repo's own AGENTS.md or CLAUDE.md carries a
+`## Ship policy` block that the `ship` skill reads. Template:
 
 ```markdown
 ## Ship policy
@@ -130,14 +144,16 @@ block that the `ship` skill reads. Template:
 ## Global rules
 
 `docs/global-CLAUDE.md` is the canonical copy of `~/.claude/CLAUDE.md`: the standing
-voice, simplicity, testing, and verification rules. Keep the two in sync.
+voice, simplicity, testing, and verification rules for Claude Code. It is repository
+maintenance material, not part of either installed plugin.
 
 ## Evolution policy
 
 - Quarterly: run `python3 scripts/usage-audit.py`; skills unused for two quarters get deleted.
 - When an official plugin reaches parity with a skill here, delete the skill the same week.
 - New domain skills require at least 3 real uses of the pattern first. No speculative skills.
-- Bump `.claude-plugin/plugin.json` on every change.
+- Bump both `plugins/garage/.claude-plugin/plugin.json` and
+  `plugins/garage/.codex-plugin/plugin.json` on every plugin change.
 
 ## License
 
