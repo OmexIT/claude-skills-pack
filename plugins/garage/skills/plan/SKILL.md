@@ -3,6 +3,8 @@ name: plan
 description: >
   Use when a feature, refactor, or fix needs an implementation plan before coding - turning an
   approved spec, ticket, or explicit user request into an executable, verifiable plan document.
+  Also when picking work back up after a context reset or a break: "status?", "what is
+  pending?", "where were we".
 ---
 
 # Implementation plan
@@ -28,3 +30,6 @@ Follow the repo's existing convention: `docs/superpowers/plans/` where establish
 
 ## Bar
 Done when any slice could be executed by a fresh session without questions, and every slice says how it will be verified. As short as completeness allows - no essay sections. Execution proceeds slice by slice via `build`.
+
+## Resume mode ("status?", "what is pending?")
+Answer from the plan document, never from recollection. Read the most recently dated plan that still has unchecked boxes; when several are active, report each briefly rather than guessing which one is meant. Reconcile its checkboxes against reality - uncommitted diff, branch state, last verify output - before reporting, and report any contradiction as a discrepancy; correct the document when work resumes, not in answer to a status question. Close with done vs pending slices and the single next action.

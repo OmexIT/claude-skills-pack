@@ -14,6 +14,9 @@ Read the repo's verification config: AGENTS.md, CLAUDE.md, `TESTING-NOTES.md`,
 command (compose file), health checks, ports, seed data, test credentials per role, newman
 collection paths, Playwright config, DB connection. If none exists, offer to create
 `docs/verification.md`; keep real credentials in a gitignored local file or secret store.
+When ports, hosts, or boot commands arrive in chat, record them in that config in the same
+session so the next one does not have to ask again. Credentials never go in a committed file:
+record only which gitignored file or secret store holds them.
 
 ## Layers - run what the change touches
 - **Boot**: use the repository's boot command (often `docker compose up -d`), wait on its health checks, confirm migrations applied, and capture logs on failure.

@@ -8,7 +8,7 @@ description: >
 # Build
 
 ## Input
-A plan doc path or slice id - or a small directly-scoped change. Non-trivial work with no plan? Write one first (`plan`).
+A plan doc path or slice id - or a small directly-scoped change. Non-trivial work with no plan? Write one first (`plan`). A "fix this" whose cause is not yet established is not a build input: that is `debug`.
 
 ## Execution rules
 1. When a plan exists, work slice by slice in its order and update checkboxes as tasks complete. The plan is durable state that survives context resets; "what's pending?" must be answerable from it alone.

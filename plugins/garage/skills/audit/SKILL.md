@@ -1,10 +1,11 @@
 ---
 name: audit
 description: >
-  Use when reviewing code, a diff, a module, an architecture, or a design/spec document against
-  house standards - including multi-expert panel reviews ("review with a DDD expert and an
-  asset-finance expert"). Also when running a removal-first simplification sweep: "what can we
-  remove", "product simplification review".
+  Use when asked to review work: "review this", "any issues here", "review the PRD against the
+  code", or a review of a diff, module, architecture, or design/spec document - including
+  multi-expert panel reviews ("review with a DDD expert and an asset-finance expert"). Also when
+  running a removal-first simplification sweep: "what can we remove", "product simplification
+  review".
 ---
 
 # Audit - evidence-mandatory review
@@ -30,13 +31,13 @@ References: `references/arch-invariants.md` for the review rules,
 `references/archunit-setup.md` for executable boundary checks.
 
 ## Doc/spec audit mode
-For PRDs, specs, and plans: spec-smells scan (vague metrics, solution-as-requirement, missing non-goals, untestable criteria, TBD without owner), requirement-coverage check, and - when requested - a panel of named domain experts. Findings quote the document or show the scoped absence of required content.
+For PRDs, specs, and plans: spec-smells scan (vague metrics, solution-as-requirement, missing non-goals, untestable criteria, TBD without owner), requirement-coverage check, and - when requested - a panel of named domain experts. Findings quote the document or show the scoped absence of required content. This mode reports; it does not rewrite the document. Edits to a PRD or spec flow through `spec`.
 
 ## Simplification sweep mode
 "simplification sweep", "what can we remove", "product simplification review": removal-first review of the whole application (or a named area). Hunt across features (speculative, partial, duplicate capabilities, low-value settings), user journeys (steps, decisions, and forms that can collapse), backend (duplicate logic, unnecessary abstractions, unjustified async, redundant persistence, excessive config), frontend (duplicate components, screens, state), and database (redundant tables, unused columns and indexes). Output a ranked remove / simplify / consolidate list - each item with evidence, user or business impact, effort, and risk - plus remaining-debt notes. Descoping flows through `spec` (PRD updates), execution through `build`.
 
 ## Output
-Ranked findings, each independently actionable. Close with: fix-now (P1/P2) vs ticket-for-later. When asked to "fix all findings": save or update the plan, then execute the authorized fixes via `build`.
+Ranked findings, each independently actionable. Close with: fix-now (P1/P2) vs ticket-for-later. When asked to "fix all findings": save or update the plan, then execute the authorized code fixes via `build` and any document fixes via `spec`.
 
 Complements any platform-native diff review: audit reviews against house standards and
 architecture. Run both before significant merges.
