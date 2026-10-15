@@ -1,8 +1,9 @@
-# garage: engineering copilot for Claude Code and Codex
+# garage: engineering skill pack for Claude Code and Codex
 
-A 12-skill plugin encoding one engineer's actual workflow and house engineering law, rebuilt
-2026-07-07 from usage evidence (2,597 real prompts) after the previous 48-skill generation
-recorded zero invocations. The old pack lives at tag `pre-redesign`.
+48 skills covering product discovery, specs and design, implementation from a spec, review,
+live verification, operations, and fintech domain work. Version 2.0.0 restores the original
+pack (tag `pre-redesign`) in place of the 12-skill rebuild (last released as 1.3.0), ported so
+the same files install in both Claude Code and Codex.
 
 ## Install
 
@@ -21,125 +22,107 @@ codex plugin add garage@garage
 # start a new Codex thread so the installed skills are loaded
 ```
 
-Both clients install the same 12 skills, references, and skill scripts. The three lifecycle
-hooks use Claude Code's hook protocol and are loaded only by Claude Code; Codex's plugin
-manifest intentionally does not declare them.
+Both clients install the same skills, references, templates, and scripts. The three lifecycle
+hooks use Claude Code's hook protocol and load only in Claude Code.
+
+## Using the skills
+
+Skills fire on natural phrasing ("write the PRD for payment links", "implement this spec",
+"audit the payments module"). To force one, use `/garage:<skill>` in Claude Code or
+`$garage:<skill>` in Codex. Skills that are marked manual-only below never fire on their own in Codex.
+
+Orchestrating skills describe delegation (agent rosters, parallel waves, worktrees, model
+labels) in Claude Code notation. `plugins/garage/references/cross-client.md` says how each of
+those maps to Codex, which runs the same roles with subagents when available or sequentially.
 
 ## The skills
 
-**Workflow spine** (mirrors the real loop; each step optional):
+**Product discovery and strategy**
 
 | Skill | Use when |
 |---|---|
-| `spec` | Defining or changing WHAT to build; PRD create/update; challenging scope |
-| `plan` | Turning an approved spec, ticket, or explicit request into a sliced, verifiable plan doc in `docs/` |
-| `build` | Executing a plan ("implement docs/...plan.md", "start slice SP-2b") |
-| `audit` | Reviewing code, diffs, or docs against house standards; expert panels |
-| `e2e` | Live verification: boot the stack, newman, Playwright, DB checks. Evidence, not claims |
-| `ship` | Commit / PR / MR / branch promotion per each repo's delivery policy |
-| `debug` | Any bug or unexpected behavior, before proposing fixes |
+| `opportunity-assessment` | Deciding whether a feature is worth building |
+| `competitive-analysis` | Comparing competitors and market positioning |
+| `go-to-market` | Planning a launch: messaging, channels, enablement |
 
-**Domain law** (auto-triggers on subject matter):
+**Planning and requirements**
 
-| Skill | Carries |
+| Skill | Use when |
 |---|---|
-| `ledger` | Double-entry invariants, idempotency key grammar, Blnk + pgledger contracts |
-| `migrations` | TSID PKs, audit columns, RLS recipe, zero-downtime rules, throttled backfills |
-| `temporal` | SAGA compensation, retry profiles, versioning, failure-mode table |
-| `spring-api` | Response envelope, RFC 9457, package-by-feature layout, cursor pagination |
-| `igaming-ui` | Odds/betslip/live-state patterns, accessible selector contract |
+| `prd` | Writing a PRD, or surgically updating one to match what was built |
+| `design-doc` | Writing or reviewing a system design doc or RFC |
+| `adr` | Recording an architecture decision and its alternatives |
+| `user-flow` | Mapping user journeys, decision points, and error states |
+| `flow-map` | Mapping every system path before coding; each path becomes a test case |
+| `ui-design` | Producing wireframes, tokens, component specs, and a11y notes from a spec |
+| `api-design` | Designing or reviewing an API contract |
+| `data-design` | Designing a data layer across PostgreSQL, MongoDB, Elasticsearch, Typesense |
+| `search-design` | Designing Elasticsearch or Typesense search |
+| `infra-design` | Designing Docker, Kubernetes, Terraform, and CI/CD |
+| `ticket-breakdown` | Breaking a PRD or design into epics and tickets |
+| `experiment-design` | Designing an A/B test or staged rollout |
+| `decision-matrix` | Weighing options against criteria |
+| `migration-plan` | Planning a database, API, or infrastructure migration |
+
+**Implementation and verification**
+
+| Skill | Use when |
+|---|---|
+| `spec-to-impl` | Implementing a spec end to end with a role-based agent team |
+| `verify-impl` | Verifying an implementation live: API, database, Playwright UI, mobile |
+| `mobile-dev` | Working on Flutter, React Native, or Android apps |
+| `temporal-workflow` | Building Temporal workflows in Java: SAGA, retries, versioning |
+| `fintech-ledger` | Double-entry ledger operations on Blnk or pgledger |
+| `api-first` | Scaffolding a Spring Boot endpoint from OpenAPI |
+| `db-migration` | Writing Liquibase or Flyway migrations with house conventions |
+| `finalize` | Lint, test, clean up, commit, and open the PR |
+
+**Quality and review**
+
+| Skill | Use when |
+|---|---|
+| `spec-panel` | Expert-panel review of a spec before implementation |
+| `code-audit` | Multi-dimensional review of existing code |
+| `arch-review` | Checking clean-architecture invariants in a Java/Spring module |
+| `evidence-review` | Default-to-rejection final gate that demands proof |
+| `test-plan` | Writing a risk-based test plan |
+| `security-review` | Threat-model-lite review of a feature or PR |
+| `performance-review` | Performance and reliability review |
+| `ux-review` | Heuristic, accessibility, and cognitive-walkthrough review |
+| `docs-review` | Reviewing documentation for clarity and correctness |
+| `metrics-review` | Auditing analytics instrumentation and data quality |
+| `tech-debt-assessment` | Inventorying and prioritizing technical debt |
+| `debug-triage` | Triaging a bug into a reproduction, hypotheses, and a minimal fix |
+
+**Release and operations**
+
+| Skill | Use when |
+|---|---|
+| `release-notes` | Drafting release notes (manual-only) |
+| `monitoring-plan` | Designing metrics, alerts, dashboards, and SLOs |
+| `runbook` | Writing an operational runbook |
+| `incident-response` | Running an active incident (manual-only) |
+| `postmortem` | Writing a blameless postmortem (manual-only) |
+
+**Team and communication**
+
+| Skill | Use when |
+|---|---|
+| `stakeholder-update` | Writing a status update for leadership (manual-only) |
+| `sprint-retro` | Running a retrospective (manual-only) |
+| `onboarding-doc` | Writing an onboarding guide |
+| `linkedin-post` | Drafting a LinkedIn post |
+
+**Supporting skills**
+
+| Skill | Use when |
+|---|---|
+| `handoff` | Chaining skills through `claudedocs/handoff-*.yaml` manifests |
+| `repo-conventions` | Applying conventions recorded in its `references/` (fill these in per fork) |
 
 **Claude Code hooks** (`plugins/garage/hooks/hooks.json`): destructive-command blocker,
-sensitive-file warning, Prettier autoformat (web files only; Java/Spotless runs once in the
-`ship` gate).
-
-## The golden path
-
-```
-spec ──► plan ──► build ──► audit ──► e2e ──► ship
-                    ▲                           │
-                    └────────── debug ◄─────────┘
-```
-
-Plans live in each repo's `docs/.../plans/` with checkboxes as durable session state.
-
-## Usage samples
-
-Skills fire on natural phrasing. Force one explicitly with `/garage:<skill>` in Claude Code
-or `$garage:<skill>` in Codex.
-
-**Single skills**
-
-```
-"should we build bulk payouts, or does the batch API already cover it?"   -> spec (challenge: keep/shrink/kill)
-"write the PRD for payment links"                                         -> spec (create)
-"sync the PRD with what we actually built"                                -> spec (update, drift check)
-"plan the wallet top-up feature from docs/prd/topups.md"                  -> plan (sliced plan doc)
-"implement docs/plans/2026-07-08-topups-plan.md"                          -> build
-"start slice 2b"                                                          -> build (resumes at that slice)
-"review this diff against our standards"                                  -> audit
-"audit the payments module, include a DDD expert"                         -> audit (expert panel)
-"simplification sweep: what can we remove from this product?"             -> audit (removal-first, whole app)
-"run and test orders end to end, api and ui"                              -> e2e (newman + Playwright + DB proof)
-"why is the balance negative after a refund?"                             -> debug (diagnosis only, no fix yet)
-"commit and merge to release-candidate"                                   -> ship (repo's branch policy)
-"promote develop to main"                                                 -> ship (promotion PR)
-```
-
-Domain skills load themselves when the work touches their subject: a hold/void flow pulls
-`ledger`, a new column pulls `migrations`, a saga with compensation pulls `temporal`, a new
-endpoint pulls `spring-api`, a betslip component pulls `igaming-ui`.
-
-**A feature, end to end**
-
-```
-"challenge the scope of X"        spec   is the smallest version still worth building?
-"write the PRD for X"             spec   AC + edge cases + non-goals
-"plan X from the PRD"             plan   vertical slices, each with its verification command
-"implement the plan"              build  slice by slice, checkboxes updated as it goes
-"audit the diff"                  audit  evidence-mandatory findings, then "fix all"
-"run X end to end"                e2e    real output, screenshots, zero-row ledger checks
-"ship it"                         ship   format, verify, commit, PR/MR per repo policy
-```
-
-**A bug**
-
-```
-"debug: refunds double-post when the provider times out"   debug -> root cause + failing repro
-"fix it"                                                   build -> minimal fix + regression test
-"ship to develop"                                          ship
-```
-
-**A product review of a whole platform**
-
-```
-"Product review: audit docs/prd with a product strategy expert and a domain
-expert, validate each PRD against the implementation for drift, challenge the
-scope of every major module (keep/shrink/kill with reasoning), then walk the
-core user flows live. Ranked findings only, fix nothing."
-```
-
-**Resuming after a context reset**
-
-```
-"what's pending?"          answered from the plan doc's checkboxes, no memory ritual
-"continue the plan"        build picks up at the first unchecked slice
-```
-
-## Per-repo ship policy
-
-Delivery rules stay out of the plugin: each repo's own AGENTS.md or CLAUDE.md carries a
-`## Ship policy` block that the `ship` skill reads. Template:
-
-```markdown
-## Ship policy
-- CLI: glab                                # or gh
-- Flow: feature -> release-candidate; promotion by MR
-- Merge: MR only, peer review is manual    # or: merge allowed after checks pass
-- Attribution: none                        # never mention AI in commits/PRs
-- Verify: mvn -q verify && newman run postman/regression.json
-- Extras: QA testing note on the ticket (how to test the API, nothing more)
-```
+sensitive-file warning, Prettier autoformat (web files only; Java formatting runs in the
+`finalize` lint step).
 
 ## Global rules
 

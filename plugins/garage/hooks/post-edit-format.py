@@ -3,7 +3,7 @@
 
 Prettier runs synchronously (typically <300ms, 10s cap) for web-stack files.
 Java is deliberately NOT formatted here: a per-edit Gradle/Maven invocation
-costs seconds to minutes each time; Spotless runs once in the `ship` gate
+costs seconds to minutes each time; Spotless runs once in the `finalize` lint step
 instead. Best-effort: never blocks, never errors.
 """
 import json

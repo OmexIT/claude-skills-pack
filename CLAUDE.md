@@ -1,11 +1,11 @@
 # garage plugin (claude-skills-pack)
 
 ## Overview
-Single-plugin Claude Code and Codex marketplace delivering a 12-skill engineering copilot: a 7-verb
-workflow spine (spec, plan, build, audit, e2e, ship, debug) and 5 domain-law skills
-(ledger, temporal, migrations, spring-api, igaming-ui), plus 3 Claude Code lifecycle hooks. Rebuilt
-2026-07-07 from usage evidence; the previous 48-skill generation is preserved at git tag
-`pre-redesign` (branch `archive/v1`).
+Single-plugin Claude Code and Codex marketplace delivering 48 engineering skills: product
+discovery, specs and design, spec-to-implementation, review, live verification, operations, and
+fintech domain skills, plus 3 Claude Code lifecycle hooks. Version 2.0.0 restored the original
+pack (git tag `pre-redesign`, branch `archive/v1`) in place of the 12-skill rebuild of
+2026-07-07, ported to cross-client frontmatter.
 
 ## Structure
 ```
@@ -14,9 +14,9 @@ workflow spine (spec, plan, build, audit, e2e, ship, debug) and 5 domain-law ski
 plugins/garage/        shared installable plugin
   .claude-plugin/      Claude Code plugin manifest
   .codex-plugin/       Codex plugin manifest
-  skills/<name>/       SKILL.md (+ references/ for knowledge, assets/ for output templates,
-                        scripts/ for tools)
-  references/          shared cross-skill references
+  skills/<name>/       SKILL.md (+ references/ for knowledge and agent personas, assets/ for
+                        output templates, scripts/ for tools, agents/openai.yaml for Codex policy)
+  references/          shared cross-skill references (cross-client.md)
   hooks/               Claude Code hooks + tests (not loaded by Codex)
 docs/                  non-loaded knowledge: optional global-CLAUDE.md reference, ops.md,
                        mobile-defaults.md
@@ -24,14 +24,20 @@ scripts/usage-audit.py transcript miner for the quarterly usage review
 ```
 
 ## Skill format rules
-- `name` matches directory name (kebab-case). Cross-client frontmatter uses only `name` and
-  `description`; Claude's `argument-hint` is not accepted by the Codex skill validator.
+- `name` matches directory name (kebab-case). Frontmatter is only `name` and `description`: the
+  Codex validator rejects Claude-only keys (`argument-hint`, `effort`, `context`, `agent`,
+  `disable-model-invocation`, `user-invocable`).
 - Description starts "Use when...", states triggering conditions ONLY, and never summarizes
-  the skill's workflow (an agent may follow the summary and skip the body). Under 500 chars.
-- Body stays under ~60 lines. Heavy knowledge goes in `references/`, loaded on demand.
-- Banned ceremony (the old pack's failure modes): output-contract YAML, handoff manifests,
-  "Learning & Memory" sections, "Workflow context" webs, model-routing tables, multi-agent
-  rosters, ASCII wave diagrams.
+  the skill's workflow (an agent may follow the summary and skip the body). Under 500 chars,
+  no angle brackets.
+- Manual-only skills get `agents/openai.yaml` with `policy.allow_implicit_invocation: false`
+  and a description that starts "Use only when the user explicitly asks...". `agents/` is
+  reserved for that file; persona prompts live in `references/`.
+- Skills refer to each other by bare name (`finalize`), never `/finalize`: slash commands are
+  namespaced as `/garage:name` in Claude Code and `$garage:name` in Codex.
+- Delegation may be written in Claude Code notation (Agent calls, worktrees, model labels) as
+  long as the skill points to `../../references/cross-client.md` for other clients. No
+  client-only features without a fallback there (Agent Teams was dropped for this reason).
 - Every `references/` path cited in a SKILL.md must exist. Grep before committing.
 - House style applies to pack files too: no em-dashes (use commas, colons, or hyphens) and no emoji, in skills, references, and docs alike.
 - Hook pattern changes require `python3 plugins/garage/hooks/test_hooks.py` to pass (paired should-block / should-pass cases).
@@ -39,7 +45,7 @@ scripts/usage-audit.py transcript miner for the quarterly usage review
 ## Rules
 - This repo is PUBLIC. Never commit client or employer names, credentials, internal branch
   policies, or usage analytics. Per-repo delivery policy lives in each project's own
-  AGENTS.md or CLAUDE.md (`## Ship policy` block); the pack stays context-neutral.
+  AGENTS.md or CLAUDE.md; the pack stays context-neutral.
 - Never commit `claudedocs/` (local working files, gitignored).
 - Hooks read JSON on stdin; block = exit 2 + stderr; warn = stderr + exit 0; side-effect
   hooks exit 0 silently.
@@ -51,7 +57,8 @@ scripts/usage-audit.py transcript miner for the quarterly usage review
 - Validate before shipping:
   `claude plugin validate .`,
   `claude plugin validate plugins/garage/.claude-plugin/plugin.json`, and
-  `python3 ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/garage`.
+  `quick_validate.py` from `~/.codex/skills/.system/skill-creator/scripts/` on every skill dir
+  (needs PyYAML, so run it from a venv).
 - After changing the repo, refresh the installed snapshots:
   `claude plugin update garage@garage` and
   `codex plugin marketplace upgrade garage && codex plugin add garage@garage`.

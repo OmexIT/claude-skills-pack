@@ -1,7 +1,7 @@
 {
   "name": "garage",
-  "version": "1.3.0",
-  "description": "Engineering workflow and fintech domain skills for Codex.",
+  "version": "2.0.0",
+  "description": "Product, design, implementation, verification, operations, and fintech domain skills for Codex.",
   "author": {
     "name": "Antony Omeri",
     "email": "antonyomeri@gmail.com",
@@ -20,8 +20,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Garage",
-    "shortDescription": "Engineering workflow and fintech domain skills.",
-    "longDescription": "A 12-skill engineering copilot for specification, planning, implementation, review, live verification, shipping, debugging, and fintech domain work.",
+    "shortDescription": "Engineering, product, and fintech domain skills.",
+    "longDescription": "A 48-skill engineering pack covering product discovery, specs and design, implementation from a spec, code and architecture review, live verification, operations, and fintech domain work (ledgers, Temporal, migrations, APIs).",
     "developerName": "Antony Omeri",
     "category": "Developer Tools",
     "capabilities": [
@@ -29,9 +29,9 @@
       "Write"
     ],
     "defaultPrompt": [
-      "Turn this approved spec into a verifiable plan.",
-      "Audit this change against our engineering standards.",
-      "Verify this implementation against the live stack."
+      "Write the PRD for this feature.",
+      "Implement this spec end to end.",
+      "Audit this module's code quality."
     ]
   }
 }

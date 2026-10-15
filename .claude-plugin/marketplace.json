@@ -6,7 +6,7 @@
     {
       "name": "garage",
       "source": "./plugins/garage",
-      "description": "Personal engineering copilot: spec → plan → build → audit → e2e → ship, plus fintech domain law (ledger, temporal, migrations, spring-api, igaming-ui)."
+      "description": "Personal engineering pack: product discovery, PRDs and design docs, spec-to-implementation, code and architecture review, live verification, operations, and fintech domain skills (ledger, Temporal, migrations, API-first)."
     }
   ]
 }
