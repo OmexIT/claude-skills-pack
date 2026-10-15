@@ -38,6 +38,15 @@ scripts/usage-audit.py transcript miner for the quarterly usage review
 - Delegation may be written in Claude Code notation (Agent calls, worktrees, model labels) as
   long as the skill points to `../../references/cross-client.md` for other clients. No
   client-only features without a fallback there (Agent Teams was dropped for this reason).
+- SKILL.md loads in full whenever the skill fires, so keep it under ~500 lines: when to use, decision
+  rules, ordered steps, gates, output shape. Scaffolds, personas, per-platform detail, and report
+  templates go in `references/` or `assets/` behind an explicit "read X when Y" line.
+- Agent rosters are lenses: small scope runs them inline, and only large scope fans out.
+- Gates judge evidence coverage, never counts ("fail if zero issues" or "at least 3 tests" are bugs).
+- Skills restate house law where it applies (money BigDecimal/NUMERIC, time with zone, TSID BIGINT
+  internal and UUIDv7 external, RFC 9457 errors) and detect the stack before mandating a library.
+- The handoff manifest format (path, field names, status values in `handoff`) is a shared interface;
+  change it only across every output contract at once.
 - Every `references/` path cited in a SKILL.md must exist. Grep before committing.
 - House style applies to pack files too: no em-dashes (use commas, colons, or hyphens) and no emoji, in skills, references, and docs alike.
 - Hook pattern changes require `python3 plugins/garage/hooks/test_hooks.py` to pass (paired should-block / should-pass cases).

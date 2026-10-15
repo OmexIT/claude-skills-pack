@@ -1,6 +1,8 @@
 # API Standards Reference
 
-This document defines the API design standards that ARCH produces in Wave 1 and every BE/FE agent must conform to. ARCH selects the API style (REST, GraphQL, gRPC, async) based on the spec, then the full contract below applies.
+Read when ARCH writes the API standards contract, when dispatching BE/FE work that adds or changes endpoints, and for the integration review (checklist in section 6.5).
+
+These are house defaults for new surfaces. The repository's existing OpenAPI document, public contract, generated clients, and versioning strategy win: do not break an existing API to match these defaults. Cross-cutting HTTP concerns (rate limits, security headers, CORS) usually live at the gateway or a shared filter; implement them in the service only when nothing upstream does.
 
 ---
 
@@ -97,7 +99,7 @@ Non-CRUD actions (use POST with verb):
 
 ### 2.3 Response Envelope
 
-All responses use a consistent envelope:
+House default for success responses (skip when the existing contract, generated client, or a streaming format needs another shape):
 
 ```json
 {
@@ -125,7 +127,7 @@ All responses use a consistent envelope:
       "field": "amount",
       "code": "POSITIVE_REQUIRED",
       "message": "Must be greater than 0",
-      "rejectedValue": -5.00
+      "rejectedValue": "-5.00"
     }
   ]
 }
@@ -217,12 +219,14 @@ Rules:
 ### 2.7 Idempotency
 
 ```
-All state-changing operations (POST, PATCH) must be safe to retry.
+Commands whose retry could duplicate an effect (payments, transfers, creates with side effects)
+must be safe to retry.
 
-POST requests:
+POST commands:
   Header: Idempotency-Key: <client-generated UUID>
   Server: store result keyed by Idempotency-Key, return cached result on duplicate
-  TTL: 24 hours minimum
+  TTL: at least the client's retry window (24 hours is a common default)
+  Same key with a different payload: reject with 422 (or 409), never replay the old result
 
 PUT/DELETE:
   Naturally idempotent - same request produces same result
@@ -237,7 +241,7 @@ Implementation:
 ### 2.8 Rate Limiting
 
 ```
-Headers in every response:
+When the service enforces limits itself (otherwise the gateway does):
   X-RateLimit-Limit: 1000          # requests per window
   X-RateLimit-Remaining: 950       # remaining in current window
   X-RateLimit-Reset: 1679529600    # window reset timestamp (Unix epoch)
@@ -245,16 +249,13 @@ Headers in every response:
 When exceeded (429 Too Many Requests):
   Retry-After: 30                  # seconds until client should retry
 
-Tiers:
-  - Public API: 100 req/min per API key
-  - Authenticated: 1000 req/min per user
-  - Internal service: 10000 req/min (circuit breaker instead of hard limit)
+Tiers: set per product and consumer type; document them in the OpenAPI spec.
 ```
 
 ### 2.9 Security Headers & CORS
 
 ```
-Required headers on every response:
+Ensure these reach clients (from the gateway or a shared filter):
   Content-Type: application/json
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
@@ -273,8 +274,8 @@ CORS:
 ```
 Content-Type: application/json (always)
 Date format: ISO 8601 (2026-03-20T14:30:00.123Z) - always UTC
-Money: { "amount": "150.00", "currency": "USD" } - string for amount, never float
-IDs: UUID v7 (time-sortable) or string - never expose auto-increment integers
+Money: { "amount": "150.00", "currency": "USD" } - decimal string, scale from the currency or asset config, BigDecimal in code, never float
+IDs: public IDs are UUIDv7; internal TSID or auto-increment keys never appear in the API
 Nulls: omit null fields from response (reduces payload, clearer contract)
 Booleans: never use 0/1 or "true"/"false" strings - use native JSON boolean
 Enums: UPPER_SNAKE_CASE strings - never numeric codes
@@ -384,7 +385,7 @@ message ListPaymentsResponse {
 - Unary RPCs for simple request-response
 - Server streaming for large result sets or real-time feeds
 - Deadline propagation on every call
-- Retry with exponential backoff + jitter
+- Retry with exponential backoff + jitter only for idempotent calls or calls carrying an idempotency key
 - Health checking via `grpc.health.v1.Health` service
 
 ---
@@ -483,21 +484,20 @@ API COMPLIANCE CHECKLIST
 ========================
 [ ] URL/naming convention consistent across all endpoints
 [ ] Correct HTTP methods and status codes (no 200-with-error-body)
-[ ] Response envelope standardized (data + meta + errors)
+[ ] Response shape consistent with the contract (house default data + meta)
 [ ] Error format: RFC 9457 Problem Details (REST) or equivalent
 [ ] Pagination on all list endpoints (cursor or offset)
 [ ] Filtering/sorting documented and consistent
 [ ] Versioning strategy documented and applied
-[ ] Idempotency keys on POST/state-changing operations
-[ ] Rate limiting with headers (Limit, Remaining, Reset)
+[ ] Idempotency keys on commands whose retry could duplicate an effect
+[ ] Rate limiting present (gateway or service) where the contract calls for it
 [ ] Authentication documented per endpoint
 [ ] Authorization documented per endpoint (roles/scopes)
 [ ] Request tracing (X-Request-ID, traceId in errors)
 [ ] Content-Type enforcement
-[ ] Security headers (HSTS, nosniff, X-Frame-Options)
-[ ] CORS configured for specific origins
+[ ] Security headers and CORS (specific origins) applied, at the gateway or in the service
 [ ] OpenAPI/AsyncAPI spec generated and accurate
-[ ] No internal IDs or implementation details leaked
+[ ] No internal IDs (TSID), stack traces, SQL, or internal paths leaked
 [ ] Date/time always ISO 8601 UTC
 [ ] Money as string/decimal, never float
 [ ] Null handling policy documented

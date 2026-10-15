@@ -1,6 +1,6 @@
 # Observability Contract Reference
 
-This document defines the observability standards that every implementation agent must follow. The OBS agent produces a feature-specific version of this contract in Wave 1, customized to the spec's requirements.
+Read when the plan includes an OBS role (a new service, a new external integration, or SLO-bound operations) and the OBS agent writes the feature's contract in Wave 1. For smaller changes, follow the repo's existing logging and metrics conventions instead. Detect the existing observability stack first; the Spring Boot snippets below are defaults, not requirements.
 
 ---
 
@@ -158,7 +158,7 @@ public class PaymentService {
 
 | Metric Type | Naming Convention | Example | When |
 |---|---|---|---|
-| Counter | `<domain>.<operation>.count` | `payment.initiated.count` | Every business event |
+| Counter | `<domain>.<operation>.count` | `payment.initiated.count` | Business events named in the contract |
 | Timer | `<domain>.<operation>.duration` | `payment.processing.duration` | Operations with latency SLOs |
 | Gauge | `<domain>.<state>.gauge` | `queue.pending.size` | Stateful resources |
 | Distribution Summary | `<domain>.<measurement>` | `payment.amount` | Value distributions |
@@ -250,27 +250,17 @@ management:
       enabled: true
 ```
 
-**Custom health indicators** for external dependencies:
-
-```java
-@Component
-public class PaymentGatewayHealthIndicator implements HealthIndicator {
-    @Override
-    public Health health() {
-        // Check external service availability
-        boolean reachable = checkPaymentGateway();
-        return reachable
-            ? Health.up().withDetail("gateway", "reachable").build()
-            : Health.down().withDetail("gateway", "unreachable").build();
-    }
-}
-```
+**Readiness scope:** include only dependencies the service cannot serve without (its own database
+and broker). Do not put third-party APIs (payment gateways, KYC providers) in liveness or
+readiness: their outage would pull every instance out of rotation, including the paths that do not
+need them. Observe them through client latency and error metrics and alert on those. Write a
+custom `HealthIndicator` only for an owned dependency that has no auto-configured indicator.
 
 ---
 
 ## 5. Dashboard Specification
 
-Every feature must produce a dashboard spec with these panels:
+When the feature adds a service or an SLO-bound operation, produce a dashboard spec with the relevant panels:
 
 ### Service Overview Dashboard
 1. **Request Rate** - `rate(http_server_requests_seconds_count[5m])` by endpoint

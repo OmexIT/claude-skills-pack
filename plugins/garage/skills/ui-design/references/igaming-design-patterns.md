@@ -1,122 +1,94 @@
-# iGaming Design Patterns Reference
+# iGaming interface patterns
 
-Patterns specific to sports betting and casino products.
+Use these with the product's design system, user research, accessibility standard, approved
+regulatory requirements, and jurisdiction configuration. They do not replace legal or
+responsible-gambling review.
 
----
+## Semantic tokens
 
-## Odds Display
+Add these to the product's token set; values come from the theme, never hard-coded hex.
 
-- Use **monospaced font** for odds numbers (prevents layout shift when odds update)
-- Always show odds with **consistent decimal places** (1.50 not 1.5)
-- Flash **green** briefly when odds increase (#22C55E, 300ms fade)
-- Flash **red** briefly when odds decrease (#EF4444, 300ms fade)
-- Selected odds state: filled background with brand primary color
-- Minimum tap target for odds buttons: **44x44px** (48px preferred on mobile)
-- Odds button layout: use CSS Grid for consistent sizing regardless of value length
-
-### Semantic Tokens for Odds
 ```
---color-odds-default:     <neutral bg>
---color-odds-increased:   #22C55E (green flash)
---color-odds-decreased:   #EF4444 (red flash)
---color-odds-selected:    <brand primary>
---color-odds-suspended:   <muted, with "SUSP" text>
+--color-odds-default / -increased / -decreased / -selected / -suspended
+--color-bet-pending / -won / -lost / -void / -cashout
+--color-live-indicator
+--color-jackpot
 ```
 
----
+Every one of these is paired with a non-color cue (glyph, text label, or shape).
 
-## Live Indicators
+## Odds and market states
 
-- **"LIVE" badge**: always red (#EF4444), pulsing animation (2s ease-in-out infinite)
-- **Live score**: monospaced, prominent, updates without layout shift
-- **Live event card**: subtle left border accent in red (3px solid)
-- **Live timer**: show elapsed time, update every second, monospaced
-- **Live event count**: show number of live events in nav badge
+- Tabular numerals so changing odds do not reflow the layout.
+- Respect the user's configured decimal, fractional, or American odds format.
+- Show an odds change with redundant cues: direction glyph or text, semantic color token, and a
+  brief non-blocking transition. Color alone is insufficient.
+- Under `prefers-reduced-motion` (or the platform equivalent), update the cue without flashing
+  or pulsing.
+- Keep open, suspended, settled, and void states explicit. A suspended market stays visible,
+  clearly locked, and unselectable.
+- Touch targets follow the platform baseline, with spacing that prevents accidental selection.
 
----
+## Live state
 
-## Bet Slip
+- A text or icon cue identifies live content without relying on color.
+- Live score, timer, and odds updates reserve layout space and use tabular numerals.
+- No spinner per tick. Keep the last confirmed state visible while reconnecting and expose
+  delayed or disconnected status.
+- Animations are optional, subtle, and off or reduced under the user's motion preference.
 
-- Always accessible from any screen (floating FAB or persistent right panel)
-- Show **running total** prominently
-- **Potential return** calculation visible at all times
-- Remove individual bet: clear X button, minimum 44x44px touch target
-- **Place Bet CTA**: full-width, high contrast, never disabled without clear reason shown
-- Bet type tabs: Single / Accumulator / System (if supported)
-- Stake input: large, numeric keyboard on mobile, pre-set stake buttons
-- Error state: inline below the offending bet (e.g. "odds changed", "event suspended")
+## Bet slip
 
-### Bet Status Tokens
-```
---color-bet-pending:  <amber/yellow>
---color-bet-won:      <green>
---color-bet-lost:     <red/muted>
---color-bet-void:     <gray>
---color-bet-cashout:  <brand accent>
-```
+- Discoverable from the main betting journey. Choose panel, sheet, or page from the actual
+  responsive layout, not a universal rule.
+- Before confirmation show stake, current odds, potential return, currency, and any changed or
+  suspended selections.
+- On odds change, follow the product's approved acceptance policy and require clear user action
+  when needed. Never silently accept worse odds.
+- Never show a disabled primary action without an adjacent reason and recovery path.
+- Prevent duplicate submission. An unknown placement result stays pending until authoritative
+  reconciliation; a client timeout is not a failure.
+- Numeric input mode without dropping validation, locale handling, or the accessible label.
 
----
+## Wallet and balance
 
-## Casino Grid
+- A loading skeleton keeps its size and has accessible status text.
+- A cached balance is labeled stale with its last-updated time and a retry path.
+- While balance authority is unavailable, disable bet placement, deposit, withdrawal, and transfer
+  actions that depend on it unless an approved offline mutation design proves safety.
+- Never show a cached value as current or turn a timeout into a zero balance.
+- Tabular numerals, explicit currency, and the asset's authoritative scale.
 
-- Game cards: aspect ratio **3:4** (portrait) or **16:9** (landscape)
-- Hover state: slight `scale(1.03)` + overlay with "Play" button
-- **New/Hot/Jackpot** badges: top-left corner, high contrast, small rounded pill
-- Provider name: small, muted, below game name
-- Loading skeleton: match exact card dimensions
-- Lazy load game thumbnails with blur-up placeholder
-- Category tabs: horizontally scrollable on mobile, no wrapping
+## Casino grids
 
-### Jackpot Display
-```
---color-jackpot: <gold - #F59E0B or similar>
-```
-- Jackpot amount: large, monospaced, with currency symbol
-- Counter animation: count up to current value on first appearance
+- Preserve image dimensions to avoid layout shift; lazy-load media with meaningful alt behavior.
+- Card ratio, hover, badges, and category layout come from the content and design system.
+- Hover-only actions must also be keyboard and touch accessible.
+- Virtualized or infinite grids expose loading, end, empty, and failure states and keep focus
+  predictable.
+- Do not animate jackpot or balance values when motion is reduced. Never imply a guaranteed win
+  through animation or copy.
 
----
+## Responsible gambling and compliance
 
-## Responsible Gambling
+- Implement the exact approved requirements per jurisdiction and product. Record the legal or
+  compliance source of truth; do not invent universal placement, timing, or interaction rules.
+- Help, limits, cooling-off, self-exclusion, reality-check, and session controls are findable,
+  accessible, and testable wherever the applicable requirement demands them.
+- No manipulative urgency ("Last chance!"), concealment, obstructive cancellation, or visual
+  pressure to increase spend.
+- A control that changes a regulated limit or exclusion state needs clear confirmation, outcome,
+  effective time, and recovery or support guidance.
+- Localized copy and age, identity, and jurisdiction rules come from approved product and legal
+  artifacts, not this reference.
 
-- Always place **limits/help link in footer** - never hidden
-- **Never use urgency language** in UI ("Last chance!", "Hurry!", "Don't miss out!")
-- **Deposit limits UI**: clear, prominent, never buried in settings
-- **Self-exclusion**: always accessible from account settings, one-click
-- **Session timer**: optional display, configurable by user
-- **Reality check**: periodic popup reminding of time/spend (configurable interval)
-- **Cool-off periods**: clear UI for temporary self-exclusion
+## Navigation and responsive checks
 
----
-
-## Mobile-First Rules for iGaming
-
-- **Bottom navigation** (not top) - thumbs reach bottom naturally
-- Bet slip accessible via **bottom sheet**, not full-page nav
-- **Swipeable card stacks** for quick game/event browsing
-- Large, thumb-friendly odds buttons (min **48px height** on mobile)
-- **Pull-to-refresh** for live event updates
-- Quick bet: single-tap to add to slip (configurable)
-- **Haptic feedback** on bet placement (native apps)
-
----
-
-## Navigation Patterns
-
-### Sportsbook
-```
-Bottom tabs: Home | Sports | Live | My Bets | Account
-Sports nav:  Horizontal scrollable pills (Football, Basketball, Tennis, ...)
-Sub-nav:     Today | Tomorrow | All | Outright
-```
-
-### Casino
-```
-Bottom tabs: Home | Casino | Live Casino | Promotions | Account
-Category:    Horizontal scrollable (Slots, Table, Live, Jackpot, New, Popular)
-```
-
-### Combined Platform
-```
-Bottom tabs: Home | Sports | Casino | My Bets | Account
-Home:        Featured events + game highlights + promotions carousel
-```
+- Common shapes, not mandates: sportsbook tabs (Home, Sports, Live, My Bets, Account), casino tabs
+  (Home, Casino, Live Casino, Promotions, Account), horizontally scrollable sport or category
+  pills. Use them only when the product's evidence and platform conventions support them.
+- Do not mandate bottom navigation, swipe gestures, haptics, pull-to-refresh, or one-tap betting.
+  Each one needs an accessible alternative.
+- Verify supported breakpoints, zoom, text resizing, keyboard flow, screen-reader names, focus
+  order, high contrast, and reduced motion.
+- Selector guidance: `ui-selector-conventions.md`.

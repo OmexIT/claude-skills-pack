@@ -5,92 +5,85 @@ description: "Use when the user wants every path through a feature mapped before
 
 # Flow map
 
-## What I'll do
-Produce a complete path map covering every possible system state and transition - happy, failure, timeout, and recovery - before any implementation starts. Every mapped path becomes a test case.
+Map every system state and transition of a feature, happy, failure, timeout, and recovery, before
+implementation. Every path becomes a test case.
 
-> **flow-map vs user-flow:** This skill maps the **system's perspective** - internal states, network failures, auth failures, concurrency conflicts, and resource cleanup.
-> Use `user-flow` for the **user's perspective** - what users see, decide, and experience at each step.
-> Typical order: `user-flow` first (UX journeys), then `flow-map` (system paths for implementation).
+## Workflow context
+- Boundary: this is the system's view (states, failure classes, concurrency, cleanup). `user-flow`
+  is the user's view (screens, choices, messages). Reuse its journeys as entry paths; do not
+  design screens or copy here.
+- Follows `user-flow`, `design-doc`, `api-design`. Feeds `spec-to-impl` and `test-plan`.
 
-## Inputs I'll use (ask only if missing)
-- Feature spec or PRD (or handoff artifact from `prd`, `design-doc`)
-- API endpoints involved
-- External dependencies (payment gateways, auth providers, messaging)
-- User roles and permissions
+## Inputs (ask only if missing)
+Spec or PRD (or upstream handoff), endpoints involved, external dependencies, roles and permissions.
 
-## How I'll think about this
-1. **Map happy paths first**: Trace the primary user flow from entry to completion. Identify every state the system passes through and every state transition. Name each state explicitly.
-2. **Map every input validation failure**: For every user input, enumerate what can be invalid - empty, too long, wrong format, wrong type, negative numbers, special characters, injection attempts. Each produces a distinct error path.
-3. **Map every auth/authz failure**: For every operation, what happens when: no token, expired token, valid token but wrong role, valid token but wrong tenant, token for deleted user.
-4. **Map every network failure**: For every external call (DB, API, queue, cache), what happens on: timeout, connection refused, 500 error, malformed response, partial response, DNS failure.
-5. **Map concurrency conflicts**: Where can two users act on the same resource simultaneously? Optimistic locking failures, double-submit, race conditions on counters or balances.
-6. **Map recovery paths**: After each failure, what's the recovery? Retry? Show error? Rollback? Compensating transaction? Dead letter queue? Manual intervention?
-7. **Map cleanup inventory**: For every path that allocates resources (DB rows, file uploads, queue messages, external API reservations), trace what must be cleaned up on failure.
+## How to map it
+1. **Happy path first**: name every state the system passes through and every transition.
+2. **Input validation**: per input, what can be invalid (empty, too long, wrong format or type,
+   negative, out of range, injection). Group inputs that fail the same way into one path.
+3. **Auth and authz**: no token, expired token, wrong role, wrong tenant, deleted or disabled user.
+4. **External calls** (DB, API, queue, cache): timeout, refused connection, 5xx, malformed or
+   partial response. A timeout after the request was sent means the outcome is **unknown**, not
+   failed: map an unknown state resolved by status lookup or reconciliation.
+5. **Concurrency**: two actors on the same resource, double submit, lost updates on counters or
+   balances. Name the guard (optimistic lock, idempotency key, unique constraint).
+6. **Recovery** per failure: retry (only for idempotent or idempotency-keyed operations, bounded by
+   the operation's semantics and the provider's limits), surface an error, roll back, compensate,
+   dead-letter, or hand to a person.
+7. **Cleanup**: for every allocated resource (rows, uploads, messages, external reservations), what
+   releases it on each failure path. Financial records are reversed with compensating entries,
+   never deleted.
 
 ## Output format
 
-### State Diagram (Mermaid)
+### State diagram (Mermaid)
 ```mermaid
 stateDiagram-v2
     [*] --> FormEntry
     FormEntry --> Validating: submit
-    Validating --> ValidationError: invalid input
+    Validating --> FormEntry: invalid input
     Validating --> Submitting: valid
-    ValidationError --> FormEntry: fix and retry
     Submitting --> Processing: API accepts
-    Submitting --> NetworkError: timeout/500
-    NetworkError --> RetryQueue: retryable
-    NetworkError --> UserError: non-retryable
+    Submitting --> UserError: non-retryable 4xx
+    Submitting --> OutcomeUnknown: timeout after send
+    OutcomeUnknown --> Processing: status lookup finds it
+    OutcomeUnknown --> Submitting: confirmed not received, retry same key
     Processing --> Success: completed
-    Processing --> RollbackNeeded: downstream failure
-    RollbackNeeded --> Compensating: auto-rollback
-    Compensating --> UserError: rollback succeeded
+    Processing --> Compensating: downstream failure
+    Compensating --> UserError: compensation done
     Success --> [*]
 ```
 
-### Path Table
-| # | Path | Entry State | Exit State | Trigger | Side Effects | Cleanup Required | Test Case |
-|---|------|-------------|-----------|---------|-------------|------------------|-----------|
-| 1 | Happy path | FormEntry | Success | Valid submit | DB write, email sent | None | TC-001 |
+### Path table
+| # | Path | Entry state | Exit state | Trigger | Side effects | Cleanup | Test case |
+|---|------|-------------|-----------|---------|-------------|---------|-----------|
+| 1 | Happy path | FormEntry | Success | Valid submit | Row written, email queued | None | TC-001 |
 | 2 | Validation fail | FormEntry | FormEntry | Invalid input | None | None | TC-002 |
-| 3 | Network timeout | Submitting | RetryQueue | API timeout | Retry record created | Delete retry on success | TC-003 |
+| 3 | Timeout after send | Submitting | OutcomeUnknown | API timeout | Pending record | Resolved by lookup | TC-003 |
 | 4 | Auth expired | Any | Login | Token expired | None | None | TC-004 |
-| 5 | Concurrent edit | Processing | ConflictError | Optimistic lock fail | None | None | TC-005 |
-| 6 | Downstream fail | Processing | RollbackNeeded | Payment API rejects | Partial DB state | Compensating transaction | TC-006 |
+| 5 | Concurrent edit | Processing | ConflictError | Version mismatch | None | None | TC-005 |
+| 6 | Downstream fail | Processing | Compensating | Provider rejects | Partial state | Compensating action | TC-006 |
 
-### Cleanup Inventory
-| Resource | Allocated When | Released When | Orphan Risk | Cleanup Mechanism |
-|----------|---------------|---------------|-------------|-------------------|
-| DB row | Step 3 (insert) | Never (permanent) | If step 5 fails | Compensating DELETE |
-| File upload | Step 2 (upload) | Step 6 (attach to record) | If step 3-5 fail | Scheduled cleanup job |
-| Queue message | Step 4 (publish) | Consumer processes | If consumer crashes | Dead letter queue |
+### Cleanup inventory
+| Resource | Allocated when | Released when | Orphan risk | Mechanism |
+|----------|---------------|---------------|-------------|-----------|
+| Upload | Step 2 | Attached in step 6 | Steps 3-5 fail | Scheduled cleanup |
+| Queue message | Step 4 | Consumer acks | Consumer crashes | Dead-letter queue |
 
 ## Anti-patterns to flag
-- WARN Only mapping the happy path ("it works when everything goes right")
-- WARN "TODO: handle error" in any path - every failure needs an explicit recovery
-- WARN Assuming external calls always succeed
-- WARN No cleanup for allocated resources on failure paths
-- WARN Ignoring concurrency - "users won't do that simultaneously"
-- WARN Recovery path is "retry forever" with no circuit breaker
+- Happy path only, or external calls assumed to succeed.
+- "TODO: handle error" on any path.
+- A timeout treated as a failure for a non-idempotent operation.
+- Allocated resources with no cleanup on failure.
+- Concurrency dismissed ("users won't do that").
+- Unbounded retry, or retry of an operation with no idempotency guarantee.
 
 ## Quality bar
-- [ ] Every external dependency has a failure path mapped
-- [ ] Every resource allocation has a corresponding cleanup path
-- [ ] Every state has at most one "unhandled" transition (and it's explicitly documented as out of scope)
-- [ ] Every path maps to a test case ID
-- [ ] Concurrency scenarios identified for all shared mutable state
-- [ ] State diagram compiles as valid Mermaid
-
-## Workflow context
-- Typically follows: `design-doc`, `api-design`, `user-flow`
-- Feeds into: `spec-to-impl` (paths become test cases), `test-plan` (coverage matrix)
-- Related: `data-design` (failure handling for data operations)
-
-## Learning & Memory
-After completing this skill, store reusable insights in memory:
-- **Flow patterns**: Recurring state machine structures, transition shapes, and path topologies that appear across features
-- **Recovery path patterns**: Effective rollback strategies, compensating transaction designs, and retry/circuit-breaker configurations
-- **Concurrency edge cases**: Race conditions, optimistic locking failures, and double-submit scenarios encountered and how they were resolved
+- Every external dependency has its failure paths mapped.
+- Every allocation has a cleanup path.
+- Unhandled transitions are listed explicitly as out of scope, with a reason.
+- Every path has a test case ID; every shared mutable resource has its concurrency case.
+- The Mermaid diagram renders.
 
 ## Output contract
 ```yaml

@@ -7,100 +7,67 @@ description: "Use when a feature or PR needs a security review or lightweight th
 
 > Delegation, model labels, and task tracking below use Claude Code notation. In Codex or another client, follow `../../references/cross-client.md`.
 
-## What I'll do
-Produce a lightweight threat model and actionable security findings, prioritized by real-world exploitability.
+A lightweight threat model and findings for one feature, PR, or endpoint set, prioritized by real
+exploitability. This is the security deep dive; `code-audit` covers security only as one breadth
+dimension, and `arch-review` covers structural boundaries.
 
-## Inputs I'll use (ask only if missing)
-- What's changing (feature/PR/endpoint)
-- Data involved (PII? financial? secrets?)
-- Auth model (who can do what?)
-- Deployment context (public internet? internal? multi-tenant?)
+## Inputs (ask only if missing)
 
-## Parallel Expert Panel
+- What is changing (feature, PR, endpoints)
+- Data involved (PII, financial, secrets) and the auth model (who can do what)
+- Deployment context (public, internal, multi-tenant)
 
-Security reviews benefit from multiple specialist perspectives running simultaneously:
+## Lenses and fan-out
 
-### Expert Roster
-
-| Expert | Model | Focus |
+| Lens | Label | Focus |
 |---|---|---|
-| `AUTH_EXPERT` | `opus` | Authentication flows, authorization checks, session management, RBAC/ABAC |
-| `INJECTION_ANALYST` | `sonnet` | SQL/NoSQL/command/template injection, XSS, SSRF, path traversal |
-| `DATA_PRIVACY` | `opus` | PII handling, GDPR/CCPA compliance, data retention, logging hygiene |
-| `ABUSE_ANALYST` | `sonnet` | Rate limiting, enumeration attacks, credential stuffing, resource exhaustion |
+| `AUTH` | `opus` | Authentication, session, server-side authorization, object-level access, tenant isolation, roles |
+| `INJECTION` | `sonnet` | SQL/NoSQL, command, template, path traversal, XSS, SSRF, unsafe deserialization |
+| `PRIVACY` | `opus` | PII minimization, retention, logs and errors, analytics payloads, secrets handling |
+| `ABUSE` | `sonnet` | Rate limits, enumeration, credential stuffing, resource exhaustion, bulk operations |
 
-### Execution Pattern
+Map the attack surface first, in one pass. **Fan-out is conditional:** a single endpoint, PR, or
+module runs the four lenses inline. Fan out only for a large surface (many services or entry
+points): dispatch the lenses as parallel Agent calls in one message with the attack-surface map,
+then synthesize one risk-ranked list.
 
-```
-Phase 1: Attack surface mapping (sequential - shared context)
-    ↓
-Phase 2: Parallel expert analysis
-  ┌──────────────┬──────────────┬──────────────┬──────────────┐
-  │ AUTH_EXPERT  │ INJECTION    │ DATA_PRIVACY │ ABUSE        │
-  │              │ _ANALYST     │              │ _ANALYST     │
-  └──────┬───────┴──────┬───────┴──────┬───────┴──────┬───────┘
-         └──────────────┼──────────────┘──────────────┘
-                        ↓
-Phase 3: Risk synthesis and prioritized findings (sequential)
-```
+## Workflow
 
-- Launch all 4 experts as parallel Agent calls after attack surface is mapped
-- Each expert works independently on their focus area
-- Use `run_in_background: true` for ABUSE_ANALYST (lower priority than auth/injection)
-- Synthesize into unified risk matrix after all experts complete
+1. **Attack surface:** every entry point (endpoints, forms, uploads, webhooks, consumers, jobs,
+   headers, URL parameters) and the trust boundary each crosses.
+2. **Trace data flow:** for each input, where it is stored, rendered, logged, and forwarded.
+3. **Authentication and authorization:** per endpoint and per persistence path, enforced
+   server-side; object-level checks (can user A reach user B's record by changing an ID?); tenant
+   isolation; privilege escalation between roles; default deny.
+4. **Injection and parsing:** parameterized queries, escaped output, no user input in shell,
+   templates, file paths, or fetched URLs without validation.
+5. **Exposure:** response over-fetching; PII, tokens, or secrets in logs, errors, analytics, or URLs;
+   errors returned as RFC 9457 Problem Details without stack traces or provider internals; internal
+   IDs (TSIDs) never exposed, external IDs are UUIDv7.
+6. **Secrets and dependencies:** no secrets in code, committed config, logs, or URLs; secrets come
+   from the platform's secret store or injected environment. Check vulnerable dependencies against
+   the resolved dependency graph with official advisories or the ecosystem scanner; never infer a
+   vulnerability from a package name or a different version.
+7. **Abuse:** enumeration, credential stuffing, spam through user content, unbounded bulk requests,
+   expensive operations without limits.
+8. **Defaults:** new features fail closed; debug endpoints, permissive CORS, and default
+   credentials are off in production.
 
-## How I'll think about this
-1. **Map the attack surface**: Identify every entry point - API endpoints, form inputs, file uploads, webhooks, message queues, URL parameters, headers. Each is a potential injection vector.
-2. **Trace data flow**: For each input, follow it through the system. Where does it get stored? Where does it get rendered? Where does it get logged? Every transition is a trust boundary.
-3. **Check authentication**: For each endpoint, verify: Is auth required? Is it enforced server-side (not just client-side)? Can auth be bypassed via direct API calls?
-4. **Check authorization**: For each state-mutating operation, verify: Is there an object-level permission check? Can user A access user B's data by changing an ID in the URL? Is there privilege escalation between roles?
-5. **Test injection surfaces**: For each user-controlled input, check: Is it parameterized before reaching SQL/NoSQL? Is it escaped before HTML rendering? Is it sanitized before shell execution or template rendering?
-6. **Evaluate data exposure**: Check API responses for over-fetching (returning fields the client doesn't need). Check logs for PII/secrets. Check error messages for stack traces or internal details.
-7. **Assess abuse potential**: Consider bulk operations, enumeration attacks, credential stuffing, spam via user-generated content, and resource exhaustion.
-8. **Review defaults**: Are new features secure by default? Do they fail closed (deny) rather than open (allow)?
-
-## Common vulnerability patterns to check (OWASP-aligned)
-- **Broken access control**: IDOR, missing function-level auth, CORS misconfiguration
-- **Injection**: SQL, NoSQL, command, template, LDAP, XPath
-- **XSS**: Reflected, stored, DOM-based - check anywhere user input renders
-- **SSRF**: Any place the server fetches a user-provided URL
-- **Insecure deserialization**: Untrusted data in deserialize/unmarshal calls
-- **Security misconfiguration**: Debug mode in prod, default credentials, overly permissive CORS
-- **Sensitive data exposure**: Secrets in logs, PII in analytics, tokens in URLs
-
-## Anti-patterns to flag
-- Authorization checks only on the frontend
-- Building SQL/queries with string concatenation
-- Logging request bodies without PII filtering
-- Using user-supplied filenames or paths without sanitization
-- Storing secrets in code, config files, or environment variables without encryption
-- "Security through obscurity" - relying on hidden endpoints instead of auth
-
-## Quality bar
-- Every finding includes: what's vulnerable, how it could be exploited, and how to fix it
-- Findings are prioritized by real exploitability, not theoretical risk
-- Auth and authz checks traced per endpoint, not assumed
-- No false sense of security - explicitly state what was NOT reviewed
-- Verification plan: how to confirm each fix works
-
-## Workflow context
-- Typically follows: `design-doc`, `code-review:code-review` (official plugin)
-- Feeds into: `test-plan` (security test cases), `incident-response`
-- Related: `performance-review` (rate limiting overlaps)
+Every finding states what is vulnerable, the exploit path (who, from where, with what access), the
+evidence (code, config, request, or scoped search), and the fix. Theoretical risk with no reachable
+path is a note, not a finding. Never propose home-grown cryptography.
 
 ## Output
-Use `assets/security-review.md` and return findings as:
-- **Must-fix** (exploitable now, high impact)
-- **Should-fix** (exploitable with effort, moderate impact)
-- **Nice-to-have** (defense-in-depth, low probability)
 
-## Learning & Memory
+Fill `assets/security-review.md`. Group findings as **Must-fix** (exploitable now, high impact),
+**Should-fix** (exploitable with effort, moderate impact), **Nice-to-have** (defense in depth).
+State explicitly what was not reviewed, and give a verification step for each fix.
 
-After review completes, save reusable patterns:
-- Security patterns specific to this project's auth model and data classification
-- Common vulnerabilities found that should inform future reviews
-- OWASP checklist items most relevant to this technology stack
-- Threat model patterns that apply to similar features in this project
+## Workflow context
+
+- Typically follows: `design-doc`, `code-audit` (security leads), `code-review:code-review` (official plugin).
+- Feeds into: `test-plan` (security test cases), `finalize`.
+- Related: `performance-review` (rate limiting and resource exhaustion overlap).
 
 ## Output contract
 ```yaml

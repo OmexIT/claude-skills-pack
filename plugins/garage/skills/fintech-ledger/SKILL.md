@@ -3,468 +3,84 @@ name: fintech-ledger
 description: "Use when work touches money movement or balances: double-entry ledger postings, wallet credit or debit, holds, capture, refunds, settlement, payouts, collections, float, multi-currency or FX, reconciliation, balance mismatches, Blnk, pgledger, or ledger tables."
 ---
 
-# Fintech Ledger: Double-Entry Pattern Skill
-
-Generates double-entry ledger operations with compensation, idempotency, multi-currency support, and reconciliation. Supports **Blnk** (API-based) or **pgledger** (pure PostgreSQL) depending on project.
-
----
-
-## Ledger Safety Gates
-
-This skill generates money-moving code. Every gate below is mandatory.
-
-1. Clarify what accounts move, what currency is used, what FX snapshot strategy applies, what compensation strategy is required, what invariants must hold, what idempotency key shape is used, and what happens on partial failure.
-2. Produce a reviewable plan listing every posting, every account lock order, every reversal path, and every reconciliation query. No inline code yet.
-3. Isolate ledger work in its own branch or worktree. Never commingle ledger changes with unrelated refactors.
-4. Write Testcontainers integration tests first that assert balanced postings, idempotency, sorted locking, reconciliation invariant (`SUM(postings) == materialized_balance`), insufficient-funds rejection, and reversal correctness. Then implement.
-5. Use this skill to produce the service, repository, Liquibase migration (pgledger mode), and domain events once the behavior is pinned by tests.
-6. Verify before claiming done: run the integration test suite with real Postgres via Testcontainers and run a reconciliation query on the test DB with a zero-delta result.
-7. Before merging, flag which invariants the reviewer must verify. Link to Blnk API docs (Blnk mode) or pgledger correctness proof (pgledger mode).
-
-**Special rule**: if the user asks to modify an existing ledger service without planning, tests, and verification, refuse politely and route them through these gates. Ledger bugs do not self-correct; they compound into balance mismatches that require manual audit to fix.
-
----
-
-## 0. Mode Detection
-
-```bash
-# Blnk mode indicators
-grep -rE "blnkfinance|blnk-go|blnk-client" build.gradle* pom.xml 2>/dev/null && echo "Blnk mode"
-grep -rE "docs\.blnkfinance\.com" . 2>/dev/null && echo "Blnk references present"
-
-# pgledger mode indicators
-grep -rE "ledger_accounts|ledger_postings|ledger_transfers" src/main/resources/db 2>/dev/null && echo "pgledger mode"
-
-# Fallback: ask user
-```
-
-Report detected mode to user before generating code:
-```
-LEDGER MODE DETECTED
-  Project:    <name>
-  Mode:       <blnk | pgledger>
-  Engine:     <Blnk HTTP API | PostgreSQL native>
-  Proceeding with <mode>-specific patterns.
-```
-
----
-
-## 1. Core Invariants (both modes)
-
-These invariants hold regardless of engine. Every generated operation must preserve them:
-
-1. **Balanced**: `SUM(debits) == SUM(credits)` for every transaction atomically. No partial posts.
-2. **Idempotent**: every posting carries an idempotency key (`<domain>:<operation>:<business-id>`). Duplicate calls return the original posting without side effects.
-3. **Sorted locking**: when locking multiple accounts, always acquire locks in canonical order (account ID ascending) to prevent deadlocks.
-4. **Append-only**: postings are never updated or deleted. Corrections are new postings.
-5. **FX snapshot**: cross-currency operations capture the FX rate at post-time as a field on the posting - never look it up later.
-6. **Audit trail**: every state change publishes a domain event (`LedgerPosted`, `BalanceChanged`) consumed by audit/reporting.
-7. **Reconciliation hooks**: after every operation, verify `materialized_balance == SUM(posting_amounts)` for affected accounts.
-
----
-
-## 2. Mode A: Blnk
-
-### 2.1 Client Wrapper
-
-```java
-@Component
-public class BlnkLedgerClient {
-
-    private final RestClient restClient;
-    private final BlnkProperties props;
-
-    public BlnkLedgerClient(RestClient.Builder builder, BlnkProperties props) {
-        this.restClient = builder
-            .baseUrl(props.baseUrl())
-            .defaultHeader("X-API-KEY", props.apiKey())
-            .build();
-        this.props = props;
-    }
-
-    public BlnkTransactionResponse createTransaction(BlnkTransactionRequest request) {
-        return restClient.post()
-            .uri("/transactions")
-            .body(request)
-            .retrieve()
-            .body(BlnkTransactionResponse.class);
-    }
-
-    public BlnkBalanceResponse getBalance(String balanceId) {
-        return restClient.get()
-            .uri("/balances/{id}", balanceId)
-            .retrieve()
-            .body(BlnkBalanceResponse.class);
-    }
-
-    public List<BlnkBalance> searchBalances(String identifier) {
-        return restClient.get()
-            .uri(uriBuilder -> uriBuilder.path("/search/balances")
-                .queryParam("q", identifier).build())
-            .retrieve()
-            .body(new ParameterizedTypeReference<>() {});
-    }
-}
-```
-
-### 2.2 Service Layer - Hold/Capture/Release Pattern
-
-```java
-@Service
-@Transactional
-public class WalletLedgerService {
-
-    private final BlnkLedgerClient blnk;
-    private final IdempotencyStore idempotency;
-    private final DomainEventPublisher events;
-
-    public WalletLedgerService(BlnkLedgerClient blnk,
-                                IdempotencyStore idempotency,
-                                DomainEventPublisher events) {
-        this.blnk = blnk;
-        this.idempotency = idempotency;
-        this.events = events;
-    }
-
-    public TransactionId placeHold(HoldCommand cmd) {
-        var key = "wallet:hold:" + cmd.correlationId();
-        return idempotency.executeOnce(key, () -> {
-            var request = BlnkTransactionRequest.builder()
-                .amount(cmd.amount())
-                .precision(100) // 2-decimal precision
-                .reference(cmd.correlationId())
-                .description("Hold for " + cmd.purpose())
-                .currency(cmd.currency())
-                .source(cmd.sourceBalanceId())
-                .destination(props.holdBalanceId())    // escrow
-                .inflightExpiryDate(cmd.expiresAt())
-                .metadata(Map.of(
-                    "tenant_id", cmd.tenantId(),
-                    "purpose",   cmd.purpose(),
-                    "user_id",   cmd.userId()
-                ))
-                .inflight(true)   // HOLD = inflight=true
-                .build();
-
-            var response = blnk.createTransaction(request);
-            events.publish(new FundsHeldEvent(
-                cmd.tenantId(), cmd.userId(), response.transactionId(),
-                cmd.amount(), cmd.currency(), Instant.now()
-            ));
-            return new TransactionId(response.transactionId());
-        });
-    }
-
-    public void commitHold(String transactionId, String correlationId) {
-        var key = "wallet:commit:" + correlationId;
-        idempotency.executeOnce(key, () -> {
-            blnk.commitInflight(transactionId);
-            events.publish(new FundsCapturedEvent(
-                transactionId, Instant.now()
-            ));
-            return null;
-        });
-    }
-
-    public void voidHold(String transactionId, String correlationId, String reason) {
-        var key = "wallet:void:" + correlationId;
-        idempotency.executeOnce(key, () -> {
-            blnk.voidInflight(transactionId);
-            events.publish(new FundsReleasedEvent(
-                transactionId, reason, Instant.now()
-            ));
-            return null;
-        });
-    }
-}
-```
-
-### 2.3 Balance Query
-
-```java
-public BigDecimal availableBalance(String balanceId) {
-    var response = blnk.getBalance(balanceId);
-    // Blnk returns (balance - inflight_balance) as available
-    return response.balance()
-        .subtract(response.inflightBalance())
-        .divide(BigDecimal.valueOf(response.precision()), 2, RoundingMode.HALF_UP);
-}
-```
-
-### 2.4 Reconciliation
-
-Daily job that compares Blnk balance to internal expected balance (from audit events):
-
-```java
-@Component
-public class BlnkReconciliationJob {
-    @Scheduled(cron = "0 0 2 * * *") // 2am daily
-    public void reconcile() {
-        for (var account : ledgerAccounts.findAll()) {
-            var blnkBalance = blnk.getBalance(account.balanceId()).balance();
-            var expectedBalance = auditEvents.sumDeltas(account.id());
-            if (blnkBalance.compareTo(expectedBalance) != 0) {
-                alerts.raise(new BalanceMismatchAlert(
-                    account.id(), blnkBalance, expectedBalance
-                ));
-            }
-        }
-    }
-}
-```
-
----
-
-## 3. Mode B: pgledger
-
-### 3.1 Schema (Liquibase)
-
-```sql
---liquibase formatted sql
---changeset app:ledger-001-core
-
-CREATE TABLE ledger_accounts (
-    id                BIGINT PRIMARY KEY,
-    tenant_id         BIGINT NOT NULL,
-    account_code      TEXT NOT NULL,
-    currency          TEXT NOT NULL,
-    balance           NUMERIC(20,2) NOT NULL DEFAULT 0,
-    pending_debits    NUMERIC(20,2) NOT NULL DEFAULT 0,
-    pending_credits   NUMERIC(20,2) NOT NULL DEFAULT 0,
-    created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (tenant_id, account_code, currency)
-);
-
-CREATE TABLE ledger_transfers (
-    id                BIGINT PRIMARY KEY,
-    tenant_id         BIGINT NOT NULL,
-    idempotency_key   TEXT NOT NULL,
-    amount            NUMERIC(20,2) NOT NULL CHECK (amount > 0),
-    currency          TEXT NOT NULL,
-    source_account_id BIGINT NOT NULL REFERENCES ledger_accounts(id),
-    target_account_id BIGINT NOT NULL REFERENCES ledger_accounts(id),
-    status            TEXT NOT NULL CHECK (status IN ('PENDING','POSTED','REVERSED')),
-    fx_rate           NUMERIC(20,8),
-    reason_code       TEXT NOT NULL,
-    metadata          JSONB NOT NULL DEFAULT '{}',
-    created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-    posted_at         TIMESTAMPTZ,
-    UNIQUE (tenant_id, idempotency_key)
-);
-
-CREATE TABLE ledger_postings (
-    id                BIGINT PRIMARY KEY,
-    transfer_id       BIGINT NOT NULL REFERENCES ledger_transfers(id),
-    account_id        BIGINT NOT NULL REFERENCES ledger_accounts(id),
-    entry_type        TEXT NOT NULL CHECK (entry_type IN ('DEBIT','CREDIT')),
-    amount            NUMERIC(20,2) NOT NULL CHECK (amount > 0),
-    balance_after     NUMERIC(20,2) NOT NULL,
-    created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX idx_postings_account_time ON ledger_postings(account_id, created_at);
-CREATE INDEX idx_transfers_tenant_status ON ledger_transfers(tenant_id, status);
-
--- Append-only trigger
-CREATE OR REPLACE FUNCTION prevent_posting_mutation() RETURNS trigger AS $$
-BEGIN
-    RAISE EXCEPTION 'ledger_postings is append-only';
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER postings_append_only
-BEFORE UPDATE OR DELETE ON ledger_postings
-FOR EACH ROW EXECUTE FUNCTION prevent_posting_mutation();
-
---rollback DROP TRIGGER postings_append_only ON ledger_postings;
---rollback DROP FUNCTION prevent_posting_mutation();
---rollback DROP TABLE ledger_postings;
---rollback DROP TABLE ledger_transfers;
---rollback DROP TABLE ledger_accounts;
-```
-
-### 3.2 Service Layer - Sorted Account Locking
-
-```java
-@Service
-@Transactional
-public class PgLedgerService {
-
-    private final LedgerAccountRepository accounts;
-    private final LedgerTransferRepository transfers;
-    private final LedgerPostingRepository postings;
-    private final JdbcTemplate jdbc;
-    private final DomainEventPublisher events;
-    private final Tsid tsid;
-
-    public TransferId post(PostCommand cmd) {
-        // Idempotency check
-        var existing = transfers.findByTenantAndKey(cmd.tenantId(), cmd.idempotencyKey());
-        if (existing.isPresent()) return new TransferId(existing.get().id());
-
-        // Sorted lock - always lock lowest account ID first to prevent deadlocks
-        var sorted = Stream.of(cmd.sourceAccountId(), cmd.targetAccountId())
-            .sorted()
-            .toList();
-
-        jdbc.update("SELECT id FROM ledger_accounts WHERE id = ANY(?) FOR UPDATE",
-            sorted.toArray());
-
-        var source = accounts.findByIdForUpdate(cmd.sourceAccountId()).orElseThrow();
-        var target = accounts.findByIdForUpdate(cmd.targetAccountId()).orElseThrow();
-
-        // Invariant: source must have enough balance
-        if (source.balance().compareTo(cmd.amount()) < 0) {
-            throw new InsufficientFundsException(source.accountCode(), source.balance(), cmd.amount());
-        }
-
-        // Write the transfer
-        var transferId = tsid.next();
-        var transfer = new LedgerTransfer(
-            transferId, cmd.tenantId(), cmd.idempotencyKey(),
-            cmd.amount(), cmd.currency(),
-            cmd.sourceAccountId(), cmd.targetAccountId(),
-            "POSTED", cmd.fxRate(), cmd.reasonCode(), cmd.metadata(),
-            Instant.now(), Instant.now()
-        );
-        transfers.save(transfer);
-
-        // Write balanced postings (debit + credit)
-        var newSourceBalance = source.balance().subtract(cmd.amount());
-        var newTargetBalance = target.balance().add(cmd.amount());
-
-        postings.save(new LedgerPosting(tsid.next(), transferId, source.id(), "DEBIT",  cmd.amount(), newSourceBalance, Instant.now()));
-        postings.save(new LedgerPosting(tsid.next(), transferId, target.id(), "CREDIT", cmd.amount(), newTargetBalance, Instant.now()));
-
-        // Update materialized balances
-        accounts.updateBalance(source.id(), newSourceBalance);
-        accounts.updateBalance(target.id(), newTargetBalance);
-
-        // Reconciliation check (defensive)
-        verifyPostingSumEqualsBalance(source.id());
-        verifyPostingSumEqualsBalance(target.id());
-
-        events.publish(new LedgerPostedEvent(
-            cmd.tenantId(), transferId, source.id(), target.id(),
-            cmd.amount(), cmd.currency(), cmd.reasonCode(), Instant.now()
-        ));
-        return new TransferId(transferId);
-    }
-
-    private void verifyPostingSumEqualsBalance(long accountId) {
-        var sumFromPostings = jdbc.queryForObject("""
-            SELECT COALESCE(SUM(CASE WHEN entry_type = 'CREDIT' THEN amount ELSE -amount END), 0)
-              FROM ledger_postings WHERE account_id = ?
-            """, BigDecimal.class, accountId);
-        var materialized = accounts.findById(accountId).orElseThrow().balance();
-        if (sumFromPostings.compareTo(materialized) != 0) {
-            throw new LedgerInvariantViolationException(accountId, sumFromPostings, materialized);
-        }
-    }
-}
-```
-
-### 3.3 Reversal
-
-```java
-public TransferId reverse(long originalTransferId, String reasonCode, String idempotencyKey) {
-    var original = transfers.findById(originalTransferId).orElseThrow();
-    // Reverse by swapping source/target - produces DEBIT on original target, CREDIT on original source
-    return post(new PostCommand(
-        original.tenantId(),
-        idempotencyKey,
-        original.amount(),
-        original.currency(),
-        original.targetAccountId(),   // was destination, now source
-        original.sourceAccountId(),   // was source, now destination
-        original.fxRate(),
-        reasonCode,
-        Map.of("reverses", String.valueOf(originalTransferId))
-    ));
-}
-```
-
----
-
-## 4. Testing
-
-### 4.1 Unit Tests (pgledger mode)
-
-Use Testcontainers with real PostgreSQL - pgledger invariants depend on real DB behavior (triggers, advisory locks, check constraints).
-
-```java
-@SpringBootTest
-@Testcontainers
-class PgLedgerServiceTest {
-
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16")
-        .withInitScript("db/migration/V1__ledger_schema.sql");
-
-    @DynamicPropertySource
-    static void registerProps(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-    }
-
-    @Autowired private PgLedgerService service;
-    @Autowired private LedgerAccountRepository accounts;
-
-    @Test
-    void should_maintain_balance_invariant_when_posting_transfer() {
-        // Given
-        var source = givenAccount("source", new BigDecimal("1000.00"));
-        var target = givenAccount("target", BigDecimal.ZERO);
-
-        // When
-        service.post(new PostCommand(
-            1L, "k-1", new BigDecimal("100.00"), "USD",
-            source.id(), target.id(), null, "TRANSFER_OUT", Map.of()
-        ));
-
-        // Then
-        assertThat(accounts.findById(source.id()).get().balance())
-            .isEqualByComparingTo("900.00");
-        assertThat(accounts.findById(target.id()).get().balance())
-            .isEqualByComparingTo("100.00");
-    }
-
-    @Test
-    void should_reject_posting_when_source_has_insufficient_funds() {
-        // Given
-        var source = givenAccount("source", new BigDecimal("50.00"));
-        var target = givenAccount("target", BigDecimal.ZERO);
-
-        // Then
-        assertThatThrownBy(() -> service.post(new PostCommand(
-            1L, "k-1", new BigDecimal("100.00"), "USD",
-            source.id(), target.id(), null, "TRANSFER_OUT", Map.of()
-        ))).isInstanceOf(InsufficientFundsException.class);
-    }
-
-    @Test
-    void should_be_idempotent_when_same_key_posted_twice() {
-        var source = givenAccount("source", new BigDecimal("1000.00"));
-        var target = givenAccount("target", BigDecimal.ZERO);
-
-        var cmd = new PostCommand(1L, "k-dup", new BigDecimal("100.00"), "USD",
-            source.id(), target.id(), null, "TRANSFER_OUT", Map.of());
-
-        var first  = service.post(cmd);
-        var second = service.post(cmd);
-
-        assertThat(second).isEqualTo(first);
-        assertThat(accounts.findById(source.id()).get().balance())
-            .isEqualByComparingTo("900.00");
-    }
-}
-```
-
----
-
-## 5. Output Contract
+# Fintech ledger: double-entry operations
+
+Builds or changes ledger operations (post, hold, capture, void, reverse, reconcile) on Blnk, upstream
+pgledger, or a service-owned PostgreSQL ledger. Ledger bugs do not self-correct: they compound into
+balance mismatches that need a manual audit, so the gates below are not optional.
+
+## Gates
+
+1. Pin the operation before code: which accounts move, currency and scale, FX snapshot, idempotency
+   key, compensation path, and what happens on a timeout or partial failure.
+2. Write a short plan: every posting (debit and credit), lock order, reversal path, and the
+   reconciliation query that proves it. Keep ledger changes out of unrelated refactors.
+3. Write integration tests first against real Postgres (Testcontainers) or the provider's test
+   instance, then implement. If asked to change a ledger path "quickly", still write the invariant
+   tests; say why instead of skipping them.
+4. Verify before claiming done: run the integration suite and the reconciliation queries; both must
+   come back clean (zero mismatch rows).
+5. In the summary, list the invariants the reviewer must check and link the engine's docs.
+
+## Mode detection
+
+Detect from dependencies, config, and migrations, then read the matching reference before writing
+code. Ask when the signals conflict or are absent.
+
+- **Blnk** (Blnk client or base URL in config): read `references/blnk-api-contract.md`.
+- **Upstream pgledger** (installed `pgledger_*` functions and views from `pgr0ss/pgledger`): read
+  `references/pgledger-invariants.md`. Use its functions; never patch its tables with house migrations.
+- **Service-owned ledger schema** (local `ledger_accounts` / `ledger_postings` style tables, sometimes
+  also called pgledger locally): read `references/pgledger-invariants.md`, and read
+  `references/service-ledger-scaffold.md` when creating the schema or the posting service.
+
+Keep local wrapper tables (operation records, idempotency, outbox) separate from upstream pgledger or
+provider objects, and verify names against the installed revision, not this skill.
+
+## Invariants (all modes)
+
+1. **Balanced**: debits equal credits per currency for every transaction, written atomically.
+2. **Idempotent**: one stable key per business operation (`<domain>:<operation>:<business-id>`),
+   reused on every retry. A duplicate key is success only after the original operation is fetched and
+   its accounts, amount, currency, and operation type match; any difference is an idempotency
+   conflict that fails closed and alerts.
+3. **Unknown is not failure**: a timeout or ambiguous 5xx after dispatch is `PENDING_RECONCILIATION`.
+   Reconcile by reference before retrying, compensating, or telling the caller it failed. Never retry
+   with a new key.
+4. **Append-only**: corrections are new linked reversal entries; never UPDATE or DELETE posted rows.
+5. **Locking**: a service-owned ledger locks every affected account in ascending ID order with
+   `ORDER BY id FOR UPDATE` before reading balances. Provider-backed ledgers use the provider's
+   concurrency contract.
+6. **Currency**: each account has one currency. FX is two balanced legs (one per currency) through FX
+   accounts, with the rate snapshotted on the operation record at post time and never re-derived.
+7. **Available funds** subtract held or inflight debits; never authorize spend from the posted
+   balance alone. Negative available balance is rejected unless the account policy allows overdraft.
+8. **Reconciliation**: the materialized balance equals the signed sum of postings using the account's
+   normal balance, and the reference's verification queries return zero rows.
+9. **Stale balances**: a balance read from a cache, snapshot, or a provider that cannot currently be
+   reached carries its as-of time. When it is stale or its account has an open reconciliation
+   mismatch, show it as stale and block debits, holds, and payouts against it until reconciled.
+10. **Money types**: `BigDecimal` in Java with scale from the currency or asset contract, `NUMERIC` in
+    SQL, integer minor units only where the provider's API requires them. Never `double` or `float`.
+11. **Events**: when downstream consumers exist, write the domain event through the repository's
+    outbox in the same transaction as the posting. Do not publish before the posting commits.
+
+Never hold a database transaction open across a provider HTTP call: persist the operation record,
+commit, dispatch, then record the outcome.
+
+## Required tests
+
+- Balanced postings and the reconciliation query for the new operation.
+- Insufficient-funds rejection.
+- Idempotent replay returns the original result with no second posting; same key with different
+  intent is rejected.
+- Reversal correctness, and for providers, the timeout path ending in `PENDING_RECONCILIATION`.
+- Concurrent posts on the same accounts when the change touches locking.
+
+Schema changes to ledger tables also follow `db-migration` (append-only trigger stays, no
+destructive operations without confirmation and a restore story).
+
+## Output contract
 
 ```yaml
 produces:
@@ -478,7 +94,7 @@ produces:
   - type: "migration"
     format: "sql"
     paths:
-      - "src/main/resources/db/changelog/changes/sql/ledger-NNN-description.sql"  # pgledger mode only
+      - "src/main/resources/db/changelog/changes/sql/ledger-NNN-description.sql"  # service-owned schema only
   - type: "test"
     format: "java"
     paths:
@@ -489,26 +105,18 @@ produces:
   handoff: "Write claudedocs/handoff-fintech-ledger-<timestamp>.yaml - suggest: temporal-workflow (if compensation needed), verify-impl, monitoring-plan"
 ```
 
----
+## Workflow context
 
-## 6. Anti-patterns (never generate)
+- `db-migration` writes the ledger changeset; `temporal-workflow` owns multi-step orchestration and
+  compensation around ledger calls; this skill owns posting semantics and reconciliation.
 
-- **Floating point for money**: never `double`/`float`/`Double` for amounts - always `BigDecimal` with explicit scale
-- **Single-leg postings**: every transfer must have a debit AND credit pair within one DB transaction
-- **Update/delete on postings**: ledger is append-only; reversals create new postings
-- **Cross-currency without FX snapshot**: always capture rate on the posting row
-- **Unsorted multi-account locks**: sort by ID ascending before locking to prevent deadlock
-- **Raw SQL in service layer (pgledger)**: use repositories or jOOQ, not string concatenation (except the FOR UPDATE lock statement which has no repository equivalent)
-- **Balance check without FOR UPDATE**: read-modify-write without explicit lock is a race condition
-- **Negative amounts in the amount column**: use `entry_type` to signal direction; `amount` is always positive
-- **Missing idempotency key**: every POST-style operation must accept and dedupe on an idempotency key
-- **Skipping reconciliation**: the materialized balance MUST equal the sum of postings - verify after every post
+## Anti-patterns (never generate)
 
----
-
-## 7. Reference Files
-
-| File | When |
-|---|---|
-| `references/blnk-api-contract.md` | Full Blnk HTTP contract if generating Blnk-mode |
-| `references/pgledger-invariants.md` | Deep invariants + proof of correctness for pgledger |
+- Single-leg postings, or one transfer whose legs are in different currencies.
+- Signed amounts instead of a positive amount plus explicit debit or credit direction.
+- Balance read before mutation without the lock, or locks taken in unspecified order
+  (`WHERE id = ANY(...) FOR UPDATE` without `ORDER BY`).
+- Treating a duplicate-reference or unique-violation response as success without comparing intent.
+- Retrying a timed-out post with a fresh idempotency key.
+- Summing an account's full posting history inside every post as a "check": run reconciliation
+  queries in tests and on a schedule instead.

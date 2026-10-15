@@ -1,6 +1,26 @@
-# Code Audit - Scorecard & Roadmap Templates
+# Code Audit - Report Templates
 
-Load this when producing Phase 3 (scorecard) and Phase 4 (improvement roadmap) output during `code-audit`.
+Load this for the Evidence Manifest (end of Phase 1) and for Phases 3 to 5 of `code-audit`.
+
+---
+
+## Evidence Manifest
+
+Include it verbatim in the final report. Write "n/a" or "absent" rather than dropping a line.
+
+```
+EVIDENCE MANIFEST - <target>
+  Files:          <n> in scope ({<lang>: <n>}), <n> read (<%>; sampling rationale if partial)
+  Tests read:     <n>; test commands run: <command -> result>
+  Callers:        <n> reverse-import sites outside the target
+  API surface:    <n> REST / <n> events / <n> jobs / <n> CLI
+  Git (30d):      <n> commits, <n> contributors, hotspots: <file (n)>, open PRs touching target
+  Stack:          <language + version>, <framework + version>, <test stack>, <build tool>
+  Conventions:    [AGENTS.md, CLAUDE.md, lint configs, ArchUnit, ADRs] or "none found"
+  Research:       [library @ version -> source URL -> insight], advisories checked
+  Prior audits:   <paths>; reopened findings <n>; never addressed <n>
+  Blockers:       <anything that limits reliability of the review>
+```
 
 ---
 
@@ -13,86 +33,67 @@ Load this when producing Phase 3 (scorecard) and Phase 4 (improvement roadmap) o
 | **Duplication** | | | |
 | **Algorithm Efficiency** | | | |
 | **Security** | | | |
-| **Performance** | | | |
+| **Performance & Reliability** | | | |
 | **Design Pattern Fitness** | | | |
 | **Architecture Conformance** | | | |
 | **Technology Fitness** | | | |
 | **Test Coverage & Quality** | | | |
 | **Overall** | | | |
 
-**Scoring guide**:
-- **9-10**: Exemplary - use as reference implementation for the team
+Mark a dimension N/A with the reason when it did not apply. Scores follow the evidence; a high
+score with no findings is valid when the manifest shows what was checked.
+
+- **9-10**: Exemplary - use as a reference implementation
 - **7-8**: Solid - minor issues, safe to ship
 - **5-6**: Concerning - address HIGH findings before merging
 - **3-4**: Significant problems - rework required
-- **1-2**: Fundamentally unsound - major redesign needed
+- **1-2**: Fundamentally unsound - redesign needed
 
 ---
 
-## Findings Summary Format
+## Findings Summary
 
 ```
 FINDINGS SUMMARY
-================
-CRITICAL: <n>  ← must fix immediately
-HIGH:     <n>  ← must fix before merge
-MEDIUM:   <n>  ← should fix
-LOW:      <n>  ← nice to have
-POSITIVE: <n>  ← good practices to keep
-
-Top 3 risks:
+CRITICAL: <n>   HIGH: <n>   MEDIUM: <n>   LOW: <n>   POSITIVE: <n>
+Top risks:
 1. <highest impact finding>
-2. <second highest>
-3. <third highest>
+2. <next>
+Not reviewed / evidence gaps: <list>
 ```
 
 ---
 
 ## Improvement Roadmap - Action Tiers
 
-Group all findings into action tiers:
+| Tier | Contents |
+|---|---|
+| 1 - Fix now (blocks merge or release) | CRITICAL and HIGH, quick wins first |
+| 2 - This sprint | MEDIUM findings that prevent future bugs or reduce real debt |
+| 3 - Schedule | LOW findings and structural improvements |
 
-### Tier 1 - Fix Now (blocks merge/release)
-
-All CRITICAL + HIGH findings, ordered by effort (quick wins first).
-
-| # | Finding | Dimension | File:Line | Effort | Fix Description |
-|---|---|---|---|---|---|
-
-### Tier 2 - Fix This Sprint
-
-MEDIUM findings that reduce tech debt or prevent future bugs.
-
-| # | Finding | Dimension | File:Line | Effort | Fix Description |
-|---|---|---|---|---|---|
-
-### Tier 3 - Schedule for Later
-
-LOW findings and structural improvements.
+Each tier uses:
 
 | # | Finding | Dimension | File:Line | Effort | Fix Description |
 |---|---|---|---|---|---|
 
 ---
 
-## Refactoring Plan Template (per Tier 1 finding)
+## Refactoring Plan (per Tier 1 finding)
 
 ```
 REFACTORING: <Finding title>
-  Current:     <what the code does now, with file:line>
-  Target:      <what it should do>
-  Steps:
-    1. <step with specific file and change>
-    2. <step>
-    3. <step>
-  Tests:       <what tests to add/modify to verify the refactoring>
-  Risk:        <what could break>
-  Verify:      <how to confirm the refactoring is correct>
+  Current:  <what the code does now, with file:line>
+  Target:   <what it should do>
+  Steps:    1. <specific file and change>  2. ...
+  Tests:    <behavior tests to add or change>
+  Risk:     <what could break>
+  Verify:   <command or check that confirms it>
 ```
 
 ---
 
-## Final Report Header Template
+## Final Report Header
 
 ```markdown
 # Code Audit: <target name>

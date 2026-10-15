@@ -5,56 +5,49 @@ description: "Use when the user wants user journeys mapped through a feature or 
 
 # User flow
 
-## What I'll do
-Map the complete user journey for a feature - from entry point through completion - including happy paths, error states, edge cases, and decision points.
-
-> **user-flow vs flow-map:** This skill maps the **user's perspective** - what users see, decide, and experience.
-> Use `flow-map` for the **system's perspective** - internal states, network failures, concurrency, and cleanup paths.
-> Typical order: `user-flow` first (understand the UX), then `flow-map` (map all system paths for implementation).
-
-## Inputs I'll use (ask only if missing)
-- The user goal (what are they trying to accomplish?)
-- Entry points (how do they get here?)
-- User persona (new vs returning, role, permissions)
-- Constraints (platforms, accessibility requirements)
-
-## How I'll think about this
-1. **Start with the user's goal, not the UI**: "User wants to invite a teammate" not "User clicks the invite button." The goal determines the flow; the UI implements it.
-2. **Map every state, not just the happy path**: Loading, empty, partial, error, success, and "nothing happened" states. Users spend more time in non-happy states than you think.
-3. **Identify decision points**: Where does the user make a choice? What information do they need to make it? What happens if they choose wrong? Can they undo it?
-4. **Trace error recovery**: When something fails, can the user understand what went wrong and fix it without starting over? Error states without recovery paths are dead ends.
-5. **Consider entry and exit points**: Users don't always start at the beginning. They arrive via deep links, notifications, emails, search results. They leave mid-flow. Design for interruption and resumption.
-6. **Check permission boundaries**: What happens when a user without the right permissions reaches a step? Do they see a helpful message or a broken page?
-
-## Anti-patterns to flag
-- Flows that only consider the happy path
-- Error states that say "Something went wrong" without actionable guidance
-- Flows that can't be resumed after interruption (lost form data, expired state)
-- Decision points without enough context for the user to choose
-- Accessibility dead ends (keyboard traps, missing screen reader context)
-- Assuming all users enter from the home page
-
-## Quality bar
-- Every state is accounted for: loading, empty, partial, error, success
-- Error states include recovery paths (not just error messages)
-- Decision points list what information the user needs
-- Edge cases are identified (permissions, concurrent edits, expired sessions, slow connections)
-- Accessibility considerations are noted at each step
-- Flow can be handed to a designer or engineer without ambiguity
+Map what a person goes through to reach a goal: where they enter, what they see, what they
+decide, where they get stuck, and how they recover. Output is a journey a designer can draw
+screens from.
 
 ## Workflow context
-- Typically follows: `prd` (UX requirements)
-- Feeds into: `design-doc` (technical implementation), `test-plan` (test scenarios), `ux-review`
-- Related: `experiment-design` (measuring flow effectiveness)
+- Boundary: this is the user's view (screens, choices, messages, friction). `flow-map` is the
+  system's view (states, failure classes, concurrency, cleanup) and turns each path into a test case.
+  Here a failure is described as the user experiences it ("payment did not go through, card kept").
+- Follows `prd`. Feeds `ui-design` (screens), `flow-map` (system paths), `ux-review`, `test-plan`.
+
+## Inputs (ask only if missing)
+- The user goal, persona (new or returning, role, permissions), and entry points.
+- Platforms and accessibility requirements.
+
+## How to map it
+1. **Start from the goal, not the UI**: "invite a teammate", not "click invite".
+2. **Every step's states**: loading, empty, partial, error, success, and "nothing happened".
+3. **Decision points**: what the user must know to choose, the default, and whether they can undo.
+4. **Error recovery**: each error the user can hit has a way forward that keeps their input. An
+   error with no recovery is a dead end; flag it.
+5. **Entry and interruption**: deep links, notifications, emails, search; leaving mid-flow and
+   coming back. Say what is preserved.
+6. **Permissions**: what a user without access sees at each step.
+7. **Money steps**: the user sees amount, fees, and outcome before confirming; a pending or
+   unknown result is shown as pending with what happens next, never as failed or done.
+
+## Anti-patterns to flag
+- Happy path only; "Something went wrong" with no next step.
+- Flows that lose data on interruption or session expiry.
+- Choices without the information needed to make them.
+- Keyboard traps or steps a screen reader cannot follow.
+- Assuming every user starts at the home page.
+
+## Quality bar
+- Every step lists its states, and every error has a recovery path.
+- Decision points list the information the user needs.
+- User-visible edge cases noted: permissions, expired session, slow connection, interruption,
+  someone else changing the same item.
+- Accessibility noted per step (focus on step change, announcements, non-color cues).
+- A designer or engineer can work from it without asking what happens next.
 
 ## Output
 Fill `assets/user-flow.md`.
-
-## Learning & Memory
-After completing this skill, store reusable insights in memory:
-- **User journey patterns**: Common navigation flows, entry/exit points, and multi-step interaction sequences that recur across features
-- **Common friction points**: Recurring UX obstacles such as confusing decision points, missing context, or broken recovery paths
-- **Error state patterns**: Effective error recovery designs, dead-end patterns to avoid, and permission boundary handling strategies
 
 ## Output contract
 ```yaml

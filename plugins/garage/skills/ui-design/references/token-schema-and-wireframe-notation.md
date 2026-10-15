@@ -1,170 +1,105 @@
-# Design Token Schema
+# Design token schema
 
-Naming convention for all design tokens. Tokens are implemented as CSS custom properties (React), ThemeExtension (Flutter), StyleSheet constants (React Native), or CSS classes (AngularJS).
+One naming scheme across the skill: `--<category>-<role>-<modifier>`. If the project already has
+tokens, extend its names instead of introducing these. Tokens ship as CSS custom properties (web),
+a `ThemeExtension` (Flutter), or theme constants (React Native); see `platform-patterns.md`.
 
----
-
-## Colour Tokens
-
-```css
-/* Semantic roles - map to primitive colours per theme */
---color-primary           /* main brand CTA, active indicators */
---color-primary-hover     /* hover state of primary */
---color-primary-subtle    /* low-emphasis primary tint (backgrounds) */
-
---color-surface-1         /* page background */
---color-surface-2         /* card / panel / sidebar background */
---color-surface-3         /* input / hover / subtle container background */
---color-surface-overlay   /* modal backdrop */
-
---color-border            /* dividers, input borders */
---color-border-focus      /* focus ring colour */
-
---color-text-primary      /* headings, body content */
---color-text-secondary    /* metadata, supporting text */
---color-text-disabled     /* disabled state text */
---color-text-inverse      /* text on dark/coloured backgrounds */
---color-text-link         /* hyperlinks */
-
---color-success           /* PAID, confirmed, positive states */
---color-success-subtle    /* success background tint */
---color-warning           /* PENDING, caution states */
---color-warning-subtle    /* warning background tint */
---color-error             /* FAILED, validation errors */
---color-error-subtle      /* error background tint */
---color-info              /* informational banners */
---color-info-subtle       /* info background tint */
-```
-
-## Status Badge Colours
+## Color roles (each has a light and a dark value)
 
 ```
-PENDING   → text: --color-warning        bg: --color-warning-subtle
-PAID      → text: --color-success        bg: --color-success-subtle
-EXPIRED   → text: --color-text-secondary bg: --color-surface-3
-FAILED    → text: --color-error          bg: --color-error-subtle
-CANCELLED → text: --color-text-disabled  bg: --color-surface-3
-ACTIVE    → text: --color-primary        bg: --color-primary-subtle
+SURFACE   --color-surface-page | -default | -elevated | -subtle (inputs, hover) | -overlay (scrim)
+TEXT      --color-text-primary | -secondary | -muted | -disabled | -inverse | -link
+BORDER    --color-border-default | -strong | -focus
+BRAND     --color-brand-primary | -primary-hover | -primary-subtle | -secondary
+STATUS    --color-{success|warning|error|info}-bg | -text | -border
 ```
 
-## Tailwind Config Mapping (React)
+Components consume semantic tokens only; primitives (`blue-500`) exist only to define them.
+
+## Status mapping
+
+Every status pairs color with a text label and, where space allows, an icon. Color alone fails
+WCAG 1.4.1.
+
+```
+PENDING   text --color-warning-text   bg --color-warning-bg   + "Pending" + clock icon
+PAID      text --color-success-text   bg --color-success-bg   + "Paid" + check icon
+FAILED    text --color-error-text     bg --color-error-bg     + "Failed" + alert icon
+EXPIRED   text --color-text-secondary bg --color-surface-subtle + "Expired"
+CANCELLED text --color-text-disabled  bg --color-surface-subtle + "Cancelled"
+ACTIVE    text --color-brand-primary  bg --color-brand-primary-subtle + "Active"
+```
+
+## Type, space, shape, motion
+
+```
+TYPE      --font-{display|heading|body|mono}; scale display-*, heading-*, body-*, caption, label
+          numbers that update in place (amounts, odds, timers) use tabular numerals
+SPACE     4px base: --spacing-1 (4) ... --spacing-20 (80); semantic --spacing-component-*, -section-*
+RADIUS    --radius-{none|sm|md|lg|xl|full}
+ELEVATION --shadow-{xs|sm|md|lg}; in dark themes express elevation with lighter surfaces
+MOTION    --motion-duration-{fast|base|slow} (about 100 / 200 / 350ms), --motion-easing-standard
+          under reduced motion: durations collapse to 0 or an opacity-only fade
+```
+
+## Tailwind mapping (web projects already on Tailwind)
 
 ```js
-// tailwind.config.js
-theme: {
-  extend: {
-    colors: {
-      primary:    'var(--color-primary)',
-      'surface-1':'var(--color-surface-1)',
-      'surface-2':'var(--color-surface-2)',
-      'surface-3':'var(--color-surface-3)',
-      border:     'var(--color-border)',
-      'text-primary':   'var(--color-text-primary)',
-      'text-secondary': 'var(--color-text-secondary)',
-      success:    'var(--color-success)',
-      warning:    'var(--color-warning)',
-      error:      'var(--color-error)',
-      info:       'var(--color-info)',
-    },
-    fontSize: {
-      'display': ['2rem',    { lineHeight: '2.5rem', fontWeight: '700' }],
-      'h1':      ['1.5rem',  { lineHeight: '2rem',   fontWeight: '600' }],
-      'h2':      ['1.25rem', { lineHeight: '1.75rem',fontWeight: '600' }],
-      'body':    ['1rem',    { lineHeight: '1.5rem', fontWeight: '400' }],
-      'body-sm': ['0.875rem',{ lineHeight: '1.25rem',fontWeight: '400' }],
-      'label':   ['0.75rem', { lineHeight: '1rem',   fontWeight: '500' }],
-    },
-    boxShadow: {
-      'level-1': '0 1px 3px rgba(0,0,0,0.08)',
-      'level-2': '0 4px 12px rgba(0,0,0,0.12)',
-      'level-3': '0 8px 24px rgba(0,0,0,0.16)',
-    },
-    borderRadius: {
-      sm: '4px',
-      md: '8px',
-      lg: '12px',
-    },
-    transitionDuration: {
-      fast: '100ms',
-      base: '200ms',
-      slow: '350ms',
-    },
-  }
-}
+theme: { extend: {
+  colors: {
+    'surface-page': 'var(--color-surface-page)', 'surface-default': 'var(--color-surface-default)',
+    'text-primary': 'var(--color-text-primary)', 'brand-primary': 'var(--color-brand-primary)',
+    'error-text': 'var(--color-error-text)', 'error-bg': 'var(--color-error-bg)',
+    // one entry per semantic token
+  },
+  transitionDuration: { fast: 'var(--motion-duration-fast)', base: 'var(--motion-duration-base)' },
+}}
 ```
 
-## Flutter Theme Mapping
-
-```dart
-// theme/app_tokens.dart
-class AppTokens extends ThemeExtension<AppTokens> {
-  final Color primary;
-  final Color surface1;
-  final Color surface2;
-  final Color surface3;
-  final Color textPrimary;
-  final Color textSecondary;
-  final Color success;
-  final Color warning;
-  final Color error;
-  // ... etc
-}
-```
+Pair with `motion-safe:` / `motion-reduce:` variants (or a global reduced-motion rule) so
+animations respect the user setting.
 
 ---
 
-# Wireframe Notation Reference
+# Wireframe notation
 
-## Box Drawing Characters
-
-```
-Single borders:    ┌ ─ ┐ │ └ ─ ┘ ├ ┤ ┬ ┴ ┼
-Double borders:    ╔ ═ ╗ ║ ╚ ═ ╝ ╠ ╣ ╦ ╩ ╬
-Heavy borders:     ┏ ━ ┓ ┃ ┗ ━ ┛
-```
-
-## Region Labels
+## Symbols
 
 ```
-┌─ REGION NAME ──────────────┐   ← labelled container
-│                            │
-└────────────────────────────┘
-
-╔═ MODAL / ELEVATED ════════╗    ← elevated surface (modal, dropdown)
-║                           ║
-╚═══════════════════════════╝
+Containers:  ┌─ REGION ─┐ │ └─┘          labelled region
+Elevated:    ╔═ MODAL ══╗ ║ ╚═╝          modal, dropdown, sheet
+Skeleton:    ░░░░░░░░░░ (text line)  ▓▓▓▓ (image or avatar block)
+Controls:    [Button]  [input____]  [select v]  (o) radio  [x] checkbox  [on|off] toggle
+Icons:       [<] back  [>] chevron  [:] overflow  [x] close  [+] add  [^] [v] sort
+Status:      [*] status dot, always with a text label beside it
 ```
 
-## Skeleton / Loading
+## Example: list screen with spec sidebar
 
 ```
-░░░░░░░░░░░░░░░░░░░░░   ← skeleton text line (full width)
-░░░░░░░░░░░░░            ← skeleton text line (partial)
-▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓   ← skeleton image / avatar block
+┌───────────────────────────────────────────────┐  SCR-001: Money Request List
+│ ╔═══════════════════════════════════════════╗ │  Viewport: 375px mobile / 1280px desktop
+│ ║ [<]  Money Requests       [+ New Request] ║ │  Regions:
+│ ╚═══════════════════════════════════════════╝ │    A: Top bar   56px, surface-elevated
+│ ┌─ FILTER BAR ──────────────────────────────┐ │    B: Filters   48px, surface-default
+│ │ [All v] [Pending v] [Date v]  [Search..]  │ │    C: List      flex column, scroll
+│ └───────────────────────────────────────────┘ │
+│ ┌─ LIST ITEM (repeat) ──────────────────────┐ │  States:
+│ │ [Avatar] John Doe          KES 5,000  [>] │ │    loading: 3 skeleton rows
+│ │          Oct 12 . [*] Pending             │ │    empty:   explanation + CTA
+│ └───────────────────────────────────────────┘ │    error:   inline banner + Retry
+└───────────────────────────────────────────────┘
 ```
 
-## Interactive Elements
+## State frames
 
 ```
-[Button Label]      ← primary button
-[input field____]   ← text input
-[dropdown ▾]        ← select / dropdown
-[● Radio]           ← radio button
-[PASS Checkbox]        ← checkbox
-[═══●════════]      ← toggle (on)
-[════════●═══]      ← toggle (off)
-[Search...]      ← search input
-```
-
-## Icons and Badges
-
-```
-[●]     ← status indicator dot
-[← ]    ← back navigation
-[→ ]    ← forward / chevron
-[⋮]     ← overflow menu
-[FAIL]     ← close / dismiss
-[+]     ← add / create
-[↑]     ← sort ascending
-[↓]     ← sort descending
+[EMPTY]              [LOADING]            [ERROR]
+┌────────────────┐   ┌────────────────┐   ┌────────────────┐
+│ No requests yet│   │ ░░░░░░░░░░░░░░ │   │ ╔════════════╗ │
+│ Requests you   │   │ ░░░░░░░░       │   │ ║ Could not  ║ │
+│ send show here │   │ ░░░░░░░░░░░░░░ │   │ ║ load data  ║ │
+│ [+ New Request]│   │ ░░░░░░░░░      │   │ ╚════════════╝ │
+└────────────────┘   └────────────────┘   │ [Retry]        │
+                                          └────────────────┘
 ```

@@ -1,141 +1,71 @@
 #!/usr/bin/env bash
-# db-verify.sh - template for verify-impl DB layer
-# Usage: RESOURCE_ID=<uuid> ./db-verify.sh
+# db-verify.sh - psql template for the verify-impl DB layer. Read-only checks.
+# Copy it, replace REPLACE_TABLE / REPLACE_CHILD_TABLE, and run:
+#   RESOURCE_ID=<captured id> DB_NAME=... DB_USER=... ./db-verify.sh
+# The password comes from PGPASSWORD (or the Compose service); never commit it.
 
 set -euo pipefail
+
+: "${RESOURCE_ID:?set RESOURCE_ID to the id captured by the API layer}"
+: "${DB_NAME:?set DB_NAME}"
+: "${DB_USER:?set DB_USER}"
 
 PASS=0
 FAIL=0
 
-# ── Connection ───────────────────────────────────────────────────────────────
-
-# Try Docker Compose first, fall back to direct psql
 if docker compose ps 2>/dev/null | grep -q "db.*running"; then
-  PSQL() { docker compose exec -T db psql -U "${DB_USER:-postgres}" -d "${DB_NAME:-appdb}" -t -A -c "$1"; }
+  PSQL() { docker compose exec -T db psql -U "$DB_USER" -d "$DB_NAME" -t -A "$@"; }
   echo "Connected via Docker Compose"
 else
-  export PGPASSWORD="${DB_PASSWORD:-postgres}"
-  PSQL() { psql -h "${DB_HOST:-localhost}" -U "${DB_USER:-postgres}" -d "${DB_NAME:-appdb}" -t -A -c "$1"; }
+  : "${PGPASSWORD:?set PGPASSWORD}"
+  export PGPASSWORD
+  PSQL() { psql -h "${DB_HOST:-localhost}" -U "$DB_USER" -d "$DB_NAME" -t -A "$@"; }
   echo "Connected via direct psql"
 fi
 
-# Test connection
-VERSION=$(PSQL "SELECT version();" 2>&1)
-if echo "$VERSION" | grep -q "PostgreSQL"; then
-  echo "PASS DB connection OK"
-else
-  echo "FAIL DB connection FAILED: $VERSION"
+if ! PSQL -c "SELECT 1;" >/dev/null 2>&1; then
+  echo "FAIL DB connection" >&2
   exit 1
 fi
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
-
 assert_db() {
-  local label="$1" query="$2" expected="$3"
-  local actual
-  actual=$(PSQL "$query" 2>&1 | tr -d '[:space:]')
+  local label="$1" query="$2" expected="$3" actual
+  actual=$(PSQL -c "$query" 2>&1 | tr -d '[:space:]')
   if [ "$actual" = "$expected" ]; then
     echo "  PASS $label"
-    ((PASS++))
+    PASS=$((PASS + 1))
   else
-    echo "  FAIL $label"
-    echo "     Query:    $query"
-    echo "     Expected: $expected"
-    echo "     Actual:   $actual"
-    ((FAIL++))
+    echo "  FAIL $label: expected $expected, got $actual"
+    echo "       $query"
+    FAIL=$((FAIL + 1))
   fi
 }
 
-assert_not_null() {
-  local label="$1" query="$2"
-  local actual
-  actual=$(PSQL "$query" 2>&1 | tr -d '[:space:]')
-  if [ -n "$actual" ] && [ "$actual" != "" ] && [ "$actual" != "NULL" ]; then
-    echo "  PASS $label → $actual"
-    ((PASS++))
-  else
-    echo "  FAIL $label - value is NULL or empty"
-    ((FAIL++))
-  fi
-}
+echo "== Row existence"
+assert_db "Resource row created" \
+  "SELECT COUNT(*) FROM REPLACE_TABLE WHERE id = '$RESOURCE_ID';" "1"
 
-# ── Row Existence ─────────────────────────────────────────────────────────────
+echo "== Data integrity"
+# NUMERIC compares as text at the column's scale.
+assert_db "Amount correct" \
+  "SELECT amount FROM REPLACE_TABLE WHERE id = '$RESOURCE_ID';" "1000.00"
+assert_db "Status is PENDING" \
+  "SELECT status FROM REPLACE_TABLE WHERE id = '$RESOURCE_ID';" "PENDING"
+assert_db "Audit timestamps populated" \
+  "SELECT created_at IS NOT NULL AND updated_at IS NOT NULL FROM REPLACE_TABLE WHERE id = '$RESOURCE_ID';" "t"
 
-echo ""
-echo "━━━ ROW EXISTENCE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-assert_db \
-  "Resource row created" \
-  "SELECT COUNT(*) FROM REPLACE_TABLE WHERE id = '$RESOURCE_ID';" \
-  "1"
+echo "== Referential integrity"
+assert_db "No orphaned child records" \
+  "SELECT COUNT(*) FROM REPLACE_CHILD_TABLE c LEFT JOIN REPLACE_TABLE p ON c.parent_id = p.id WHERE p.id IS NULL;" "0"
 
-# ── Data Integrity ────────────────────────────────────────────────────────────
+echo "== Ledger balance"
+# Entries must exist: an unwritten ledger would otherwise pass as balanced.
+assert_db "Ledger entries exist and balance" \
+  "SELECT COUNT(*) >= 2 AND COALESCE(SUM(debit_amount), 0) = COALESCE(SUM(credit_amount), 0)
+   FROM ledger_entries WHERE transaction_id = '$RESOURCE_ID';" "t"
 
-echo ""
-echo "━━━ DATA INTEGRITY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-assert_db \
-  "Amount correct" \
-  "SELECT amount FROM REPLACE_TABLE WHERE id = '$RESOURCE_ID';" \
-  "1000.00"
+echo "== Row evidence"
+PSQL -x -c "SELECT * FROM REPLACE_TABLE WHERE id = '$RESOURCE_ID';"
 
-assert_db \
-  "Status = PENDING" \
-  "SELECT status FROM REPLACE_TABLE WHERE id = '$RESOURCE_ID';" \
-  "PENDING"
-
-# ── Audit Fields ──────────────────────────────────────────────────────────────
-
-echo ""
-echo "━━━ AUDIT FIELDS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-assert_not_null \
-  "created_at populated" \
-  "SELECT created_at FROM REPLACE_TABLE WHERE id = '$RESOURCE_ID';"
-
-assert_not_null \
-  "updated_at populated" \
-  "SELECT updated_at FROM REPLACE_TABLE WHERE id = '$RESOURCE_ID';"
-
-# ── Referential Integrity ─────────────────────────────────────────────────────
-
-echo ""
-echo "━━━ REFERENTIAL INTEGRITY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-assert_db \
-  "No orphaned child records" \
-  "SELECT COUNT(*) FROM REPLACE_CHILD_TABLE c
-   LEFT JOIN REPLACE_TABLE p ON c.parent_id = p.id
-   WHERE p.id IS NULL;" \
-  "0"
-
-# ── Ledger Balance (fintech double-entry) ─────────────────────────────────────
-
-echo ""
-echo "━━━ LEDGER BALANCE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-IMBALANCE=$(PSQL "
-  SELECT ABS(
-    SUM(CASE WHEN entry_type='DEBIT'  THEN amount ELSE 0 END) -
-    SUM(CASE WHEN entry_type='CREDIT' THEN amount ELSE 0 END)
-  )
-  FROM ledger_entries
-  WHERE transaction_id = '$RESOURCE_ID';" 2>&1 | tr -d '[:space:]')
-
-if [ "$IMBALANCE" = "0" ] || [ "$IMBALANCE" = "0.00" ]; then
-  echo "  PASS Ledger balanced (debits = credits)"
-  ((PASS++))
-else
-  echo "  FAIL Ledger IMBALANCED - difference: $IMBALANCE"
-  ((FAIL++))
-fi
-
-# ── Full Row Dump (for evidence) ──────────────────────────────────────────────
-
-echo ""
-echo "━━━ RAW ROW DATA ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-PSQL "\x on \n SELECT * FROM REPLACE_TABLE WHERE id = '$RESOURCE_ID';" 2>&1
-
-# ── Summary ───────────────────────────────────────────────────────────────────
-
-echo ""
-echo "━━━ DB VERIFY SUMMARY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  PASS Passed: $PASS"
-echo "  FAIL Failed: $FAIL"
-
-[ "$FAIL" -gt 0 ] && exit 1 || exit 0
+echo "== Summary: $PASS passed, $FAIL failed"
+[ "$FAIL" -eq 0 ]

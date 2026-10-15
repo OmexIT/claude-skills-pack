@@ -2,41 +2,20 @@
 
 ## Summary
 - **Overall health**: Good / Moderate / Poor
-- **Total items identified**: X
-- **Critical items**: X
-- **Quick wins available**: X
+- **Items identified**: X (critical: X, quick wins: X)
 - **Estimated total remediation**: X person-weeks
+- **Evidence sources**: churn analysis, CI data, incidents, prior audits, team input
 
 ## Debt inventory
 
-### Code debt
-| Item | Location | Impact | Effort | Priority | Compounding? |
-| --- | --- | --- | --- | --- | --- |
-| ... | file/module | High/Med/Low | S/M/L | P0-P3 | Yes/No |
+Type is one of: code, architecture, testing, infrastructure, documentation.
 
-### Architecture debt
-| Item | Area | Impact | Effort | Priority | Compounding? |
-| --- | --- | --- | --- | --- | --- |
-| ... | ... | ... | ... | ... | ... |
-
-### Testing debt
-| Item | Area | Impact | Effort | Priority | Compounding? |
-| --- | --- | --- | --- | --- | --- |
-| ... | ... | ... | ... | ... | ... |
-
-### Infrastructure debt
-| Item | Area | Impact | Effort | Priority | Compounding? |
-| --- | --- | --- | --- | --- | --- |
-| ... | ... | ... | ... | ... | ... |
-
-### Documentation debt
-| Item | Area | Impact | Effort | Priority | Compounding? |
-| --- | --- | --- | --- | --- | --- |
-| ... | ... | ... | ... | ... | ... |
+| Item | Type | Location | Evidence | Cost of delay | Blast radius | Effort | Priority | Compounding? |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ... | code | file/module | churn 40 commits/6mo | High/Med/Low | ... | S/M/L | P0-P3 | Yes/No |
 
 ## Quick wins (high value, low effort)
 1. **Item**: What to fix - **Effort**: hours/days - **Impact**: What improves
-2. ...
 
 ## Roadmap connection
 | Upcoming feature | Blocked/slowed by debt item | Impact if not addressed |
@@ -45,35 +24,21 @@
 
 ## Compounding debt (getting worse over time)
 1. **Item**: Why it compounds - **Current cost**: X - **Cost in 6 months**: Y
-2. ...
 
 ## Repayment plan
 
-### Recommended allocation
-- Ongoing: X% of sprint capacity for debt repayment
-- Quick wins sprint: Address items 1-5 in next sprint
+- Ongoing allocation: X% of capacity alongside feature work
+- Quick wins: items to take in the next iteration
 
-### Phase 1 (next 2 weeks): Quick wins
-| Item | Owner | Effort | Done criteria |
-| --- | --- | --- | --- |
-| ... | ... | ... | ... |
-
-### Phase 2 (next quarter): Critical debt
-| Item | Owner | Effort | Done criteria |
-| --- | --- | --- | --- |
-| ... | ... | ... | ... |
-
-### Phase 3 (next half): Strategic debt
-| Item | Owner | Effort | Done criteria |
-| --- | --- | --- | --- |
-| ... | ... | ... | ... |
+| Phase | Item | Owner | Effort | Done criteria |
+| --- | --- | --- | --- | --- |
+| Next 2 weeks: quick wins | ... | ... | ... | ... |
+| Next quarter: critical debt | ... | ... | ... | ... |
+| Next half: strategic debt | ... | ... | ... | ... |
 
 ## Success metrics
-- Build time: Current → Target
-- Test reliability: Current flaky rate → Target
-- Deploy frequency: Current → Target
-- Developer satisfaction: Baseline → Follow-up survey
-- Time to implement a typical feature: Current → Target
+Pick the ones the debt actually affects, with current value and target: build time, flaky-test
+rate, deploy frequency, change failure rate, time to implement a typical change in the affected area.
 
 ## Open questions
 - ...

@@ -6,10 +6,10 @@
 - Duration:
 - Severity:
 
-## Timeline (UTC or local time, be consistent)
-| Time | Event |
-| --- | --- |
-| 00:00 | … |
+## Timeline (UTC)
+| Time | Event | Source |
+| --- | --- | --- |
+| 00:00 | … | … |
 
 ## Root cause(s)
 - RC1:
@@ -23,6 +23,9 @@
 - What made it hard to diagnose:
 - What worked well:
 - What didn’t:
+
+## Affected records (money or data incidents)
+- Records or transactions affected, how they were corrected, any still open:
 
 ## Customer communication
 - What we told customers:

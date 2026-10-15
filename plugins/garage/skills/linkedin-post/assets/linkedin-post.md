@@ -1,50 +1,19 @@
-# LinkedIn Post Draft
+# LinkedIn post: <topic>
 
-## Post metadata
-- **Type**: Thought leadership / Announcement / Lesson learned / How-to / Hot take / Story / Carousel outline
-- **Audience**: <who should stop scrolling>
-- **Goal**: Engagement / Traffic / Credibility / Hiring / Community
-- **Tone**: Conversational / Authoritative / Vulnerable / Provocative / Celebratory
+Audience: <who should read it> | Goal: <conversation, clicks, credibility, hiring>
 
----
+## Post (copy-paste ready, plain text)
 
-## Hook (first 2 lines - must work before "see more")
+<opening two lines: the specific moment, number, or claim>
 
-<hook goes here - bold claim, surprising number, counterintuitive take, or relatable moment>
+<body: one idea, short paragraphs>
 
-## Body
+<closing line: a real question or next step, only if it fits>
 
-<body goes here - one idea, short paragraphs, scannable structure>
-
-## CTA
-
-<call to action - matched to the goal above>
-
-## Hashtags
-
-<3-5 relevant hashtags>
-
----
-
-## Post (copy-paste ready)
-
-<full post assembled - plain text, no markdown, ready to paste into LinkedIn>
-
----
-
-## Variations (optional)
-
-### Shorter version (~100 words)
-<condensed version for quick engagement>
-
-### Longer version (~400 words)
-<expanded version with more detail or storytelling>
-
----
+<hashtags only if the user asked: two or three>
 
 ## Notes
-- **Character count**: <total characters> (LinkedIn limit: 3,000)
-- **Line count before "see more"**: <first 210 characters>
-- **Tagged people/companies**: <if any>
-- **Link strategy**: <in post / first comment / none>
-- **Best posting time**: <suggestion based on audience - e.g., Tue-Thu 8-10am local>
+- Length: <characters> of 3,000
+- Link: <in the post, in the first comment, or none, as the user prefers>
+- Facts to confirm before posting: <any detail the user should double-check>
+- Shorter version: <only if the user asked for variants>

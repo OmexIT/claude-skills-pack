@@ -1,69 +1,41 @@
-# Competitive Analysis: <product / feature area>
+# Competitive analysis: <product or feature area>
 
-## Market landscape
+As of: YYYY-MM-DD
 
-### Our position
-- **Product**: What we offer
-- **Target customer**: Who we serve
-- **Key differentiator**: Why customers choose us
+## Summary
+Three to five sentences: where we stand, the biggest threat, and the clearest opening.
 
-### Competitive map
-| Category | Competitors |
-| --- | --- |
-| Direct (same solution, same customer) | ... |
-| Indirect (different solution, same problem) | ... |
-| Substitutes (manual process, spreadsheets, status quo) | ... |
-| Potential (adjacent products that could expand) | ... |
+## Who else solves this
+| Type | Who |
+|---|---|
+| Direct rivals (same solution, same customer) | |
+| Other ways customers cope (manual work, spreadsheets, doing nothing) | |
+| Likely entrants (adjacent products that could expand) | |
 
 ## Competitor profiles
+Repeat for the competitors that matter most (usually three or fewer).
 
-### Competitor A: <name>
-- **Target customer**:
-- **Positioning**:
-- **Key strengths**: (what they do better than us)
-- **Key weaknesses**: (where they fall short)
-- **Pricing model**:
-- **Trajectory**: (growing fast? stagnating? pivoting?)
-- **Threat level**: High / Medium / Low
+### <Competitor>
+- Who they sell to and how they position themselves:
+- Where they beat us:
+- Where they fall short:
+- Pricing:
+- Direction (growing, stalling, changing focus):
+- Threat: high / medium / low
 
-### Competitor B: <name>
-_(repeat structure)_
+## What customers weigh when buying
+| Buying factor | Importance | Us | <Competitor A> | <Competitor B> |
+|---|---|---|---|---|
+| <price, time to value, fit with existing tools, reliability, support> | high / med / low | strong / weak / none | | |
 
-## Feature comparison
-| Capability | Us | Competitor A | Competitor B | Customer importance |
-| --- | --- | --- | --- | --- |
-| ... | Strong/Weak/None | ... | ... | High/Med/Low |
-
-_Note: Rate by capability quality, not just presence. Having a feature ≠ having it well._
-
-## Buying criteria analysis
-| What customers care about | Our position | Market gap? |
-| --- | --- | --- |
-| Price / value | ... | ... |
-| Time to value / onboarding | ... | ... |
-| Integration ecosystem | ... | ... |
-| Reliability / uptime | ... | ... |
-| Support quality | ... | ... |
-| ... | ... | ... |
-
-## Differentiation opportunities
-### Where we're strong (defend)
-- ...
-
-### Where we're weak (close the gap or concede)
-- ...
-
-### Underserved areas (differentiate)
-- ...
-
-## Strategic implications
-- **Build**: Features/capabilities worth investing in
-- **Avoid**: Areas where competitors have insurmountable leads
-- **Watch**: Trends or competitors that could disrupt the market
-- **Position**: How to frame our offering against the landscape
-
-## Open questions
-- ...
+## What this means for us
+- Defend: where we are strong and customers care.
+- Catch up or concede: where we are weak, and which of these is worth fixing.
+- Stand apart: needs no one serves well.
+- Watch: moves that could change the picture.
 
 ## Sources
-- ...
+- <source, date checked>
+
+## Unconfirmed points
+- <claim to verify, and how>

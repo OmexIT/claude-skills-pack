@@ -118,7 +118,7 @@ those maps to Codex, which runs the same roles with subagents when available or 
 | Skill | Use when |
 |---|---|
 | `handoff` | Chaining skills through `claudedocs/handoff-*.yaml` manifests |
-| `repo-conventions` | Applying conventions recorded in its `references/` (fill these in per fork) |
+| `repo-conventions` | Repos with no conventions in AGENTS.md or CLAUDE.md; its references are placeholders until filled |
 
 **Claude Code hooks** (`plugins/garage/hooks/hooks.json`): destructive-command blocker,
 sensitive-file warning, Prettier autoformat (web files only; Java formatting runs in the

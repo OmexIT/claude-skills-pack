@@ -1,10 +1,10 @@
-# Architecture (edit me)
+PLACEHOLDER: not filled in for any repository. Treat this file as absent; do not apply anything below as a rule.
 
-Describe the high-level architecture of this repo.
+# Architecture conventions (outline)
 
-Suggested sections:
-- Services/modules overview
-- Data stores and key schemas
-- External dependencies
-- Key request flows
-- Local dev setup expectations
+When documenting a repo, cover only what applies, with a file path example for each rule:
+- Modules or services and what each owns
+- Dependency direction and what must not import what
+- Data stores and which module owns each table or collection
+- External dependencies and how failures are handled
+- Main request or job flows

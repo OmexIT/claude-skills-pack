@@ -5,52 +5,50 @@ description: "Use when the user wants technical debt inventoried or prioritized:
 
 # Tech debt assessment
 
-## What I'll do
-Inventory technical debt in a codebase or system, categorize it by type and severity, and produce a prioritized repayment plan based on cost-of-delay.
+Inventory debt across a codebase or system, categorize it, and produce a repayment plan ordered by
+cost of delay. This prioritizes across areas; for evidence-level findings inside specific code, run
+`code-audit` first and feed its Tier 2/3 findings in here.
 
-## Inputs I'll use (ask only if missing)
+## Inputs (ask only if missing)
+
 - Codebase or area to assess
-- Known pain points (slow builds, flaky tests, difficult deploys)
-- Team concerns or frustrations
-- Upcoming roadmap (what features are planned that debt blocks?)
+- Known pain points (slow builds, flaky tests, difficult deploys, recurring incidents)
+- Upcoming roadmap (which planned work the debt blocks or slows)
 
-## How I'll think about this
-1. **Categorize by type**: Code debt (duplication, poor abstractions), architecture debt (wrong boundaries, scaling limits), testing debt (low coverage, flaky tests), infrastructure debt (manual processes, outdated tooling), documentation debt (missing runbooks, outdated docs). Different types require different remediation approaches.
-2. **Measure cost-of-delay, not just ugliness**: Ugly code that nobody touches has zero cost. Clean code that you modify weekly saves time on every change. Prioritize debt that's actively slowing the team down.
-3. **Identify compounding debt**: Some debt gets worse over time - every new feature built on a bad abstraction makes the eventual fix harder. This is the most urgent category.
-4. **Connect to roadmap**: Tech debt that blocks upcoming features should be addressed first. Debt in areas you won't touch for 6 months can wait.
-5. **Right-size the fix**: Not all debt needs a big refactor. Sometimes the fix is a small naming change, extracting a function, or adding a missing test. Quick wins build momentum.
-6. **Budget, don't sprint**: Sustainable debt repayment means a consistent allocation (e.g., 20% of sprint capacity), not a heroic "cleanup sprint" followed by months of new debt accumulation.
+## Workflow
 
-## Anti-patterns to flag
-- "Rewrite everything" as a debt strategy (almost always wrong)
-- Cleanup sprints with no follow-up (debt reaccumulates immediately)
-- Tracking debt without prioritizing it (a list without a plan)
-- Prioritizing by engineering preference rather than business impact
-- Ignoring testing debt (flaky/missing tests slow everything)
-- Treating all debt as equal severity
+1. **Gather evidence, not impressions:** churn hotspots
+   (`git log --since="6 months ago" --format= --name-only | grep . | sort | uniq -c | sort -rn | head`), build and CI durations, flaky or disabled tests, incident and
+   postmortem history, prior `claudedocs/*-code-audit.md` reports, and team pain points. Each debt
+   item cites at least one of these.
+2. **Categorize:** code (duplication, poor abstractions), architecture (wrong boundaries, scaling
+   limits), testing (missing or flaky tests), infrastructure (manual steps, outdated tooling),
+   documentation (missing runbooks, stale docs). The type decides the remediation approach.
+3. **Cost of delay, not ugliness:** ugly code nobody touches costs little; a module changed weekly
+   costs on every change. Score each item by how often it is touched and what it slows or risks.
+4. **Compounding debt first:** debt that grows with every feature built on it (a bad abstraction, a
+   duplicated source of truth) gets more expensive to fix each month.
+5. **Connect to the roadmap:** debt blocking planned work comes first; debt in areas untouched for
+   months waits.
+6. **Right-size fixes:** many items need an extracted function, a deleted dead path, or one missing
+   test, not a rewrite. List quick wins separately.
+7. **Plan repayment:** a steady allocation alongside feature work, owners, done criteria, and the
+   metrics that will show improvement.
 
-## Quality bar
-- Debt items are categorized by type (code, architecture, testing, infra, docs)
-- Each item has: description, cost-of-delay estimate, blast radius, remediation effort
-- Items are prioritized by cost-of-delay and compounding risk, not aesthetics
-- Connection to roadmap: which upcoming work is blocked or slowed by which debt
-- Repayment plan includes timeline, resource allocation, and success metrics
-- Quick wins are identified separately (high value, low effort)
-
-## Workflow context
-- Typically follows: Team retrospectives, performance issues, difficult feature implementations
-- Feeds into: `ticket-breakdown` (debt repayment tickets), `design-doc` (architectural changes)
-- Related: `performance-review` (performance-related debt), `security-review` (security-related debt)
+Flag these when you see them: "rewrite everything" as strategy, a one-off cleanup sprint with no
+ongoing allocation, a debt list with no priorities, priorities driven by preference rather than
+cost, and treating every item as equally severe.
 
 ## Output
-Fill `assets/tech-debt-assessment.md`.
 
-## Learning & Memory
-After completing this skill, store reusable insights in memory:
-- **Tech debt categories**: Recurring debt patterns by type (code, architecture, testing, infra, docs) and their typical indicators in codebases
-- **Cost-of-delay patterns**: Observed relationships between debt items and team velocity, including compounding debt that worsened over time
-- **Repayment strategies**: Effective remediation approaches, budget allocation ratios, and quick-win identification heuristics that delivered results
+Fill `assets/tech-debt-assessment.md`. Each item has evidence, cost-of-delay, blast radius, and
+remediation effort.
+
+## Workflow context
+
+- Typically follows: `code-audit`, `arch-review`, retrospectives, postmortems, painful feature work.
+- Feeds into: `ticket-breakdown` (repayment tickets), `design-doc` (architectural changes).
+- Related: `performance-review` and `security-review` for debt in those areas.
 
 ## Output contract
 ```yaml

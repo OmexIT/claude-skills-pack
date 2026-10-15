@@ -5,112 +5,74 @@ description: "Use when work must pass a final quality gate backed by proof: evid
 
 # Evidence review (default-to-rejection)
 
-## What I'll do
-Act as the final quality gate before shipping. I default to **NEEDS WORK** and require concrete evidence to approve. Claims without proof are automatic failures.
+Final gate before shipping. The rating starts at **NEEDS WORK** and moves up only as evidence
+covers the requirements. This skill judges whether the proof is sufficient; it does not gather
+fresh evidence at scale (`verify-impl` does) or audit code quality broadly (`code-audit` does).
 
-## Inputs I'll use (ask only if missing)
-- What was implemented (feature, PR, or spec reference)
-- Test plan or acceptance criteria (or handoff artifact from `verify-impl`, `spec-to-impl`)
-- Access to the codebase to verify claims
+## Inputs (ask only if missing)
 
-## Core philosophy
+- What was implemented (feature, PR, or spec reference) and its acceptance criteria or test plan
+- Evidence already produced (handoff from `verify-impl` or `spec-to-impl`, logs, reports)
+- Access to the codebase to re-check claims
 
-**NEEDS WORK until proven otherwise.**
+## What fails the gate
 
-This inverts the typical review pattern. Instead of "looks good unless I find problems," this skill assumes problems exist and requires evidence of quality.
+The gate judges evidence coverage, never the number of issues found. A review that finds nothing
+wrong passes when the evidence covers every requirement; a review that finds nothing because
+nothing was checked fails. Any of these means NEEDS WORK or worse:
 
-## Automatic FAIL triggers
-Any of these → immediate NEEDS WORK rating:
-- Zero issues reported (impossible for any real implementation)
-- "Tests pass" without actual test runner output pasted
-- "Build succeeds" without actual build log
-- Perfect scores without supporting documentation
-- Specs marked "implemented" without a verification command to prove it
-- "Works on my machine" without CI or reproducible evidence
-- Screenshots from a design tool, not from the running application
+- "Tests pass" or "build succeeds" with no runner or build output
+- A requirement marked done with no verification command or artifact behind it
+- A zero-issue or perfect-score report that does not show what was checked
+- "Works on my machine" with no CI run or reproducible command
+- Screenshots from a design tool instead of the running application
+- Evidence for a different commit, branch, or environment than the one being shipped
 
-## How I'll think about this
+## Workflow
 
-1. **Collect evidence inventory**: For every requirement marked "done," demand the proof:
-   | Requirement | Evidence Type | Evidence Location | Verified? |
+1. **Evidence inventory.** For every requirement claimed done, record the proof:
+
+   | Requirement | Evidence type | Location | Verified? |
    |---|---|---|---|
-   | FR-001: User can submit form | Screenshot of running app | e2e/screenshots/tc001.png | PASS/FAIL |
-   | FR-002: API validates input | curl output showing 400 | test-report.log line 45 | PASS/FAIL |
-   | FR-003: Data persists to DB | psql query result | db-verify.log | PASS/FAIL |
+   | FR-001 user can submit form | Playwright run against the app | e2e report, test TC-001 | PASS/FAIL |
+   | FR-002 API rejects bad input | HTTP response with status and body | test log line 45 | PASS/FAIL |
 
-2. **Verify evidence is real**: Run the verification commands myself. Don't trust pasted output - re-execute:
-   ```bash
-   # Re-run tests
-   mvn test 2>&1 | tail -20
-   # Re-check DB state
-   docker compose exec db psql -U postgres -d appdb -c "SELECT count(*) FROM ..."
-   # Re-take screenshot
-   npx playwright test --grep "TC-001" 2>&1
-   ```
+2. **Re-check it.** Re-run the repository's own verification commands (tests, build, lint, the
+   targeted e2e case) rather than trusting pasted output. Read-only queries against a local or
+   test database are fine. Anything that resets, reseeds, migrates, or deletes data needs the
+   user's explicit confirmation and a restore path first.
+3. **Coverage, proportional to risk.** Every P0 requirement and every money, auth, data-mutation,
+   or tenant-isolation path needs direct evidence. API changes need a request and response pair;
+   persisted state needs a query or test that reads it back; UI flows need a run against the real
+   app at the viewports the feature supports. Lower-risk items can rest on a covering automated test. Record anything uncovered.
+4. **Regressions.** Compare against the previous baseline (prior CI run or report): test counts,
+   newly skipped or disabled tests, new warnings.
+5. **Incomplete-work signals** in the diff: new TODO/FIXME without a tracked follow-up,
+   commented-out code, new lint or type suppressions, duplicated logic that existing code already
+   provides.
+6. **Rate:**
+   - **REJECT**: a critical requirement unverified, tests failing, or evidence fabricated or stale
+   - **NEEDS WORK**: evidence gaps on non-critical requirements, or minor issues found
+   - **CONDITIONAL PASS**: all P0 evidence verified; P1/P2 gaps documented as follow-ups
+   - **PASS**: every requirement has verified evidence, checks re-ran green, no incomplete-work signals
 
-3. **Check for missing coverage**: Cross-reference the spec/PRD against what was tested:
-   - Every P0 requirement: needs test evidence
-   - Every API endpoint: needs a request/response pair
-   - Every DB write: needs a row existence check
-   - Every UI flow: needs a screenshot or Playwright result
+## Valid evidence
 
-4. **Check for regressions**: Compare current test results against previous baseline:
-   ```bash
-   # Find previous test results
-   ls -t e2e/reports/verify-*.log | head -2
-   # Diff test counts
-   ```
-
-5. **Check code quality signals**:
-   - Are there new TODO/FIXME comments? (incomplete work)
-   - Are there commented-out code blocks? (uncertainty)
-   - Are there `@Suppress` / `// eslint-disable` / `// ignore:` annotations? (suppressed warnings)
-   - Are there duplicate patterns? (didn't reuse existing code)
-
-6. **Rate the implementation**:
-   - **REJECT**: Critical requirements unverified, tests failing, evidence missing
-   - **NEEDS WORK**: Minor gaps in evidence, non-critical issues found
-   - **CONDITIONAL PASS**: All P0 evidence provided, P1/P2 gaps documented as follow-up
-   - **PASS**: All requirements have evidence, all tests pass, code quality clean
-
-## Evidence types accepted
-
-| Type | What constitutes valid evidence | Invalid evidence |
+| Type | Valid | Not valid |
 |---|---|---|
-| **Test output** | Actual stdout from test runner with pass/fail counts | "All tests pass" (text claim) |
-| **Screenshots** | Playwright/emulator screenshot of running app | Figma mockup or design file |
-| **Build logs** | Actual compiler/bundler output showing success | "Build works" (text claim) |
-| **API responses** | curl output with status code and response body | API spec showing expected response |
-| **DB state** | psql/mongosh query result showing actual rows | Schema diagram |
-| **Coverage report** | Coverage tool output with percentages and uncovered lines | "We have good coverage" |
-| **Lint output** | Linter stdout showing zero errors | "Code is clean" |
-
-## Anti-patterns to flag
-- WARN Accepting self-reported quality without verification
-- WARN "It works" without a reproducible verification command
-- WARN Reviewing only the code diff without running the application
-- WARN Skipping mobile/responsive verification for UI changes
-- WARN No regression check against previous test baseline
-- WARN Approving with known TODO comments in core logic
-
-## Quality bar
-- [ ] Every P0 requirement has at least one piece of concrete evidence
-- [ ] All evidence was verified (re-executed, not just trusted)
-- [ ] Code quality scan found no incomplete work markers
-- [ ] No duplicate patterns introduced (checked against existing codebase)
-- [ ] Rating is one of: REJECT / NEEDS WORK / CONDITIONAL PASS / PASS
-- [ ] Follow-up items documented for anything not covered
+| Tests | Runner output with pass/fail counts for this commit | "All tests pass" |
+| Build | Compiler or bundler output | "Build works" |
+| API | Request plus status code and body | The OpenAPI example |
+| Data | Query result or test that reads the state back | Schema diagram |
+| UI | Automated run or screenshot of the running app | Design mockup |
+| Coverage | Tool output with uncovered lines | "Good coverage" |
+| Absence | Scoped search naming paths and terms | "Nothing else uses it" |
 
 ## Workflow context
-- Typically follows: `verify-impl`, `spec-to-impl`, `code-review:code-review` (official plugin)
-- Feeds into: `finalize` (if PASS or CONDITIONAL PASS)
-- Related: `test-plan` (defines what needs evidence), `security-review`
 
-## Learning & Memory
-After completing this skill, store reusable insights in memory:
-- **Evidence quality standards**: What constitutes sufficient proof for different requirement types, and minimum evidence thresholds that caught real issues
-- **Common proof gaps**: Recurring areas where implementations lack verification -- untested edge cases, missing integration evidence, and overlooked regression checks
-- **Verification patterns**: Effective re-execution commands, cross-referencing techniques, and evidence collection workflows that streamlined the review process
+- Typically follows: `verify-impl` (gathers live evidence), `spec-to-impl`, `code-review:code-review` (official plugin).
+- Feeds into: `finalize` on PASS or CONDITIONAL PASS.
+- `test-plan` defines what needs evidence; `code-audit` judges code quality, not proof.
 
 ## Output contract
 ```yaml

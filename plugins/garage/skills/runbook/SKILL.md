@@ -5,51 +5,34 @@ description: "Use when the user wants an operational runbook, operations or on-c
 
 # Runbook
 
-## What I'll do
-Produce an operational runbook that an on-call engineer can follow at 3am to deploy, scale, debug, and recover the service without needing to read the source code.
+Write procedures an on-call engineer can follow at 3am to deploy, scale, diagnose, and recover the
+service without reading its source.
 
-## Inputs I'll use (ask only if missing)
-- Service/system name and purpose
-- Architecture overview (components, dependencies, data stores)
-- Deployment process (CI/CD, manual steps, environments)
-- Known failure modes and their symptoms
-- Monitoring and alerting setup
+## Inputs (ask only if missing)
+- Service name, purpose, components, dependencies, data stores
+- Deployment process and environments
+- Known failure modes and the alerts that fire for them (from `monitoring-plan` if it exists)
+- Escalation contacts
 
-## How I'll think about this
-1. **Write for the stressed, sleep-deprived on-call engineer**: Clear steps, no ambiguity, copy-pasteable commands. If a step requires judgment, provide decision criteria.
-2. **Symptoms before solutions**: Organize by "what you're seeing" (alert fired, users reporting errors, latency spike) not by "what's wrong" (database connection exhaustion). The on-call engineer knows the symptom, not the cause.
-3. **Include verification at every step**: After each action, explain how to confirm it worked. "Restart the service" is incomplete - "Restart the service and verify logs show `Service started` and health check returns 200" is a runbook.
-4. **Escalation paths are mandatory**: Every section should end with "if this doesn't resolve it, escalate to X." No dead ends.
-5. **Keep it current or delete it**: An outdated runbook is worse than no runbook - it gives false confidence. Include a "last verified" date and review schedule.
-
-## Anti-patterns to flag
-- Steps that assume deep system knowledge ("fix the replication lag")
-- Missing escalation paths (what if the runbook doesn't solve it?)
-- Commands without explanation (copy-paste without understanding is dangerous)
-- No verification steps after actions
-- Stale information without review dates
-
-## Quality bar
-- An engineer unfamiliar with the service can follow every procedure
-- Every action has a verification step
-- Every section has an escalation path
-- Commands are copy-pasteable with realistic values
-- Common failure modes are covered with symptom-based lookup
-- Last verified date is included; review cadence is set
-
-## Workflow context
-- Typically follows: Service deployment, `design-doc`
-- Feeds into: `incident-response` (referenced during incidents), `postmortem` (runbook gaps identified)
-- Related: `monitoring-plan` (alerting that triggers runbook procedures)
+## Rules
+1. **Organize by symptom**: "error-rate page on checkout", not "connection pool exhaustion". The
+   reader knows the alert, not the cause. One section per alert that pages.
+2. **Copy-pasteable commands** taken from the real repo, scripts, and tooling; verify each against
+   the repo rather than inventing flags. If a step needs judgment, give the decision criteria.
+3. **Verify after every action**: what output, metric, or log line proves the step worked.
+4. **Destructive steps** (deleting data, killing queries, restoring a backup, failover, replaying
+   or reversing money movements) state the blast radius, who must approve, and how to undo or
+   restore. Never a bare destructive command.
+5. **Every section ends with an escalation path**: when to escalate, to whom, how.
+6. **Freshness**: record a last-verified date and owner; a stale runbook gives false confidence.
 
 ## Output
-Fill `assets/runbook.md`.
+Fill `assets/runbook.md`; drop sections that do not apply.
 
-## Learning & Memory
-After completing this skill, store reusable insights in memory:
-- **Operational patterns**: Common deployment sequences, health-check verification steps, and environment-specific procedures that recur across services
-- **Failure recovery procedures**: Proven remediation steps for recurring failure modes, including symptom-to-cause mappings and verification commands
-- **Scaling triggers**: Threshold indicators, capacity planning heuristics, and scaling decision criteria that proved reliable in production
+## Workflow context
+- `monitoring-plan` decides what fires and why; this skill says what a human does when it fires.
+- Used during `incident-response`; gaps found there come back through `postmortem` action items.
+- Follows `infra-design` or `design-doc`.
 
 ## Output contract
 ```yaml

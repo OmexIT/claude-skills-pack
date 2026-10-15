@@ -6,18 +6,19 @@
 - Current baseline (if known):
 
 ## Performance budget / SLO
-- Latency target (p50/p95):
+- Latency target (p50/p95/p99, or the assumed budget if none exists):
 - Error rate target:
 - Resource limits (CPU/memory/cost):
 
 ## Risk areas
 - DB queries (N+1, missing indexes, large scans)
-- External calls (timeouts, retries, circuit breakers)
+- External calls (timeouts, retry semantics, behavior when the dependency fails)
 - Payload sizes (serialization, response bloat)
 - Concurrency / locking / transactions
 - Caching strategy (correctness, invalidation)
 
 ## Measurements
+- Evidence used (profile, trace, query plan, dashboard) or "none, leads only":
 - How to benchmark locally:
 - Staging load test plan:
 - What to profile:

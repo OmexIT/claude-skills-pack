@@ -5,57 +5,58 @@ description: "Use when the user is designing, reviewing, or changing an API cont
 
 # API design
 
-## What I'll do
-Design a clear, consistent API (or review an existing one) that's easy for consumers to use correctly and hard to use incorrectly.
+Designs a new API contract or reviews an existing one, producing a contract document, not code.
+Implementing the contract in Spring Boot is `api-first`.
 
-## Inputs I'll use (ask only if missing)
-- Who consumes this API (frontend, mobile, third-party, internal service)?
-- What operations are needed (CRUD, workflows, queries)?
-- Existing API patterns in the codebase (naming, auth, error format)
-- Constraints (backwards compatibility, rate limits, payload size)
+## Inputs (ask only if missing)
+- Consumers: frontend, mobile, third party, internal service.
+- Operations and workflows needed, including non-CRUD actions (approve, cancel, export).
+- Existing API patterns in the codebase or OpenAPI document: naming, auth, envelope, error format,
+  versioning. An established public contract wins over house defaults.
+- Constraints: backward compatibility, rate limits, payload size, latency.
 
-## How I'll think about this
-1. **Design for the consumer, not the database**: API shape should reflect what consumers need, not your internal data model. Don't expose implementation details through your API surface.
-2. **Naming is the hardest part**: Resource names should be nouns, not verbs. Use consistent pluralization. Actions that don't fit CRUD (approve, archive, export) need thoughtful endpoint design.
-3. **Error contract is as important as success**: Every error should include: HTTP status, error code (machine-readable), message (human-readable), and field-level details for validation errors. Consumers will write code against your error format.
-4. **Pagination from day one**: Any endpoint that returns a list will eventually return too many items. Design pagination in from the start - retrofitting it is a breaking change.
-5. **Versioning strategy**: Decide upfront how you'll evolve the API. URL versioning (/v2/), header versioning, or additive-only changes? Each has trade-offs.
-6. **Idempotency for writes**: POST/PUT/PATCH operations should be safe to retry. Use idempotency keys for operations that create resources or trigger side effects.
-7. **Least surprise principle**: If a consumer guesses how an endpoint works based on other endpoints in the API, they should be right.
+## Decision rules
+1. **Shape for the consumer, not the tables.** No storage details in the surface.
+2. **Resources are plural nouns.** Actions that do not fit CRUD become a sub-resource or a command
+   endpoint (`POST /payment-links/{id}/cancel`) with documented idempotency.
+3. **Errors are a contract.** House default is RFC 9457 Problem Details with a stable `type`, field
+   level `errors[]` with machine-readable codes, and `traceId`. Never `200 OK` with an error body.
+4. **Pagination on every list** that can grow: opaque cursor, `pageSize` cap, stable ordering, and
+   filters and tenant scope reapplied on every page.
+5. **Versioning**: follow the service's existing strategy; otherwise prefer additive change and
+   define what counts as breaking before the first release.
+6. **Retry safety**: GET, PUT, and DELETE are idempotent by definition. POST commands that create
+   state or move money take a required `Idempotency-Key`; same key and payload replays the original
+   response, same key with a different payload is rejected. Concurrent PATCH uses `ETag` and
+   `If-Match` when lost updates matter.
+7. **House data rules**: public IDs are UUIDv7 strings and internal TSIDs never appear; money is a
+   decimal string plus currency or asset code with scale from that currency; timestamps are ISO 8601
+   UTC.
+8. **Least surprise**: a consumer who guesses from the other endpoints should guess right.
+
+For a review, cite the endpoint, the rule it breaks, consumer impact, and the fix. Impact decides
+severity, not the count of findings.
 
 ## Anti-patterns to flag
-- Inconsistent naming (mix of camelCase and snake_case, singular and plural)
-- Leaking internal IDs or implementation details in responses
-- 200 OK with an error in the response body
-- No pagination on list endpoints
-- Breaking changes without versioning strategy
-- Overly chatty APIs requiring multiple round-trips for common operations
-- Missing rate limiting on public-facing endpoints
-- No idempotency on state-changing operations
+- Mixed casing or pluralization; verbs in resource paths.
+- Internal or sequential IDs, or storage-generated keys, in paths, bodies, or cursors.
+- Floating-point money or timestamps without zone.
+- Breaking changes without a versioning or deprecation path.
+- Chatty flows needing several round trips for one common task.
+- Public endpoints without documented auth and rate limits.
 
 ## Quality bar
-- Naming is consistent across all endpoints (convention documented)
-- Every endpoint has: method, path, request shape, response shape, error cases
-- Error format is standardized with machine-readable codes
-- Pagination is present on all list endpoints
-- Auth requirements are specified per endpoint
-- Breaking change policy is defined
-- At least one complete request/response example per endpoint
+- Every endpoint has method, path, auth, request, response, and error cases, with one complete
+  example each.
+- Error format, pagination, and naming conventions are written down once and followed everywhere.
+- Breaking-change policy is defined.
 
 ## Workflow context
-- Typically follows: `design-doc` (system architecture)
-- Feeds into: `ticket-breakdown`, `test-plan`, `security-review`
-- Related: `docs-review` (API documentation quality)
+- Follows `design-doc`; feeds `ticket-breakdown`, `test-plan`, `security-review`.
+- `api-first` implements this contract in Spring Boot; this skill writes no code.
 
 ## Output
 Fill `assets/api-design.md`.
-
-## Learning & Memory
-
-After API design completes, save:
-- API patterns adopted in this codebase (naming conventions, error format, auth scheme) for consistency across future endpoints
-- Versioning strategies chosen and the breaking-change policies that worked
-- Pagination approaches that proved effective for the data characteristics encountered
 
 ## Output contract
 ```yaml

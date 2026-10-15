@@ -7,119 +7,77 @@ description: "Use when the user wants a UI design or implementation evaluated fo
 
 > Delegation, model labels, and task tracking below use Claude Code notation. In Codex or another client, follow `../../references/cross-client.md`.
 
-## What I'll do
-Evaluate a design or implementation for usability, accessibility, and user experience quality using established heuristic frameworks.
-
-## Inputs I'll use (ask only if missing)
-- Screen, mockup, URL, or description of the UI
-- Target user persona and their goal
-- Context: mobile/desktop, new user/experienced, accessibility requirements
-- Known pain points or areas of concern
-
-## Parallel Expert Panel
-
-UX reviews benefit from multiple specialist perspectives:
-
-### Expert Roster
-
-| Expert | Model | Focus |
-|---|---|---|
-| `UX_STRATEGIST` | `opus` | Information architecture, user flows, task completion efficiency |
-| `A11Y_EXPERT` | `sonnet` | WCAG 2.2 compliance, keyboard nav, screen readers, color contrast |
-| `INTERACTION_DESIGNER` | `sonnet` | Micro-interactions, feedback loops, error recovery, state transitions |
-| `VISUAL_DESIGNER` | `sonnet` | Visual hierarchy, consistency, spacing, typography, brand alignment |
-
-### Execution Pattern
-
-```
-Phase 1: Context gathering - understand user persona, goals, platform (sequential)
-    ↓
-Phase 2: Parallel expert reviews
-  ┌──────────────┬──────────────┬──────────────┬──────────────┐
-  │ UX           │ A11Y_EXPERT  │ INTERACTION  │ VISUAL       │
-  │ _STRATEGIST  │              │ _DESIGNER    │ _DESIGNER    │
-  └──────┬───────┴──────┬───────┴──────┬───────┴──────┬───────┘
-         └──────────────┼──────────────┘──────────────┘
-                        ↓
-Phase 3: Consolidated UX findings report (sequential)
-```
-
-- Launch all 4 experts in parallel after context is established
-- Each expert reviews the UI independently through their lens
-- Use `run_in_background: true` for VISUAL_DESIGNER (lower priority than usability/a11y)
-- Consolidate findings, deduplicating overlapping observations
-
-## How I'll think about this
-1. **Nielsen's 10 heuristics**: Systematically check visibility of system status, match between system and real world, user control, consistency, error prevention, recognition over recall, flexibility, aesthetic design, error recovery, and help/documentation.
-2. **Cognitive walkthrough**: For each step in the user's task, ask: Will the user know what to do? Will they notice the right action? Will they understand the feedback? Can they recover from mistakes?
-3. **Accessibility (WCAG)**: Check keyboard navigation, screen reader compatibility, color contrast, text sizing, focus management, and alternative text. Accessibility isn't optional.
-4. **Information hierarchy**: Is the most important information most prominent? Can users scan and find what they need? Is the visual hierarchy guiding attention correctly?
-5. **Error experience**: When things go wrong, is the error message helpful? Does it explain what happened, why, and what to do? Can users recover without losing their work?
-6. **Consistency audit**: Does this screen follow the same patterns as the rest of the product? Inconsistency creates cognitive load.
-
-## Heuristic checklist
-### Visibility of system status
-- [ ] User knows where they are in the application
-- [ ] Loading states are visible and informative
-- [ ] Actions provide immediate feedback
-- [ ] Progress indicators exist for long operations
-
-### User control and freedom
-- [ ] Undo/redo is available for destructive actions
-- [ ] Cancel is always accessible
-- [ ] Users can navigate back without losing data
-- [ ] Confirmation dialogs for irreversible actions
-
-### Consistency and standards
-- [ ] UI patterns match platform conventions
-- [ ] Same actions look the same across the product
-- [ ] Terminology is consistent throughout
-- [ ] Icons have consistent meaning
-
-### Error prevention and recovery
-- [ ] Inputs are validated before submission (client-side)
-- [ ] Destructive actions require confirmation
-- [ ] Error messages are specific and actionable
-- [ ] Users can recover from errors without restarting
-
-### Accessibility
-- [ ] Color contrast meets WCAG AA (4.5:1 text, 3:1 large text)
-- [ ] All interactive elements are keyboard accessible
-- [ ] Focus order is logical and visible
-- [ ] Images have meaningful alt text
-- [ ] Form fields have associated labels
-- [ ] Screen reader can navigate and understand the page
-
-## Anti-patterns to flag
-- Disabled buttons without explanation (why can't I click this?)
-- Modal dialogs for non-critical information
-- Infinite scroll without "back to top" or position persistence
-- Required fields not marked, or marked only with color
-- Toast notifications for critical errors (easy to miss)
-- Tiny tap targets on mobile (<44px)
-
-## Quality bar
-- Every finding includes: what's wrong, who's affected, severity, and a fix suggestion
-- Accessibility issues are prioritized (WCAG A > AA > AAA)
-- Findings distinguish between usability issues and personal preference
-- Positive patterns are noted (not just problems)
-- Screen-specific and consistent with the rest of the product
+Evaluate a design or a running implementation from the user's side: can the target user complete
+their task, understand what happened, recover from mistakes, and do it with assistive technology?
+The output is findings and recommendations, not a redesign.
 
 ## Workflow context
-- Typically follows: `user-flow`, `prd` (UI requirements)
-- Feeds into: `ticket-breakdown` (UX fix tickets), `code-review:code-review` (implementation review)
-- Related: `docs-review` (content clarity overlaps)
+- Boundary: `ui-design` creates design artifacts and its review mode checks them against the
+  design system before build. This skill judges usability and accessibility of any design or
+  built UI; fixes that need new screens or tokens go back to `ui-design` revision.
+- Follows `user-flow`, `prd`, `ui-design`. Feeds `ticket-breakdown` (fix tickets) and code review.
+
+## Inputs (ask only if missing)
+- The UI: screens, mockups, a URL or running app, Figma link, or `design/` artifacts.
+- Target user, their goal, and context (device, new or experienced, assistive technology needs).
+- Known pain points.
+
+## Gather evidence
+- Running UI with browser tools available: walk the task, capture the accessibility tree or
+  snapshot, keyboard-only pass, zoom to 200%, and reduced-motion and dark-theme checks where
+  supported. Without tools, review what was provided and say what could not be verified.
+- Evidence can be a screenshot, accessibility snapshot, DOM or code excerpt, measured contrast
+  ratio, step-by-step reproduction, or a reproducible absence (no label, no focus state).
+
+## Lenses and fan-out
+
+| Lens | Model | Focus |
+|---|---|---|
+| `UX_STRATEGIST` | `opus` | Task completion, IA, flow efficiency, cognitive walkthrough |
+| `A11Y_EXPERT` | `sonnet` | WCAG 2.2 AA, keyboard, screen readers, contrast, motion |
+| `INTERACTION_DESIGNER` | `sonnet` | Feedback, errors and recovery, state transitions |
+| `VISUAL_DESIGNER` | `sonnet` | Hierarchy, consistency, spacing, typography |
+
+For a single screen, component, or short flow, apply all four lenses inline in one pass. Fan out
+in parallel only for a multi-screen product or several long flows, and only where the client
+supports subagents; then deduplicate overlapping findings before reporting.
+
+## Method
+1. **Cognitive walkthrough** for each step of the user's task: will they know what to do, notice
+   the right control, understand the feedback, and recover from a mistake?
+2. **Nielsen's heuristics**: status visibility, real-world match, control and freedom,
+   consistency, error prevention, recognition over recall, flexibility, minimal design, error
+   recovery, help.
+3. **Accessibility (WCAG 2.2 AA)**:
+   - Contrast 4.5:1 text, 3:1 large text and UI boundaries, in every theme.
+   - Color is never the only cue for status, errors, required fields, or changes.
+   - Every control reachable and operable by keyboard, with a visible focus not hidden by sticky
+     elements; logical focus order; focus managed on dialogs and route changes.
+   - Controls have roles and accessible names; inputs have labels; errors are linked to fields.
+   - Target size at least 24x24 CSS px (platform guidance 44pt or 48dp); drag has an alternative.
+   - Motion honors reduced-motion settings; nothing flashes more than three times a second;
+     auto-updating content can be paused.
+4. **Error and money experience**: errors say what happened and what to do and keep the user's
+   input; money or irreversible actions are confirmed, show pending until confirmed, and never
+   present a stale balance as current.
+5. **Consistency** with the rest of the product's patterns and terminology.
+
+## Anti-patterns to flag
+- Disabled buttons with no visible reason.
+- Modals for non-critical information; toasts for critical errors.
+- Infinite scroll with no position persistence or keyboard-reachable "load more".
+- Required fields marked only by color; placeholder used as the label.
+- Hover-only information or actions.
+
+## Quality bar
+- Every finding: what is wrong, who is affected, evidence, severity, and a fix.
+- Accessibility findings tagged with WCAG criterion and level (A before AA before AAA).
+- Usability problems separated from preference; strengths noted.
+- A review with few or no findings is valid when the evidence covers the task; state what was
+  covered and what was not.
 
 ## Output
 Fill `assets/ux-review.md`.
-
-## Learning & Memory
-
-After review completes, save:
-- UX patterns that proved effective for this product type
-- Common usability issues found in this project (to check proactively)
-- Accessibility patterns most relevant to this user base
-- Design system consistency rules discovered during review
 
 ## Output contract
 ```yaml

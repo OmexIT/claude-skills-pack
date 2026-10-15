@@ -3,270 +3,135 @@ name: arch-review
 description: "Use when the user asks for an architecture review of existing Java or Spring Boot code: clean or hexagonal architecture boundaries, module boundaries, dependency direction, domain leakage, transaction boundaries, or business logic in controllers."
 ---
 
-# Architectural Review: Clean Architecture Invariants Skill
+# Architecture Review: Java and Spring Boundaries
 
-Reviews a Java module against clean architecture, hexagonal, and DDD invariants. Produces a findings report with severity and concrete fix suggestions.
+Reviews a Java/Spring module against its architecture invariants: dependency direction, transaction
+and external-effect boundaries, API and persistence boundaries, resilience semantics, and module
+rules. Read-only: it produces findings and, on request, a fix plan, never inline fixes.
 
----
+## Review workflow
 
-## Review Workflow
+1. Parse scope: a module name, a package path, or nothing (then the git-changed files or the module
+   the user is working in). Mode is `report-only` unless the user asks for `fix-plan`.
+2. Read the accepted architecture first: AGENTS.md / CLAUDE.md, ADRs, existing ArchUnit or Modulith
+   tests, and `package-info.java`. Judge against what the repository accepted, not a textbook
+   layout. Package names below (`api`, `application`, `domain`, `infrastructure`) are examples; map
+   them to the repo's real layout.
+3. Inventory: Java files per layer, controllers, services, repositories, clients, listeners.
+4. If ArchUnit or Modulith verification exists, run it and record the result. If not, analyze with
+   grep and file reads; propose ArchUnit only for boundaries the team has accepted and that recur.
+5. Check each invariant below; use the leads table to find candidates, then prove reachable impact
+   before assigning severity.
+6. Write the report, and in fix-plan mode the tickets.
 
-This skill is read-only. It produces a findings report, never inline fixes.
+For a CRITICAL or HIGH finding, explain why the violation exists (shortcut, legacy constraint,
+missing port, unclear boundary) before recommending a fix. Fixes go through the implementation
+skill for the area (`api-first`, `temporal-workflow`, `fintech-ledger`) and a review before merge.
 
-**Invoke this skill** (`arch-review`) to audit a Java module against clean architecture invariants. Produces findings with severity ratings (CRITICAL/HIGH/MEDIUM/LOW) and affected file paths.
+## Invariants
 
-**After findings are produced** - for each CRITICAL or HIGH finding:
+**Dependency direction.** Domain behavior does not depend on HTTP, persistence clients, messaging,
+provider clients, or framework configuration. Application use cases coordinate the domain and
+depend on ports; infrastructure implements ports; API code validates transport input, calls a use
+case, and maps the result. Some repositories deliberately keep Spring Data mapping annotations on
+aggregates: when the local architecture accepts that, it is not a finding.
 
-1. Understand why the violation exists: shortcut, legacy constraint, missing abstraction, unclear boundary, or missing test pressure. Do not skip directly from finding to code change.
-2. Turn the findings into a reviewable remediation plan with ordered tickets and dependencies. Use fix-plan mode (see Section 4) to auto-generate ticket skeletons.
-3. Chain to an implementation skill for actual code changes:
-   - `api-first` for controller/service/DTO restructuring
-   - `temporal-workflow` for saga/orchestration extraction
-   - `fintech-ledger` for money-code restructuring
-   - (domain-appropriate skill per finding)
-4. Request a focused code review after fixes are in place, before merging.
-5. If remediation spans multiple branches, decide merge strategy (single PR vs. stacked PRs) before implementation starts.
+**Transactions and external effects.**
+- Transaction boundaries sit on application use cases, not controllers or private helpers.
+- Private methods and self-invocation (`this.` calls) do not get a proxied transaction boundary.
+- Remote calls stay outside database transactions unless an outbox, saga, durable operation
+  record, or equivalent design handles the coupling.
+- A timed-out remote mutation has an unknown result: persist that state, keep the same idempotency
+  key, and reconcile before retrying or compensating.
 
-**Hard rule**: this skill NEVER produces inline fixes in the same invocation. It produces findings. Fixes happen in a separate pass through the code-generator workflow. If the user asks "just fix it", refuse and route them through the plan → fix → review chain.
+**Resilience, chosen per operation from failure semantics.**
+- Timeouts on every remote call.
+- Bounded retries only for retryable, idempotent operations, with backoff and jitter.
+- Bulkheads or concurrency limits where a shared resource needs protection.
+- Circuit breakers only where repeated failures would amplify load and the open-circuit result has
+  safe semantics. A breaker is not required on every HTTP, queue, or database call.
+- Fallbacks must be honest: a clearly marked stale read or a fast explicit failure. A fallback that
+  returns a fabricated outcome for a mutation (for example a "declined" or "success" result the
+  provider never sent) is a finding, never a fix.
 
----
+**API and persistence boundaries.** No request binding to entities and no entities returned from
+controllers. Controller thinness is judged by responsibilities (transport only), not a line count.
+Repositories persist and load; business decisions and cross-aggregate orchestration live in use
+cases or domain services. Public identifiers never expose internal keys (TSIDs stay internal;
+external IDs are UUIDv7); errors are RFC 9457 Problem Details.
 
-## 0. Scope Parsing
+**Value objects.** Use them when a concept carries validation, units, comparison, formatting,
+security, or repeated business meaning (`Money` wrapping `BigDecimal` with a currency, tenant IDs,
+operation references). Money is never `double`; time is `Instant`/`OffsetDateTime`. Do not wrap
+every primitive to satisfy a pattern.
 
-Arguments are the text that follows the skill name in the user's request: file paths, names, and flags.
+**Events and modules.** Use events when consumers cross a real boundary, need an independent
+lifecycle or delivery, or the event is part of the audit trail. Prefer a direct call for simple
+in-process coordination with one owner. Apply Spring Modulith rules only when the repository uses
+Modulith; then verify declared dependencies, cycles, public interfaces, and
+`ApplicationModules.verify()` coverage.
 
-Accepts:
-- Module name: `arch-review payment`
-- Package path: `arch-review com.company.payment`
-- Nothing: review the current git-changed files OR the top-level module the user is currently working on
+## Evidence leads
 
-Confirm scope:
-```
- ARCH REVIEW SCOPE
-  Module:     payment
-  Package:    com.example.payment
-  Files:      <n> Java files
-  Layers:     domain, application, infrastructure, api
-  Mode:       report-only | fix-plan
-```
+| Lead | What to verify |
+|---|---|
+| Spring or provider imports in the domain package | Domain behavior now depends on infrastructure, versus an accepted mapping annotation |
+| Repository injected into a controller | API bypasses authorization, use-case rules, or transaction ownership |
+| Entity returned from or bound in a controller | Persistence fields or internal IDs leak into the public contract |
+| `@Transactional` on a private method, or a `this.` call to one | Boundary is ineffective under proxy mode |
+| `@Transactional` on a controller | Transaction spans transport concerns |
+| Remote client call inside a transaction | Lock duration and partial failure are explicitly designed |
+| Resilience annotation with a `fallbackMethod` | Fallback is honest for the operation, not a fabricated result |
+| `catch (Exception e)` in a service | Code hides an unknown state or maps errors too broadly |
+| Raw amount or ID primitives in the domain | Repeated business rules justify a value object |
+| Static calls or persistence access across feature modules | Ownership or module boundaries are bypassed |
 
----
+Severity: read `references/clean-architecture-patterns.md` for the severity guide and good and bad
+dependency examples. Assign severity only after proving reachable impact; the same pattern can be
+accepted in one repository and critical in another.
 
-## 1. Invariants Checked
+## Report
 
-### 1.1 Dependency Direction (non-negotiable)
-
-```
-api / presentation
-        │
-        ▼
-application (services, use cases)
-        │
-        ▼
-domain (aggregates, value objects, events)
-        ▲
-        │
-infrastructure (repos, clients, adapters)
-```
-
-**Rules**:
-- `domain` imports NOTHING from `application`, `infrastructure`, `api`, or Spring
-- `application` imports from `domain` only (and Spring for `@Service`, `@Transactional`)
-- `infrastructure` imports `domain` and `application` ports; never referenced the other way
-- `api` imports `application` only; never touches `domain` or `infrastructure` directly
-
-### 1.2 Transaction Boundaries
-
-- `@Transactional` only on service methods (application layer), never on repositories or controllers
-- Read-only transactions marked `@Transactional(readOnly = true)`
-- No `@Transactional` on private methods (Spring can't proxy them)
-- Service method invoking another service method on the same class via `this.` bypasses the proxy - flag it
-
-### 1.3 No Business Logic in Controllers
-
-- Controllers should only: parse request, call service, map response, return HTTP status
-- Controllers must NOT: loop over entities, aggregate results, make decisions based on business rules
-- Max recommended lines per controller method: 15
-
-### 1.4 No Direct Entity Exposure in API
-
-- Response DTOs must be separate records - never return JPA entities or JDBC aggregates from a `@RestController`
-- Requests must be separate DTO records - never bind directly to an entity
-- MapStruct or manual mapping between domain and DTO
-
-### 1.5 Circuit Breakers on External Calls
-
-- Every call to an external HTTP API / external DB / external queue must be wrapped in a Resilience4j `@CircuitBreaker` or equivalent
-- Fallback methods should be deterministic and safe (often "return cached" or "fail fast with 503")
-
-### 1.6 Value Objects vs Primitive Obsession
-
-- Money → `Money` value object (not `BigDecimal`)
-- Email → `Email` value object (not `String`)
-- PhoneNumber → `PhoneNumber` value object
-- Tenant ID → `TenantId` value object
-- IDs → typed IDs (`PaymentId`, `UserId`) - not raw `Long` / `String`
-
-Primitives are allowed at the infrastructure boundary (DB columns, HTTP payloads) - domain should see value objects.
-
-### 1.7 Event Publishing for State Changes
-
-- Every aggregate state change emits a domain event
-- Events use `ApplicationEventPublisher` or Spring Modulith's `DomainEvents`
-- Consumers use `@ApplicationModuleListener` for cross-module, `@EventListener` for in-module
-
-### 1.8 Module Boundary Enforcement (Spring Modulith)
-
-If Spring Modulith is present, ensure:
-- `@ApplicationModule` declares allowed dependencies
-- `ApplicationModules.verify()` is in a test - failing build on violation
-- `package-info.java` documents module purpose and ports
-
----
-
-## 2. Execution Phases
-
-### 2.1 Phase 1 - Inventory
-
-```bash
-find <package> -name "*.java" | head -200
-grep -l "@RestController" <package> | wc -l
-grep -l "@Service" <package> | wc -l
-grep -l "@Repository" <package> | wc -l
-```
-
-### 2.2 Phase 2 - Static Checks via ArchUnit (if available)
-
-```java
-@AnalyzeClasses(packages = "com.example.payment")
-class PaymentArchTest {
-
-    @ArchTest
-    static final ArchRule domain_does_not_depend_on_application =
-        classes().that().resideInAPackage("..domain..")
-            .should().onlyDependOnClassesThat().resideInAnyPackage(
-                "..domain..", "java..", "org.slf4j..");
-
-    @ArchTest
-    static final ArchRule controllers_only_in_api_package =
-        classes().that().areAnnotatedWith(RestController.class)
-            .should().resideInAPackage("..api..");
-
-    @ArchTest
-    static final ArchRule repositories_only_in_infrastructure =
-        classes().that().areAssignableTo(CrudRepository.class)
-            .should().resideInAPackage("..infrastructure..");
-
-    @ArchTest
-    static final ArchRule services_are_annotated_with_service =
-        classes().that().haveSimpleNameEndingWith("Service")
-            .and().resideInAPackage("..application..")
-            .should().beAnnotatedWith(Service.class);
-
-    @ArchTest
-    static final ArchRule no_cyclic_module_dependencies =
-        slices().matching("com.example.(*)..").should().beFreeOfCycles();
-}
-```
-
-If ArchUnit isn't in the project, propose adding it. Otherwise perform file-by-file grep analysis.
-
-### 2.3 Phase 3 - File-by-File Analysis
-
-For each file, check:
-- Imports (does a `domain` file import Spring annotations?)
-- Class annotations (controller doing service work?)
-- Method bodies (controller with `for (...)` loops processing domain objects?)
-- Return types (controller returning `Entity` directly?)
-- Exception handling (services catching and swallowing? controllers using try/catch instead of `@ControllerAdvice`?)
-
----
-
-## 3. Findings Report Format
+Save to `claudedocs/<module>-arch-review-<timestamp>.md`:
 
 ```markdown
-# Architectural Review - <module>
-Reviewer: arch-review skill
-Date: <timestamp>
-Mode: report-only | fix-plan
+# Architecture Review - <module>
+Date: <timestamp>   Mode: report-only | fix-plan
+Scope: <packages, file count>   Accepted architecture sources: <ADRs, ArchUnit, AGENTS.md or "none">
+Verification run: <ArchUnit/Modulith command -> result, or "none present">
 
 ## Summary
+CRITICAL <n> | HIGH <n> | MEDIUM <n> | LOW <n>
 
-  Total findings: <n>
-  CRITICAL: <n>   (must fix before merge)
-  HIGH:     <n>   (should fix this sprint)
-  MEDIUM:   <n>   (track as tech debt)
-  LOW:      <n>   (style/cleanup)
+## Findings
+### [CRIT-001] <title>
+  Invariant: <which one>
+  Location: <file:line>
+  Evidence: <quote, grep output, or test result>
+  Impact: <reachable consequence>
+  Fix: <smallest corrective action>
 
-## CRITICAL findings
-
-### [CRIT-001] domain layer imports Spring
-  **Rule**: 1.1 Dependency Direction
-  **File**: src/main/java/com/example/payment/domain/Payment.java:5
-  **Issue**: `import org.springframework.stereotype.Component;`
-  **Why it matters**: domain must be framework-agnostic; coupling to Spring prevents unit-testing domain in isolation
-  **Fix**: Remove the `@Component` annotation; move any Spring-managed lifecycle into `application` or `infrastructure`.
-
-### [CRIT-002] controller contains business logic
-  **Rule**: 1.3 No Business Logic in Controllers
-  **File**: src/main/java/com/example/payment/api/PaymentController.java:45-78
-  **Issue**: Controller loops over payments, aggregates totals by currency, and applies fee discount logic inline.
-  **Fix**: Extract to `PaymentSummaryService.computeSummary(criteria)` in the application layer; controller calls once and maps the result.
-
-## HIGH findings
-
-### [HIGH-001] external HTTP call without circuit breaker
-  **Rule**: 1.5 Circuit Breakers on External Calls
-  **File**: src/main/java/com/example/payment/infrastructure/PaymentGatewayClient.java:32
-  **Issue**: `restClient.post().retrieve()` has no `@CircuitBreaker` annotation; a gateway outage would cascade.
-  **Fix**: Add `@CircuitBreaker(name = "payment-gateway", fallbackMethod = "fallbackCharge")` and implement `fallbackCharge(...)` returning a `PaymentDeclinedResult`.
-
-... etc ...
-
-## Dependency Graph
-
-```
-api ──► application ──► domain ◄── infrastructure
-                                 \
-                                  └─► application (VIOLATION: CRIT-003)
-```
+## Dependency graph
+<actual direction found, violations marked with finding IDs>
 
 ## Recommendations
-
-1. Add ArchUnit to the build so these invariants are enforced on every CI run
-2. Extract `PaymentSummaryService` (addresses CRIT-002)
-3. Wrap all gateway clients in circuit breakers (addresses HIGH-001..005)
-4. Migrate `BigDecimal amount` to `Money` value object across the payment module (addresses MED-001..008)
+<ordered; ArchUnit rules only for accepted, recurring boundaries>
 ```
 
----
+A clean review is valid when the evidence supports it.
 
-## 4. Fix-Plan Mode
+**Fix-plan mode** additionally writes `claudedocs/<module>-arch-fix-plan-<timestamp>.md`: ordered
+tickets, each with severity, effort, files, dependencies on other tickets, and a "done when"
+check (for example "domain package has no `org.springframework` imports; ArchUnit rule passes").
+To propose an executable rule, read `references/archunit-setup.md`.
 
-If invoked with `--fix-plan`, produce an ordered ticket breakdown:
+## Workflow context
 
-```markdown
-## Remediation Tickets
+- Java/Spring architecture only. For breadth across quality dimensions or other stacks, use `code-audit`.
+- Threat modeling goes to `security-review`; SLO-driven latency or throughput work to `performance-review`.
+- Downstream: `ticket-breakdown` for remediation tickets, `tech-debt-assessment` for deferred items.
 
-### Ticket 1: Remove Spring imports from domain layer
-  **Severity**: CRITICAL
-  **Effort**: 1 day
-  **Files**: <n>
-  **Dependencies**: none
-  **Done when**: domain package has zero `org.springframework.*` imports; ArchUnit rule passes
-
-### Ticket 2: Introduce ArchUnit build verification
-  **Severity**: HIGH
-  **Effort**: 2 days
-  **Dependencies**: Ticket 1
-  **Done when**: `./gradlew test` runs `PaymentArchTest` and fails on regression
-
-...
-```
-
----
-
-## 5. Output Contract
+## Output contract
 
 ```yaml
 produces:
@@ -281,31 +146,3 @@ produces:
     paths: ["src/test/java/.../<Module>ArchTest.java"]         # suggested ArchUnit test
   handoff: "Write claudedocs/handoff-arch-review-<timestamp>.yaml - suggest: ticket-breakdown, tech-debt-assessment"
 ```
-
----
-
-## 6. Anti-patterns to Detect
-
-| Pattern | Detection | Severity |
-|---|---|---|
-| Spring imports in `domain/` | grep `org.springframework` | CRITICAL |
-| JPA/JDBC imports in `domain/` | grep `jakarta.persistence` / `org.springframework.data` | CRITICAL |
-| Controller returning entities | grep for `return <entity>` in `@RestController` classes | HIGH |
-| `@Transactional` on private methods | grep `private.*@Transactional` | HIGH |
-| `@Transactional` on controllers | grep `@Transactional` in api package | CRITICAL |
-| Missing circuit breaker on `RestClient` / `WebClient` | grep for HTTP calls without `@CircuitBreaker` | HIGH |
-| `this.otherMethod()` in service when other method is `@Transactional` | static analysis | HIGH |
-| `BigDecimal amount` in method signature (domain layer) | grep | MEDIUM |
-| Raw `Long id` / `String id` in domain | grep | MEDIUM |
-| `catch (Exception e)` in services | grep | MEDIUM |
-| Static method call into another module | grep cross-module `static` calls | HIGH |
-| Repository called directly from controller | grep `@Autowired.*Repository` in api package | CRITICAL |
-
----
-
-## 7. Reference Files
-
-| File | When |
-|---|---|
-| `references/archunit-setup.md` | How to add ArchUnit to Gradle/Maven |
-| `references/clean-architecture-patterns.md` | Deep dive on each invariant with good/bad examples |

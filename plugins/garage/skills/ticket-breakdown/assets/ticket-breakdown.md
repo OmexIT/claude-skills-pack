@@ -1,46 +1,27 @@
-# Ticket breakdown: <project / feature>
+# Ticket breakdown: <feature>
+
+Source: <PRD or design doc link>
 
 ## Assumptions
-- …
+- <assumption that shaped the split>
 
-## Milestones (high level)
-1. M1:
-2. M2:
-3. M3:
+## Epics (skip for fewer than about six tickets)
+- **E1: <name>**: goal
 
-## Epics
-### Epic A: <name>
-- Goal:
-- Notes:
+## Tickets (in delivery order)
 
-### Epic B: <name>
-- Goal:
-- Notes:
+### T1: <outcome-focused title> [size] [epic]
+- What: <behavior delivered>
+- Acceptance criteria:
+  - [ ] <criterion, with spec ID if any>
+- Tests: <behavior to prove>
+- Depends on: <ticket IDs or none>
+- Notes: <migration, rollout, or risk notes, only when relevant>
 
-## Tickets (sequenced)
-> Keep tickets small enough to merge within 1–3 days when possible.
+### T2: <title>
 
-1. **T1: <title>**
-   - Description:
-   - Acceptance criteria:
-     - [ ] …
-   - Implementation notes:
-   - Tests:
-   - Dependencies:
-   - Rollout/flag notes:
+## Critical path
+T1 -> T3 -> T5
 
-2. **T2: <title>**
-   - …
-
-## Risks
-- …
-
-## Rollout plan (sequence)
-1. …
-2. …
-
-## Definition of done
-- [ ] Metrics/instrumentation shipped
-- [ ] Alerts/dashboards updated (if applicable)
-- [ ] Docs updated
-- [ ] Rollback plan documented
+## Risks and spikes
+- <risk>: <spike ticket or mitigation>

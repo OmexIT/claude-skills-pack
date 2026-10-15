@@ -4,40 +4,32 @@
 - What changed:
 - What did NOT change (explicitly):
 
-## Risks (top 5)
+## Risks (highest first)
 1. …
-2. …
 
-## Test strategy
-### Automated tests
+## Strategy
 - Unit:
 - Integration:
-- E2E:
+- E2E (critical journeys only):
+- Manual (devices, accessibility, visual), if the change has UI:
 
-### Manual tests
-- Browsers/devices:
-- Accessibility:
-- Visual regression:
-
-## Test cases (coverage matrix)
-| Area | Scenario | Type (unit/integration/e2e/manual) | Expected |
+## Coverage matrix
+| Area | Scenario | Level (unit/integration/e2e/manual) | Expected |
 | --- | --- | --- | --- |
-| Auth | … | … | … |
+| … | … | … | … |
 
 ## Edge cases
-- …
+- Covered:
+- Out of scope (and why):
 
-## Data & migration checks (if applicable)
-- Backfill verification:
-- Rollback plan:
+## Data and migration checks (if applicable)
+- Forward migration on realistic data:
+- Rollback, or restore story if irreversible:
 
-## Observability checks
-- Logs to verify:
-- Metrics/dashboards:
-- Alerts:
+## Production verification (risky changes)
+- Log, metric, or alert that confirms it works:
 
-## Release readiness checklist
-- [ ] Tests passing
-- [ ] Feature flag present (if needed)
-- [ ] Rollback documented
-- [ ] Owner on-call / monitoring plan
+## Release checklist
+- [ ] Planned tests pass, with runner output linked
+- [ ] Rollback path documented (and tested for high-risk changes)
+- [ ] Monitoring owner knows what to watch

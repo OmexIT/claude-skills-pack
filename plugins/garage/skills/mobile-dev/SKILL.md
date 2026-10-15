@@ -5,82 +5,80 @@ description: "Use when the work is a mobile app in Flutter, React Native, Androi
 
 # Mobile development
 
-## What I'll do
-Provide stack-aware mobile development guidance, implementation patterns, and testing strategies for Flutter, React Native, or Android (Kotlin).
+Stack-aware guidance, patterns, and test strategy for Flutter, React Native, Android, and iOS.
 
-## Inputs I'll use (ask only if missing)
-- Target platform (Flutter / React Native / Android / cross-platform)
-- Feature description or spec reference
-- Existing project? (check for pubspec.yaml, package.json, build.gradle)
-- State management approach in use (BLoC, Riverpod, Redux, ViewModel)
-- Backend API details (REST endpoints, auth mechanism)
+## Inputs (ask only if missing)
+- Platform and existing project files (`pubspec.yaml`, `package.json`, `build.gradle(.kts)`,
+  `*.xcodeproj`); read the framework and library versions before recommending APIs
+- State management, navigation, and DI already in use
+- Feature description or spec, backend API and auth mechanism
 
-## How I'll think about this
+## Existing apps keep their stack
+Keep the app's proven navigation, state, DI, and secure-storage choices unless a measured problem
+justifies migration. The defaults below are for greenfield choices only.
 
-### Flutter (Dart)
-1. **Architecture**: Clean Architecture layers (presentation → domain → data). Features as directories, not file types. One widget per file.
-2. **State management**: Riverpod for new projects (compile-safe, testable). BLoC for complex event-driven flows. Provider for simple apps. Never raw setState in production.
-3. **Navigation**: GoRouter for declarative routing. Deep link support from day one. Named routes with typed parameters.
-4. **Platform channels**: MethodChannel for one-off calls. EventChannel for streams. Pigeon for type-safe platform interop. Always handle PlatformException.
-5. **Testing**: Widget tests for UI logic (fast, no device needed). Integration tests for full flows. Golden tests for visual regression. `flutter test --coverage` for coverage reports.
-6. **Build variants**: Flavors for dev/staging/prod. Separate Firebase configs per flavor. `--dart-define` for build-time constants.
-7. **Performance**: `const` constructors everywhere possible. `ListView.builder` for long lists (never `ListView` with children). Profile with DevTools. Avoid rebuilding entire widget trees.
+## Money and offline (all platforms)
+- Money is decimal end to end: parse API amounts into a decimal type (Dart `decimal`, a JS decimal
+  library or minor-unit integers, Kotlin `BigDecimal`, Swift `Decimal`), never `double`/`float`.
+- Cached money reads (balances, limits, prices) are visibly stale and non-authoritative: show when
+  they were fetched and refresh before any decision that depends on them.
+- Never queue offline money mutations unless the product has a reviewed durable idempotency,
+  ordering, and reconciliation design. Without it, money actions require connectivity, and an
+  unknown result (timeout, app killed mid-request) fails closed: show "pending, checking" and
+  reconcile with the server, never retry blindly or assume failure.
+- Other offline writes: decide per feature whether a local queue is worth it; define conflict
+  resolution before building one. "Show an error when offline" is a valid answer.
 
-### React Native (TypeScript)
-1. **Architecture**: Feature-based directories. Shared components in `src/components/`. Platform-specific code in `.ios.tsx` / `.android.tsx` files.
-2. **State management**: Zustand or Redux Toolkit. React Query for server state. AsyncStorage for persistence. Never store sensitive data in AsyncStorage (use react-native-keychain).
-3. **Navigation**: React Navigation 6+ with typed routes. Deep linking via linking config. Tab + Stack composition pattern.
-4. **Native modules**: Turbo Modules for new architecture. Bridge modules for legacy. Always provide TypeScript types for native interfaces.
-5. **Testing**: Jest + React Native Testing Library for component tests. Detox for E2E. `jest --coverage` for reports.
-6. **Performance**: Hermes engine (enabled by default). FlatList with `getItemLayout` for fixed-height items. `useMemo`/`useCallback` for expensive computations. Profile with Flipper.
+## Flutter
+- Feature-first directories with presentation, domain, data layers where the feature has real logic.
+- Greenfield state and routing: Riverpod and GoRouter; `setState` is fine for local widget state.
+- Platform interop: MethodChannel, EventChannel, or Pigeon for typed interfaces; handle `PlatformException`.
+- Tests: widget tests for UI logic, `integration_test/` for flows, golden tests only where visual
+  regressions have bitten.
+- Flavors only for real environment differences; `--dart-define` for build-time constants.
+- Performance: `const` constructors, `ListView.builder` for long lists, profile in DevTools.
 
-### Android (Kotlin)
-1. **Architecture**: MVVM with Jetpack Compose. ViewModel + StateFlow for UI state. Repository pattern for data access. Hilt for dependency injection.
-2. **State management**: StateFlow in ViewModel. SavedStateHandle for process death survival. DataStore for preferences (not SharedPreferences).
-3. **Navigation**: Jetpack Navigation Compose with typed arguments. Deep links in AndroidManifest. Single-Activity architecture.
-4. **Testing**: JUnit 5 + MockK for unit tests. Espresso for UI tests. Compose Testing for composable tests. Robolectric for fast on-JVM tests.
-5. **Build variants**: buildTypes (debug/release) + productFlavors (dev/staging/prod). ProGuard/R8 rules for release. Separate signing configs per variant.
-6. **Performance**: Baseline Profiles for startup. Lazy composition in lists. Profile with Android Studio Profiler. StrictMode in debug builds.
+## React Native
+- Feature directories; platform files (`.ios.tsx`, `.android.tsx`) only where behavior differs.
+- Server state through a query cache (for example React Query); keep state local before adding a
+  shared store.
+- Secrets and tokens in platform-backed secure storage (Keychain/Keystore wrappers), never
+  AsyncStorage.
+- Navigation: React Navigation with typed routes, at the version the project already uses.
+- New Architecture: Turbo Modules or the project's existing native-module approach, with TypeScript
+  types for native interfaces.
+- Tests: Jest with React Native Testing Library; Detox or the project's E2E runner for flows.
+- Performance: Hermes, `FlatList` virtualization, profile with React Native DevTools.
 
-### Cross-cutting concerns (all platforms)
-1. **Offline-first**: Local DB (SQLite/Hive/Room) as source of truth. Sync queue for pending operations. Conflict resolution strategy.
-2. **Deep linking**: Universal Links (iOS) + App Links (Android) + GoRouter/Navigation. Test with `adb shell am start` / `xcrun simctl openurl`.
-3. **Push notifications**: FCM setup with platform-specific handlers. Notification channels (Android). Background vs foreground handling.
-4. **Accessibility**: Semantics labels (Flutter), accessibilityLabel (RN), contentDescription (Android). Test with TalkBack/VoiceOver. Minimum touch target 48dp.
-5. **Responsive layouts**: MediaQuery/LayoutBuilder (Flutter), Dimensions (RN), WindowSizeClass (Android). Never hardcode pixel values.
-6. **App store readiness**: Privacy manifest, screenshots per device size, app review guidelines compliance, versioning strategy (semver).
+## Android (Kotlin)
+- MVVM with Compose, ViewModel exposing StateFlow, `SavedStateHandle` for process death.
+- Greenfield: Hilt and DataStore. Navigation Compose with typed routes; single activity.
+- Tests: JUnit and MockK for logic, Compose testing for UI, Robolectric for fast JVM UI tests.
+- Release: R8 rules, per-variant signing; Baseline Profiles when startup is measured slow.
+
+## iOS (Swift)
+- SwiftUI or UIKit as the project already uses; observable view models; Keychain for secrets.
+- Tests: XCTest for logic, XCUITest for flows.
+
+## Cross-cutting
+- Accessibility: every interactive element has an accessible name and role (`Semantics`,
+  `accessibilityLabel`, `contentDescription`); touch targets at least 48dp Android, 44pt iOS. Tests
+  find elements by these; test IDs only when semantics are insufficient.
+- Deep links (Universal Links, App Links): test with `adb shell am start` and `xcrun simctl openurl`.
+- Push: foreground versus background handling, Android notification channels.
+- Loading, error, empty, and offline states for every async screen.
+- App store: privacy manifest and data-safety forms, review guidelines, version and build numbers.
 
 ## Anti-patterns to flag
-- WARN Blocking the UI thread with synchronous operations
-- WARN Platform-specific code in shared business logic
-- WARN Missing null safety (Flutter) or missing TypeScript strict mode (RN)
-- WARN Hardcoded dimensions instead of responsive layouts
-- WARN Storing secrets or tokens in plain text storage
-- WARN No loading/error/empty states for async operations
-- WARN Rebuilding entire widget/component trees on every state change
-- WARN Skipping accessibility labels
-
-## Quality bar
-- [ ] Clean architecture with clear layer separation
-- [ ] State management is testable and predictable
-- [ ] Widget/component tests cover happy path + error states
-- [ ] Deep linking works for all primary routes
-- [ ] Offline behavior is defined (even if "show error")
-- [ ] Accessibility passes automated audit
-- [ ] No hardcoded strings (use l10n/i18n)
-- [ ] Build variants configured for dev/staging/prod
+- `double` for money; queued offline money mutations without the reviewed design; cached balances
+  shown as current
+- Secrets or tokens in plain storage
+- Blocking the UI thread; platform code in shared business logic
+- Controls without accessible names
 
 ## Workflow context
-- Typically follows: `design-doc`, `api-design`, `flow-map`
-- Feeds into: `test-plan` (mobile test cases), `verify-impl` (mobile verification)
-- Related: `ux-review` (mobile UX), `infra-design` (CI/CD for mobile builds)
-- Related: `ui-design --stitch --platform mobile` (Stitch supports MOBILE, TABLET, DESKTOP device types for layout generation)
-
-## Learning & Memory
-After completing this skill, store reusable insights in memory:
-- **Platform-specific patterns**: Architectural idioms, API usage patterns, and platform quirks unique to Flutter, React Native, or Android that affected implementation decisions
-- **State management choices**: Which state management approaches worked well for different feature complexities, and trade-offs observed in practice
-- **Navigation approaches**: Routing configurations, deep-link setups, and navigation composition patterns that proved reliable across app architectures
+- Follows `design-doc`, `api-design`, `flow-map`; related: `ux-review` (mobile UX), `ui-design` (Stitch mobile layouts), `infra-design` (mobile CI).
+- Feeds `test-plan` (mobile test cases) and `verify-impl` (device verification).
 
 ## Output contract
 ```yaml

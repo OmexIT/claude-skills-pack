@@ -13,7 +13,7 @@ Version:      1.0
 Total Requirements:     <n>
   Functional (FR):      <n>
   Non-Functional (NFR): <n>
-Ambiguities:            <n>  ← pause if >3 critical
+Ambiguities:            <n>  (pause on any critical one that blocks a P0 requirement)
 Total Estimated Tasks:  <n>
 
 ── FUNCTIONAL REQUIREMENTS ────────────────────────────────

@@ -5,216 +5,130 @@ description: "Use when implementation is done and the user wants to wrap it up: 
 
 # Finalize
 
-## What I'll do
-Run the full completion pipeline: lint → test → clean up → commit → PR. Ensures nothing ships without passing quality gates and nothing is left behind.
+Wrap up finished work: check, lint, test, clean up, commit, and only then the delivery steps the
+user asked for. Nothing ships with failing checks, and nothing goes further than requested.
 
-## Inputs I'll use (ask only if missing)
-- What was implemented (feature name or branch)
-- Target branch for PR (default: main)
-- Any files to exclude from commit (.env, credentials, large binaries)
+## 1. Policy and scope (before touching git)
 
-## How I'll think about this
+- Read the repo's delivery policy: AGENTS.md / CLAUDE.md (a `## Ship policy` block if present),
+  CONTRIBUTING, PR templates. It decides branch naming, commit format, whether commits go on a
+  feature branch, PR base, and whether attribution trailers are allowed or required.
+- Determine exactly which steps the user asked for: commit only, commit and push, open a PR, or
+  merge. "Commit this" means a local commit. A bare "finalize" or "wrap it up" means lint, test,
+  and a local commit, then ask before pushing or opening a PR. Merge only on an explicit request
+  that the policy allows.
+- If you are on the default branch and the policy (or the user's habit) requires a feature
+  branch, create one before committing.
+- Never add AI or tool attribution (co-author trailers, "generated with" footers) to commits or
+  PRs unless the repo policy requires it.
 
-### 1. SCAN - Detect what needs finalizing
+Inputs, asked only if unclear: the feature or branch name, the PR base (from policy, else the
+detected default branch), and files to exclude.
+
+## 2. Scan
+
 ```bash
-git status                              # uncommitted changes
-git worktree list                       # orphaned worktrees
-git branch --no-merged main             # unmerged feature branches
-find . -name "*.orig" -o -name "*.bak"  # temp files
-ls .worktrees/ 2>/dev/null              # stale worktree dirs
-```
-Report what was found before proceeding.
-
-### 2. LINT - Run language-appropriate linters
-
-**Parallel execution**: When the project uses multiple languages/stacks, run linters and test suites concurrently:
-
-```
-┌──────────────────────────────────────┐
-│ Phase 1: SCAN (sequential)            │
-└──────────────┬───────────────────────┘
-               │
-  ┌────────────┼────────────┐
-  ▼            ▼            ▼
-┌──────┐  ┌──────┐  ┌──────────┐
-│ Java │  │ TS/  │  │ Flutter/ │
-│ Lint │  │ React│  │ Dart     │
-│      │  │ Lint │  │ Lint     │
-└──┬───┘  └──┬───┘  └────┬────┘
-   │         │           │
-   └─────────┼───────────┘
-             ▼
-  ┌────────────┼────────────┐
-  ▼            ▼            ▼
-┌──────┐  ┌──────┐  ┌──────────┐
-│ Java │  │ TS/  │  │ Flutter/ │
-│ Test │  │ React│  │ Dart     │
-│      │  │ Test │  │ Test     │
-└──┬───┘  └──┬───┘  └────┬────┘
-   │         │           │
-   └─────────┼───────────┘
-             ▼
-┌──────────────────────────────────────┐
-│ Phase 4: CLEAN → STAGE → COMMIT → PR│
-└──────────────────────────────────────┘
+git status --short
+git worktree list
+DEFAULT=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')
+git branch --no-merged "${DEFAULT:-main}"
+find . -path ./node_modules -prune -o \( -name '*.orig' -o -name '*.bak' -o -name '.DS_Store' \) -print
 ```
 
-Detect stacks from project files, then launch lint agents in parallel. After all lints pass, launch test agents in parallel.
+Report what you found before changing anything.
 
-| Stack | Command |
-|---|---|
-| Java / Maven | `mvn checkstyle:check spotbugs:check -q` |
-| Java / Gradle | `./gradlew checkstyleMain spotbugsMain` |
-| React / TypeScript | `npx eslint . --ext .ts,.tsx && npx tsc --noEmit` |
-| Flutter / Dart | `dart analyze && dart format --set-exit-if-changed .` |
-| Android / Kotlin | `./gradlew ktlintCheck detekt` |
-| AngularJS | `npx eslint . --ext .js` |
+## 3. Review the diff
 
-Show actual linter output. If lint fails:
-- Auto-fix what can be auto-fixed (`eslint --fix`, `dart format`)
-- Surface remaining issues and fix them
-- Re-run to confirm clean
+Read `git diff` for the files you will commit and fix: leftover debug output, commented-out code,
+unused imports, to-do comments with no tracked follow-up, secrets or credentials, unrelated
+changes. Only code in this change; pre-existing issues get mentioned, not fixed.
 
-### 2.5 SIMPLIFY - Pre-commit quality review
+## 4. Lint and test
 
-Before proceeding to tests, optionally run a code quality sweep on changed files:
-- Spawn three parallel review agents on recently changed files:
-  1. **Reuse agent**: Check if changed code duplicates existing utilities
-  2. **Quality agent**: Check for code smells, SOLID violations, dead code
-  3. **Efficiency agent**: Check for unnecessary allocations, N+1 patterns, missed optimizations
-- Only flag issues in code that was changed (not pre-existing issues)
-- Auto-fix what can be auto-fixed, surface remaining issues
+Use the commands the repo defines, in this order: project instructions, CI config,
+`package.json` scripts, Makefile or task runner, the build tool's aggregate task (`./gradlew
+check`, `mvn verify`). Fall back to a stack default only for tools the repo actually configures:
 
-### 3. TEST - Run test suites
-| Stack | Command |
-|---|---|
-| Java / Maven | `mvn test -q` |
-| Java / Gradle | `./gradlew test` |
-| React / Vitest | `npx vitest run` |
-| Flutter | `flutter test` |
-| Android | `./gradlew testDebugUnitTest` |
-| Playwright | `npx playwright test` |
+| Stack | Lint | Test |
+|---|---|---|
+| Java (Gradle / Maven) | configured Checkstyle, SpotBugs, or Spotless tasks | `./gradlew test` / `mvn test` |
+| TypeScript / React | `npx eslint .` and `npx tsc --noEmit` | `npx vitest run` or `npx jest --ci` |
+| Flutter / Dart | `dart analyze`, `dart format --set-exit-if-changed .` | `flutter test` |
+| Android / Kotlin | configured ktlint or detekt | `./gradlew testDebugUnitTest` |
+| E2E (if the change touches flows it covers) | - | `npx playwright test` |
 
-Show actual test output with pass/fail counts. If tests fail → fix and re-run. Do NOT proceed with failing tests.
+Independent stacks can run in parallel. Show the real output with counts. Apply auto-fixes
+(`eslint --fix`, formatters), fix the rest, and re-run until clean. Do not continue with lint
+errors or failing tests.
 
-### 4. CLEAN - Remove debris
+## 5. Clean up
+
+Destructive steps run only after the user confirms the list:
+- Worktrees: `git worktree prune` drops entries whose directories are gone. Remove a worktree
+  with `git worktree remove <path>` only when its branch is merged; never `rm -rf .worktrees/`.
+- Branches: list `git branch --merged <default branch>` (excluding the current and default branch) and
+  delete with `git branch -d` only the ones the user approves.
+- Temp files from the scan, and `e2e/.captures.json`: delete after confirmation.
+- Check `.gitignore` covers build output (`node_modules`, `target`, `build`, `.gradle`,
+  `.dart_tool`).
+
+## 6. Stage and commit
+
 ```bash
-# Worktree cleanup
-git worktree prune
-rm -rf .worktrees/ 2>/dev/null
-
-# Stale branches (only merged ones)
-git branch --merged main | grep -v main | grep -v '\*' | xargs -r git branch -d
-
-# Temp files
-find . -name "*.orig" -name "*.bak" -name ".DS_Store" -delete 2>/dev/null
-rm -f e2e/.captures.json 2>/dev/null
-
-# Build artifacts (don't commit these)
-# Check .gitignore covers: node_modules, target, build, .gradle, .dart_tool
-```
-
-### 4.5 ARCHIVE - Move intermediate artifacts (after successful commit)
-```bash
-# Archive planning/design artifacts - NOT handoff manifests or test evidence
-FEATURE="<feature-name>"
-ARCHIVE="claudedocs/.archive/$(date +%Y%m%d-%H%M%S)-$FEATURE"
-mkdir -p "$ARCHIVE"
-
-# Move primary outputs (PRD, design docs, analysis files)
-mv claudedocs/${FEATURE}-*.md "$ARCHIVE/" 2>/dev/null
-
-# Move design artifacts if present
-[ -d design/ ] && mv design/ "$ARCHIVE/design/" 2>/dev/null
-
-# PRESERVE (do NOT archive):
-#   claudedocs/handoff-*.yaml  - audit trail, never delete
-#   e2e/test-plan.yaml         - needed for regression testing
-#   e2e/reports/               - test evidence
-#   e2e/verify-impl/           - screenshots and traces
-```
-
-Report what was archived:
-```
-ARCHIVED intermediate artifacts to: $ARCHIVE
-  Preserved: handoff manifests (audit trail)
-  Preserved: e2e/ artifacts (regression + evidence)
-```
-
-> **Safety rule:** Only archive after the commit succeeds. If commit fails, artifacts are still needed. Add `claudedocs/.archive/` to `.gitignore`.
-
-### 5. STAGE - Selective git add
-```bash
-# Stage specific files - NEVER git add -A blindly
-# Exclude: .env, credentials, secrets, large binaries, build dirs
-git add <specific files and directories>
-
-# Review what's staged
+git add <specific paths>      # never git add -A or git add . blindly
 git diff --cached --stat
 ```
-Show the staged file list to user for confirmation.
 
-### 6. COMMIT - Conventional commit
+Show the staged list. Exclude `.env`, credentials, keys, large binaries, build output.
+Commit in the repo's format (default: Conventional Commits `<type>(<scope>): <description>`,
+type from the change, scope from the main area touched).
+
+## 7. Push and PR (only when asked)
+
+Push the branch, then open the PR against the base from policy:
+
 ```bash
-git commit -m "<type>(<scope>): <description>"
+gh pr create --base <base> --title "<title>" --body "<body>"
 ```
-- Derive type from changes: feat, fix, refactor, test, docs, chore
-- Derive scope from primary directory changed
-- Description from the feature/task name
 
-### 7. PR - Create pull request
+Body: summary bullets, test results (actual counts), a design reference if a handoff manifest has
+`stitch.project_id` or a `figma:` block, and the repo's PR template sections if it has one.
+Return the PR URL. Do not merge unless the user asked for that too.
+
+## 8. Archive (after the commit succeeds)
+
+Follow the `handoff` lifecycle: archive only manifests whose `lifecycle.archivable_after` skills
+have all consumed them.
+
 ```bash
-gh pr create --title "<title>" --body "$(cat <<'EOF'
-## Summary
-<bullet points of what changed>
-
-## Design Reference
-<If handoff has stitch.project_id - include this section>
-- Stitch Project: <project_id>
-- Design System: <asset_id>
-- Screens: <n> generated
-<End if>
-
-## Test Results
-<paste actual test output summary>
-
-## Checklist
-- [ ] Lint: clean
-- [ ] Tests: all passing
-- [ ] No orphaned worktrees or temp files
-- [ ] No secrets or credentials in diff
-EOF
-)"
+ARCHIVE="claudedocs/.archive/$(date +%Y%m%d-%H%M%S)-<feature>"
+mkdir -p "$ARCHIVE"
+mv claudedocs/<feature>-*.md "$ARCHIVE/" 2>/dev/null
+# design/ only after the user confirms nothing still uses it
 ```
-Return the PR URL.
 
-## Anti-patterns to flag
-- WARN Committing with failing tests
-- WARN `git add -A` without reviewing what's staged
-- WARN Committing .env, credentials, or secrets
-- WARN Leaving orphaned worktrees or feature branches
-- WARN Empty commit messages or non-conventional format
-- WARN Skipping lint because "it's just a small change"
+Keep `claudedocs/handoff-*.yaml`, `e2e/test-plan.yaml`, `e2e/reports/`, and verification
+screenshots. Make sure `claudedocs/.archive/` is ignored by git.
 
 ## Quality bar
-- [ ] Zero lint errors on committed code
-- [ ] All tests pass with actual output shown
-- [ ] No orphaned worktrees or stale branches remain
-- [ ] No temp files, build artifacts, or secrets in the commit
-- [ ] PR created with summary and test evidence
-- [ ] Conventional commit message with correct type and scope
+
+- Lint clean and all tests passing, with real output shown
+- Only intended files committed; no secrets, temp files, or build output
+- Delivery went exactly as far as the user asked, in the repo's format and policy
+- No orphaned worktrees or merged branches left behind (with the user's approval)
 
 ## Workflow context
-- Follows: `spec-to-impl`, `verify-impl`, or any manual implementation work
-- Feeds into: `code-review:code-review` (PR is ready for review)
-- Related: `release-notes` (PR description feeds release notes)
+
+- Follows `spec-to-impl`, `verify-impl`, or manual implementation work.
+- Delivery only: verification of behavior belongs to `verify-impl`, a full review to `code-audit`.
+- Feeds `release-notes` (PR description) and code review on the opened PR.
 
 ## Output contract
 ```yaml
 produces:
   - type: git_commit
     ref: "<commit SHA>"
-  - type: pull_request
+  - type: pull_request           # only when a PR was requested and created
     url: "<PR URL>"
     branch: "<branch name>"
   - type: evidence

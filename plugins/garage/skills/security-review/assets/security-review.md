@@ -22,7 +22,7 @@
 ### AuthN/AuthZ
 - [ ] Auth required where appropriate
 - [ ] Authorization checked server-side (not only client-side)
-- [ ] Object-level permission checks (IDs in URLs/body)
+- [ ] Object-level permission checks (IDs in URLs/body) and tenant isolation on every persistence path
 
 ### Input handling
 - [ ] Validate/sanitize inputs
@@ -31,7 +31,8 @@
 
 ### Data exposure & privacy
 - [ ] PII is minimized in responses
-- [ ] Logs/errors do not leak secrets/PII
+- [ ] Logs/errors do not leak secrets/PII; errors are Problem Details without internals
+- [ ] Internal IDs are not exposed
 - [ ] Analytics events avoid sensitive payloads
 
 ### Abuse resistance
@@ -39,9 +40,13 @@
 - [ ] Anti-automation / spam considerations (if relevant)
 
 ### Dependencies & secrets
-- [ ] Secrets stored in the right place (not in repo)
+- [ ] Secrets stored in the right place (not in repo, logs, or URLs)
+- [ ] Dependency advisories checked against resolved versions
 - [ ] Third-party calls are authenticated and time-limited
 - [ ] SSRF-safe patterns if URLs are user-controlled
+
+## Not reviewed
+- …
 
 ## Findings
 ### Must-fix

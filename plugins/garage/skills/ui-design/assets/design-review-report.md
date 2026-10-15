@@ -11,7 +11,7 @@ Overall:  <PASS | NEEDS WORK | FAIL>
 ━━━ CRITICAL ISSUES (must fix before launch) ━━━━━━━━━━━
 
 FAIL [CRIT-001] <issue description>
-   Location: <where exactly in the design>
+   Location: <artifact, frame, or token>
    Problem:  <why this is a problem - user impact>
    Fix:      <specific actionable recommendation>
 
@@ -44,6 +44,8 @@ Contrast:      <PASS | FAIL> - <details>
 Keyboard nav:  <PASS | FAIL> - <details>
 Touch targets: <PASS | FAIL> - <details>
 Screen reader: <PASS | FAIL> - <details>
+Non-color cues: <PASS | FAIL> - <details>
+Reduced motion: <PASS | FAIL> - <details>
 
 ━━━ CATEGORY SCORES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

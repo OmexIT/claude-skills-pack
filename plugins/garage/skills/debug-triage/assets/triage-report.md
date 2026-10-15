@@ -26,13 +26,17 @@
 - [ ] Query logs for error signature
 - [ ] Compare a working vs failing account/data case
 
-## Minimal safe fix
+## Root cause
+- Cause:
+- Confirmed by (evidence):
+- Bad data already written (records, restore path), if any:
+
+## Minimal fix
 - Proposed code/config change:
-- Risks:
-- Fallback:
+- Risks and rollback:
 
 ## Regression test
-- Unit/integration/e2e test idea:
+- Test that fails without the fix:
 
 ## Rollout & verification
 - Staging validation:

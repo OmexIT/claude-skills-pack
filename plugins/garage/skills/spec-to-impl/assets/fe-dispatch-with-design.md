@@ -1,99 +1,76 @@
-# FE Agent Dispatch Template - With Design Context
+# FE Agent Dispatch - With Design Source
 
-Use this template when dispatching the FE agent and a Design Context Package is available.
-Replace all `<PLACEHOLDER>` values before dispatching.
+Use instead of `assets/dispatch-prompt.md` for FE tasks when a Figma design source exists:
+variant A when Phase 0 produced a Design Context Package, variant B when a
+`claudedocs/handoff-figma:figma-generate-design-*.yaml` manifest exists. Without either, use the
+standard template with whatever `ui-design` artifacts exist, or the spec text alone.
 
----
+## Shared prompt body
 
 ```
 You are a senior Frontend Engineer working on <PROJECT NAME>.
 
-TECH STACK: <React + TypeScript + Tailwind CSS | other>
-COMPONENT LIBRARY: <shadcn/ui | none | other>
-CONVENTIONS: <link to conventions file or inline summary>
+TECH STACK: <detected framework, styling, component library>
+CONVENTIONS: <project instructions or inline summary>
 
 YOUR TASKS:
-<paste all FE TASK blocks assigned to this wave>
+<FE TASK blocks for this wave, each with its figma_ref>
 
 CONTRACTS TO RESPECT:
-<paste shared DTOs, API response types, and route definitions from ARCH>
+<shared DTOs, API response types, route definitions from ARCH>
 
 SPEC CONTEXT:
-<paste only the UI-relevant spec sections - not the full document>
+<UI-relevant spec sections only>
 
----
+<variant A or B block below>
 
-DESIGN CONTEXT PACKAGE:
-<paste the full Design Context Package produced by the DESIGN agent>
+DESIGN-TO-CODE RULES:
+1. The design source is the truth for every color, spacing, font, and radius value. Never
+   invent a value; reference tokens, never raw hex.
+2. Add tokens as CSS custom properties (:root and the dark theme selector) and wire them into the
+   project's styling config (for Tailwind: theme.extend).
+3. Each task's figma_ref is the exact frame to implement; it outranks the written spec for visuals.
+4. Code Connect mapped -> import the existing component, do not rewrite it. Unmapped -> match an
+   existing codebase component by name first, generate only when none fits.
+5. Implement every designed state (hover, focus, active, disabled, error, loading, empty). A state
+   missing from the design gets a sensible default and a WARN line in the compliance report.
+6. Match auto-layout direction, gap, padding, and alignment. Generate every viewport the source has.
+7. Accessibility: visible label or aria-label on interactive elements, keyboard support (Tab,
+   Enter, Escape, arrows), focus trap in modals, WCAG AA contrast (4.5:1 text, 3:1 UI), aria-live
+   for dynamic updates, status never conveyed by color alone, reduced-motion respected.
+8. Tests query by role, label, and accessible name; add a test ID only where no accessible
+   locator exists, and say why.
 
----
-
-DESIGN-TO-CODE INSTRUCTIONS:
-
-1. The Design Context Package above is your source of truth for ALL visual decisions.
-   Do not assume, estimate, or freestyle any color, spacing, font, or radius value.
-
-2. Add all CSS custom properties to globals.css (:root and [data-theme="dark"]).
-
-3. Add all token references to tailwind.config.ts under theme.extend.
-
-4. For each task, the figma_ref field contains the exact Figma frame to implement.
-   Use it as your primary visual specification.
-
-5. For each component:
-   - Code Connect = mapped → use the existing named import. Do NOT rewrite it.
-   - Code Connect = unmapped → generate from extracted props and layout data.
-
-6. Implement every state listed: hover, focus, active, disabled, error, loading, empty.
-
-7. Match auto-layout gap and padding exactly. Use [Xpx] for non-Tailwind values.
-
-8. Accessibility requirements:
-   - aria-label or visible label for all interactive elements
-   - Focus trap for modals and dropdowns
-   - WCAG AA contrast: 4.5:1 text, 3:1 UI components
-   - Keyboard: Tab, Enter, Escape, Arrow keys
-   - aria-live for dynamic content
-
-9. Output a Design Compliance Report after completing each screen.
-
----
-
-PRODUCE (one entry per task):
-
---- FILE: src/components/<Name>/<Name>.tsx ---
-[full component implementation with typed Props, cn(), named export]
----
---- FILE: src/components/<Name>/index.ts ---
-[barrel export]
----
---- FILE: src/components/<Name>/<Name>.test.tsx ---
-[render + accessibility tests using Vitest + RTL]
----
+PRODUCE: component files, barrel exports, co-located tests, then per screen:
 --- DESIGN COMPLIANCE: <ScreenName> ---
-PASS <element> - matches Figma exactly
+PASS <element> - matches Figma
 WARN <element> - deviation: <reason>
 FAIL <element> - not implemented: <reason>
 ---
+Plus the TEST REPORT block from assets/dispatch-prompt.md.
 ```
 
----
+## Variant A: Design Context Package (Phase 0 ran)
 
-## When to Use This Template
+```
+DESIGN CONTEXT PACKAGE:
+<paste the full package from the DESIGN agent>
+```
 
-Use this template instead of `assets/dispatch-prompt.md` when:
-- TASK-000 (DESIGN) has completed and produced a Design Context Package
-- The FE task has a `figma_ref` field pointing to a specific Figma frame
+## Variant B: figma-generate-design handoff
 
-If no Design Context Package is available, use the standard `dispatch-prompt.md` template instead.
+Before dispatch, read the manifest's `figma:` block: `file_key`, `file_url`,
+`pages[].screens[]` (`node_id`, `viewport`, `route_suggestion`, `screenshot_path`),
+`component_map[]`, and `variable_bindings[]`. No DESIGN agent is needed.
 
-## Key Differences from Standard Dispatch
+```
+FIGMA DESIGN HANDOFF:
+  File: <file_url> (fileKey <file_key>)
+  Screens: <screen name -> node_id, viewport, route> per screen in this task
+  Components: <component_map entries used by these screens>
+  Tokens: <variable_bindings as token -> value>
 
-| Aspect | Standard Dispatch | Design-Enhanced Dispatch |
-|---|---|---|
-| Visual source of truth | Spec text + wireframes | Design Context Package from Figma |
-| Token handling | Use existing or extract from spec | Extract from Figma variables |
-| Component generation | Build from wireframe descriptions | Build from extracted props, variants, layout |
-| Code Connect | Not checked | Respect mapped vs unmapped status |
-| Design compliance | Not checked | Mandatory compliance report per screen |
-| Figma reference | Not included | figma_ref links task to exact Figma frame |
+For each screen, call get_design_context(fileKey, nodeId) for current design data; the handoff
+screenshot is the fallback reference. Check Code Connect (get_code_connect_map) before generating
+a component. variable_bindings are the only source for token values.
+```

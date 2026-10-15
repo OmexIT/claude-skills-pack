@@ -1,53 +1,16 @@
-# Status Update: <project / initiative>
+# <Project>: update for <period>
 
-**Date**: <date>
-**Overall status**: On track / At risk / Blocked
-**Author**: <name>
+**Status: on track / at risk / blocked.** <One sentence on why.>
 
-## TL;DR
-One sentence: where we are and what you need to know.
-
-## Decisions needed
-| Decision | Context | Options | Deadline | Who decides |
-| --- | --- | --- | --- | --- |
-| ... | ... | A / B | ... | ... |
-
-_If no decisions needed, state "None this period."_
+<If you need something: the decision or help, from whom, and by when. Otherwise omit.>
 
 ## Progress
-| Milestone / deliverable | Status | Notes |
-| --- | --- | --- |
-| ... | Done / In progress / Not started | ... |
+- <What shipped or moved, with numbers where they exist, against what was planned.>
 
-### Key metrics
-| Metric | Last period | This period | Target | Trend |
-| --- | --- | --- | --- | --- |
-| ... | ... | ... | ... | Up / Down / Flat |
+## Risks and blockers
+- <Risk or blocker>: <what we are doing about it, and what it costs if it lands>.
 
-### What shipped
-- ...
+## Next
+- <The two or three things that matter before the next update.>
 
-### What's in progress
-- ...
-
-## Risks and mitigations
-| Risk | Probability | Impact | Mitigation | Status |
-| --- | --- | --- | --- | --- |
-| ... | High/Med/Low | High/Med/Low | ... | Active / Monitoring / Resolved |
-
-## Blockers
-| Blocker | Impact | What we need | From whom | By when |
-| --- | --- | --- | --- | --- |
-| ... | ... | ... | ... | ... |
-
-_If no blockers, state "None this period."_
-
-## Next period plan
-- ...
-- ...
-- ...
-
-## Resource / budget update (if applicable)
-- Budget: X% spent, Y% remaining
-- Team: Any staffing changes or needs
-- Timeline: On schedule / Adjusted to <new date>
+<Optional: budget, staffing, or date changes, only when something changed.>

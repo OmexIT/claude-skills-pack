@@ -1,58 +1,48 @@
 ---
 name: monitoring-plan
-description: "Use when the user needs observability for a service or feature: monitoring plan, metrics, alerts, dashboards, SLOs, or on-call response."
+description: "Use when the user needs observability for a service or feature: a monitoring plan, metrics, alerts, dashboards, SLOs, logging, or tracing."
 ---
 
 # Monitoring plan
 
-## What I'll do
-Design a comprehensive observability strategy that ensures you know when something is wrong, why it's wrong, and how bad it is - before users tell you.
+Decide what to measure, when to alert, and who gets paged, so the team knows something is wrong,
+why, and how bad before users report it.
 
-## Inputs I'll use (ask only if missing)
-- Service/feature being monitored
-- SLOs or performance targets (if defined)
-- Current monitoring (what exists already?)
-- On-call structure (who responds to alerts?)
-- Critical user journeys (what must always work?)
+## Inputs (ask only if missing)
+- Service or feature, and its critical user journeys
+- SLOs or targets, if any exist
+- Current monitoring stack and what already exists (extend it, do not replace it)
+- Who responds to alerts
 
-## How I'll think about this
-1. **The four golden signals**: Start with latency, traffic, errors, and saturation. These cover most problems for most services. Add custom metrics only for domain-specific concerns.
-2. **Alert on symptoms, not causes**: Alert when users are affected ("error rate > 1%"), not when a specific thing breaks ("disk at 90%"). Cause-based alerts generate noise; symptom-based alerts are actionable.
-3. **SLOs drive alerting**: Define what "good enough" looks like (99.9% availability, p95 < 200ms). Alert when the error budget is being consumed too fast, not on every blip.
-4. **Dashboards tell stories**: A good dashboard answers "is the service healthy?" in 5 seconds and "why is it unhealthy?" in 30 seconds. Organize metrics from broad (traffic, errors) to narrow (specific endpoints, queries).
-5. **Logs need structure**: Unstructured logs are almost useless at scale. Include request IDs, user IDs, timestamps, and error codes in every log line. Make logs searchable.
-6. **Traces connect the dots**: For distributed systems, traces show where time is spent across services. Add trace context to all inter-service calls.
+## Decision rules
+1. **Golden signals first**: latency, traffic, errors, saturation per critical journey. Add domain
+   metrics only where they catch a failure the golden signals miss.
+2. **Page on symptoms, notify on causes.** Pages fire when users are affected (error rate, SLO burn);
+   cause signals (disk, queue depth) go to a channel unless they predict imminent user impact.
+3. **SLOs drive paging.** Alert on error-budget burn rate (fast and slow windows), not on every blip.
+   Set targets from measured baseline and user need, not a default like 99.9%.
+4. **Every page has a runbook entry and an owner.** An alert nobody can act on is noise; downgrade or
+   delete it.
+5. **Money flows** get domain signals: reconciliation mismatches, transactions stuck in a pending
+   state past their expected window, ledger imbalance, duplicate-effect detection. These page.
+6. **Logs are structured** with timestamp (UTC, ISO-8601 with offset), level, request or trace ID,
+   and error code. Use external IDs, never personal data, secrets, or tokens in logs.
+7. **Traces** where a request crosses services; propagate the standard trace context the stack
+   already uses.
 
 ## Anti-patterns to flag
-- Alerting on every metric (alert fatigue → ignored alerts)
-- No alert runbook (alert fires, nobody knows what to do)
-- Dashboards with 50 graphs and no clear narrative
-- Logs without request IDs (can't correlate across services)
-- Monitoring that doesn't cover the critical user journey
-- Setting SLOs without actually alerting on error budget burn
-
-## Quality bar
-- Four golden signals are covered (latency, traffic, errors, saturation)
-- SLOs are defined with error budget alerts
-- Every alert has: threshold, runbook link, escalation path
-- Dashboard has a clear information hierarchy (health → details → debugging)
-- Structured logging with correlation IDs
-- Critical user journeys have end-to-end monitoring
-- Alert noise assessment: estimated alert frequency and false positive rate
-
-## Workflow context
-- Typically follows: `design-doc`, service deployment
-- Feeds into: `runbook` (alert response procedures), `incident-response`
-- Related: `performance-review` (performance metrics), `experiment-design` (experiment dashboards)
+- Pages without a runbook entry or owner; alerting on every metric
+- SLOs defined but no burn-rate alert
+- Dashboards with no health-first hierarchy
+- Logs that cannot be correlated across services
 
 ## Output
-Fill `assets/monitoring-plan.md`.
+Fill `assets/monitoring-plan.md`; replace every placeholder threshold with a value justified by
+baseline data or mark it "to calibrate".
 
-## Learning & Memory
-After completing this skill, store reusable insights in memory:
-- **SLO definitions**: Service-level objective targets, error budget calculations, and burn-rate thresholds that proved effective for similar services
-- **Alert thresholds**: Calibrated alert values that balanced signal vs noise, including false-positive rates and tuning adjustments
-- **Dashboard layouts that proved useful**: Information hierarchy patterns, golden-signal arrangements, and drill-down structures that enabled fast incident triage
+## Workflow context
+- This skill decides what fires and why; `runbook` says what a human does when it fires; `incident-response` runs a live incident.
+- Follows `design-doc` or `infra-design`; related: `performance-review`, `experiment-design` (experiment dashboards).
 
 ## Output contract
 ```yaml

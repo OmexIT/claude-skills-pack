@@ -1,68 +1,40 @@
-# Opportunity Assessment: <feature / initiative>
+# Opportunity assessment: <idea>
 
-## Summary
-- **Opportunity**: One-sentence description
-- **Recommendation**: Build / Don't build / Investigate further
-- **Confidence**: High / Medium / Low
-- **Key reason**: Why this recommendation
+## Recommendation
+Build / Don't build / Find out more first. Confidence: high / medium / low.
+<Two or three sentences a busy reader can act on.>
 
-## Problem validation
-- **Problem statement**: What user pain are we solving?
-- **Evidence**: Data, user research, support tickets, market signals
-- **Frequency**: How often does this problem occur?
-- **Severity**: How painful is it when it does?
-- **Workarounds**: What do users do today? How costly are the workarounds?
+## The problem
+Who has it, how often, how painful it is, what they do today instead, and the evidence for each.
 
-## Impact assessment
-- **Who benefits**: User segment and estimated size
-- **How much**: Expected improvement (quantify where possible)
-- **Business value**: Revenue, retention, acquisition, cost savings, or strategic positioning
-- **Time to impact**: How long after shipping before we see results?
+## The benefit
+Who gains and roughly how much (revenue, retention, cost saved, risk removed), with the basis for
+the estimate and when the benefit would show up.
 
-## Effort estimation
-| Phase | Estimate | Notes |
-| --- | --- | --- |
-| Design | ... | ... |
-| Engineering | ... | ... |
-| Testing / QA | ... | ... |
-| Documentation | ... | ... |
-| Migration (if any) | ... | ... |
-| Ongoing maintenance | .../quarter | ... |
-| **Total initial** | ... | |
-| **Annual ongoing** | ... | |
+## The cost
+| Item | Estimate | Notes |
+|---|---|---|
+| Build (design, engineering, testing) | | |
+| Ongoing (support, running cost, upkeep per year) | | |
+| One-off extras (migration, training), when relevant | | |
 
-## Risk assessment
-| Risk | Probability | Impact | Mitigation |
-| --- | --- | --- | --- |
-| Technical (can we build it?) | High/Med/Low | ... | ... |
-| Market (do users want it?) | High/Med/Low | ... | ... |
-| Execution (can we ship on time?) | High/Med/Low | ... | ... |
-| Dependency (what blocks us?) | High/Med/Low | ... | ... |
+## Fit with our goals
+How it serves the current strategy, or why it is a detour.
 
-## Strategic alignment
-- **Company/product strategy**: How does this align?
-- **Long-term vision**: Does this move us forward or sideways?
-- **Platform / ecosystem**: Does this strengthen our position?
-- **Alignment score**: Strong / Moderate / Weak / Misaligned
+## Alternatives
+| Option | Benefit | Cost | Risk |
+|---|---|---|---|
+| This idea | | | |
+| <best alternative use of the same team> | | | |
+| Wait or do nothing | | | |
 
-## Alternatives considered
-| Option | Impact | Effort | Risk | Recommendation |
-| --- | --- | --- | --- | --- |
-| Build this feature | ... | ... | ... | ... |
-| Build alternative X instead | ... | ... | ... | ... |
-| Do nothing / wait | ... | ... | ... | ... |
-| Buy / partner | ... | ... | ... | ... |
+## Risks
+| Risk | Likelihood | Impact | What we would do |
+|---|---|---|---|
 
-## Reversibility
-- How easy to undo if it fails?
-- Data migrations, API contracts, or user habits that make reversal costly?
-- Can we validate with a smaller experiment first?
+How hard is this to undo, and is there a smaller test that answers the biggest unknown first?
 
-## Decision
-- **Recommendation**: Build / Don't build / Investigate further
-- **If build**: Next step is `prd`
-- **If investigate**: Specific questions to answer and how
-- **If don't build**: Revisit trigger (what would change this decision?)
-
-## Open questions
-- ...
+## Next step
+- If build: write the PRD.
+- If find out more: the questions to answer, how, and by when.
+- If don't build: what would make us look again.

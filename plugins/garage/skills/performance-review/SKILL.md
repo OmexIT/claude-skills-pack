@@ -7,86 +7,66 @@ description: "Use when a feature or PR needs a performance and reliability revie
 
 > Delegation, model labels, and task tracking below use Claude Code notation. In Codex or another client, follow `../../references/cross-client.md`.
 
-## What I'll do
-Produce a practical performance assessment with concrete measurements, identified bottlenecks, and a prioritized optimization plan.
+A measured performance and reliability assessment of one feature, PR, or hot path: bottlenecks,
+a prioritized optimization plan, and how to prove it. This is the deep dive; `code-audit` covers
+performance only as one breadth dimension. A specific regression or failing behavior goes to
+`debug-triage`; alerts and dashboards to `monitoring-plan`.
 
-## Inputs I'll use (ask only if missing)
-- Feature/PR description or code to review
-- Target workload (requests/sec, users, data volume)
-- Current baseline metrics (if known)
-- Performance SLOs or budget (latency targets, error rate)
+## Inputs (ask only if missing)
 
-## Parallel Expert Panel
+- Feature, PR, or code path to review
+- Target workload (requests per second, users, data volume) and current baseline, if known
+- SLO or budget (latency percentiles, error rate, cost). If none exists, state the assumed budget
+  and label conclusions that depend on it.
 
-Performance reviews benefit from multi-layer specialist analysis:
+## Lenses and fan-out
 
-### Expert Roster
+| Lens | Label | Runs when | Focus |
+|---|---|---|---|
+| `BACKEND` | `sonnet` | Server code in scope | Request path latency, remote calls, serialization, thread and pool use |
+| `DB` | `opus` | Database in scope | Query patterns, plans, indexes, transaction scope, connection pools |
+| `FRONTEND` | `sonnet` | UI in scope | Bundle size, rendering, network waterfall, Core Web Vitals |
+| `INFRA` | `sonnet` | Scaling or capacity in scope | Resource limits, autoscaling, connection limits, CDN and cache layers |
 
-| Expert | Model | Focus |
-|---|---|---|
-| `BACKEND_PERF` | `sonnet` | API latency, service-to-service calls, serialization overhead, thread management |
-| `DB_PERF` | `opus` | Query patterns, N+1 detection, index coverage, connection pooling, transaction scope |
-| `FRONTEND_PERF` | `sonnet` | Bundle size, render performance, network waterfall, Core Web Vitals |
-| `INFRA_PERF` | `sonnet` | Resource utilization, scaling strategy, connection limits, CDN/caching layers |
+Map the hot path first. **Fan-out is conditional:** one endpoint, job, or module runs the active
+lenses inline. Fan out only for a wide scope (several services or tiers): dispatch the active
+lenses as parallel Agent calls in one message with the hot-path map, then synthesize by
+user-facing impact.
 
-### Execution Pattern
+## Workflow
 
-```
-Phase 1: Hot path mapping (sequential - establishes shared context)
-    ↓
-Phase 2: Parallel expert analysis
-  ┌──────────────┬──────────────┬──────────────┬──────────────┐
-  │ BACKEND_PERF │ DB_PERF      │ FRONTEND     │ INFRA_PERF   │
-  │              │              │ _PERF        │              │
-  └──────┬───────┴──────┬───────┴──────┬───────┴──────┬───────┘
-         └──────────────┼──────────────┘──────────────┘
-                        ↓
-Phase 3: Bottleneck synthesis + load test plan (sequential)
-```
+1. **Hot path:** trace the request or job end to end: entry point, each service call, query, and
+   external dependency.
+2. **Evidence first:** start from what exists: SLO dashboards, profiles, traces, slow-query logs,
+   query plans, load-test results. Without measurements, findings are leads and the plan says how
+   to measure them. Static thresholds are leads, not defects.
+3. **Queries:** N+1 access, unbounded result sets, missing pagination, scans, lock-heavy writes,
+   row-by-row bulk work. Index and N+1 claims need the query, the plan, or workload evidence.
+4. **Caching:** repeated identical reads that could be cached, and existing caches without an
+   invalidation strategy, TTL, or stated staleness tolerance.
+5. **Concurrency and resources:** lock contention, long transactions, pool exhaustion, thread
+   starvation, memory that grows with input size, payload size.
+6. **Remote calls:** timeouts on every call; retries only for retryable, idempotent operations,
+   bounded with backoff and jitter so they do not amplify an outage; bulkheads or circuit breakers
+   where the failure mode needs them and the open-circuit result is safe. Never return a fabricated
+   success for a failed mutating call.
+7. **Measurement plan:** concrete benchmark or load test (tool, data volume, target percentiles),
+   what to profile, and how regressions will be detected after release.
 
-- Launch all applicable experts in parallel after hot path is mapped
-- Skip FRONTEND_PERF for backend-only reviews, skip DB_PERF if no database involved
-- Each expert produces findings with quantified impact estimates
-- Synthesize into prioritized optimization plan ordered by user-facing impact
-
-## How I'll think about this
-1. **Map the hot path**: Trace the request lifecycle end-to-end - from entry point through every service call, database query, and external dependency to response.
-2. **Identify cost drivers**: For each step, estimate relative cost. Database queries, network calls, serialization, and file I/O are usually the dominant factors - not CPU logic.
-3. **Check query patterns**: Look for N+1 queries, missing indexes, full table scans, unbounded result sets, and unnecessary joins. Check if queries are proportional to input size.
-4. **Evaluate caching**: Is anything cached that shouldn't be (stale data risk)? Is anything uncached that should be (repeated identical lookups)? Are cache invalidation strategies correct?
-5. **Assess concurrency**: Look for lock contention, long-held transactions, connection pool exhaustion, thread starvation, and race conditions under load.
-6. **Check resource bounds**: Verify pagination on all list endpoints. Check payload sizes. Confirm memory usage doesn't grow with input size unboundedly.
-7. **Measure, don't guess**: Identify what to profile and how. Propose specific benchmarks, not vague "load test it."
-
-## Anti-patterns to flag
-- Optimizing code that isn't on the hot path
-- Adding caching without an invalidation strategy
-- "It works in dev" without load testing against realistic data volumes
-- Unbounded queries hidden behind pagination that only limits the API response
-- Premature optimization that adds complexity without measured benefit
-
-## Quality bar
-- Every recommendation links to a specific code path or query
-- Performance budgets are quantified (p50/p95/p99), not vague ("should be fast")
-- At least one measurement plan with concrete steps to reproduce
-- Risks are ranked by impact (user-facing latency > background job speed)
-- Includes regression detection strategy (how we'll know if it gets worse)
-
-## Workflow context
-- Typically follows: `design-doc`, `code-review:code-review` (official plugin)
-- Feeds into: `test-plan` (performance test cases), `monitoring-plan`
-- Related: `security-review` (rate limiting overlaps)
+Rank recommendations by user-facing impact (interactive latency before background throughput).
+Reject optimizations off the hot path, caches without invalidation, and complexity without a
+measured benefit.
 
 ## Output
-Fill `assets/perf-review.md`.
 
-## Learning & Memory
+Fill `assets/perf-review.md`. Every recommendation links to a specific code path, query, or
+measurement.
 
-After review completes, save:
-- Performance baselines and budgets established for this project
-- Hot path patterns specific to this architecture
-- Query optimization patterns that proved effective
-- Load test configurations and results for regression comparison
+## Workflow context
+
+- Typically follows: `design-doc`, `code-audit` (performance leads), `code-review:code-review` (official plugin).
+- Feeds into: `test-plan` (performance test cases), `monitoring-plan` (SLO alerts).
+- Related: `security-review` (rate limiting and resource exhaustion overlap).
 
 ## Output contract
 ```yaml

@@ -1,6 +1,7 @@
 # Clean Architecture Patterns
 
-Use this reference to classify architecture findings and propose fixes.
+Use this reference to classify architecture findings and propose fixes. Layer names are
+examples; the repository's accepted architecture decides what counts as a violation.
 
 ## Dependency Direction
 
@@ -26,7 +27,8 @@ controller -> repository
 
 - Put transaction boundaries at application-service use cases.
 - Do not start transactions in controllers.
-- Keep remote calls outside database transactions unless the system explicitly uses an outbox or saga.
+- Keep remote calls outside database transactions unless the system explicitly uses an outbox,
+  saga, or durable operation record.
 
 ## DTO And Entity Boundaries
 

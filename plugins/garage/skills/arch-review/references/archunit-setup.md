@@ -1,6 +1,7 @@
 # ArchUnit Setup
 
-Use ArchUnit when architecture findings can be converted into executable rules.
+Use ArchUnit when an accepted, recurring boundary can be converted into an executable rule.
+Package names below are placeholders: map them to the repository's real layout.
 
 ## Gradle
 
@@ -33,14 +34,15 @@ class ArchitectureTest {
   @ArchTest
   static final ArchRule controllers_do_not_access_repositories =
       noClasses()
-          .that().resideInAPackage("..web..")
-          .should().accessClassesThat().resideInAPackage("..repository..");
+          .that().resideInAPackage("..api..")
+          .should().accessClassesThat().resideInAPackage("..infrastructure..");
 }
 ```
 
 ## Review Guidance
 
 - Use the project's existing ArchUnit version if present; otherwise choose the current version compatible with the build.
-- Add rules only for boundaries the team has accepted.
+- Add rules only for boundaries the team has accepted. If the repository uses Spring Modulith,
+  prefer `ApplicationModules.verify()` for module rules.
 - Start with high-signal rules: controller-to-repository access, module dependency direction, and domain-to-infrastructure imports.
 - If current code violates the desired rule broadly, document a migration plan before enabling the rule in CI.

@@ -35,6 +35,7 @@ SURFACES:
   --color-surface-page:       #___ / #___
   --color-surface-default:    #___ / #___
   --color-surface-elevated:   #___ / #___
+  --color-surface-subtle:     #___ / #___
   --color-surface-overlay:    #___ / #___
 
 TEXT:
@@ -42,6 +43,7 @@ TEXT:
   --color-text-secondary:     #___ / #___
   --color-text-muted:         #___ / #___
   --color-text-disabled:      #___ / #___
+  --color-text-inverse:       #___ / #___
   --color-text-link:          #___ / #___
 
 BORDERS:
@@ -52,18 +54,16 @@ BORDERS:
 BRAND:
   --color-brand-primary:       #___ / #___
   --color-brand-primary-hover: #___ / #___
+  --color-brand-primary-subtle: #___ / #___
   --color-brand-secondary:     #___ / #___
 
-STATUS:
-  --color-success-bg:    #___ / #___
-  --color-success-text:  #___ / #___
-  --color-warning-bg:    #___ / #___
-  --color-warning-text:  #___ / #___
-  --color-error-bg:      #___ / #___
-  --color-error-text:    #___ / #___
-  --color-info-bg:       #___ / #___
-  --color-info-text:     #___ / #___
+STATUS (each paired with a text label or icon, never color alone):
+  --color-{success|warning|error|info}-bg:     #___ / #___
+  --color-{success|warning|error|info}-text:   #___ / #___
+  --color-{success|warning|error|info}-border: #___ / #___
 ```
+
+Contrast checked for every text and background pair in both themes: ___
 
 ## Typography System
 
@@ -120,6 +120,15 @@ Shadows:
   --shadow-md:  0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06)
   --shadow-lg:  0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05)
   --shadow-xl:  0 20px 25px rgba(0,0,0,0.1), 0 10px 10px rgba(0,0,0,0.04)
+Dark theme: express elevation with lighter surfaces rather than stronger shadows.
+```
+
+## Motion
+
+```
+--motion-duration-fast: ___ms   --motion-duration-base: ___ms   --motion-duration-slow: ___ms
+--motion-easing-standard: ___
+Reduced motion: ___ (durations to 0 or opacity-only fade; no pulse, parallax, or count-up)
 ```
 
 ## Component Inventory

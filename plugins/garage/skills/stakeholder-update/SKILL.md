@@ -5,47 +5,23 @@ description: "Use only when the user explicitly asks for a stakeholder, exec, in
 
 # Stakeholder update
 
-## What I'll do
-Produce a concise, structured status update that gives stakeholders what they need - progress, risks, blockers, and decisions - without wading through details.
+A short status update a busy reader can act on after the first three lines: where things stand, what you need from them, and what could go wrong.
 
-## Inputs I'll use (ask only if missing)
-- Project/initiative being reported on
-- Audience (exec team, cross-functional partners, investors, board)
-- Time period (weekly, monthly, milestone-based)
-- Current status and recent progress
-- Risks, blockers, or decisions needed
+Ask only what is missing: the project, the audience (leadership, partner teams, investors, board), the period, and the facts (progress, risks, blockers, decisions needed). Pull facts from tickets, PRs, or notes the user points to; never invent numbers or dates.
 
-## How I'll think about this
-1. **Lead with the headline**: Status (on track / at risk / blocked), one sentence on why, and what you need from the reader. Most stakeholders read the first 3 lines and skim the rest.
-2. **Traffic light simplicity**: Green (on track), Yellow (at risk, mitigation underway), Red (blocked, need help). This is the universal language of stakeholder updates.
-3. **Decisions needed, not just FYI**: If you need something from stakeholders, state it explicitly with a deadline. Don't bury asks in the middle of a progress report.
-4. **Risks with mitigations**: Never present a risk without a mitigation plan. "We might miss the deadline" is alarming. "We might miss the deadline; we're cutting scope on X to de-risk" is professional.
-5. **Metrics over narratives**: "Shipped 12 of 15 tickets, 2 in review, 1 blocked" beats "We made good progress this week." Numbers build trust.
-6. **Consistent format**: Use the same structure every time. Stakeholders learn where to look and can process updates faster.
-
-## Anti-patterns to flag
-- Updates that are all good news (erodes trust - every project has risks)
-- Buried asks (the decision you need is in paragraph 4)
-- No metrics (vague "progress was made")
-- Risk without mitigation (just presenting problems)
-- Inconsistent format (different structure every time)
-- Too long (stakeholders stop reading after 1 page)
-
-## Quality bar
-- Status is immediately clear (first line: on track / at risk / blocked)
-- Progress is quantified (not just narrative)
-- Risks include mitigation plans
-- Decisions needed are explicit with deadlines
-- Update fits in one page / one screen
-- Consistent format that stakeholders can scan quickly
+## Rules
+- Open with status (on track, at risk, or blocked), one sentence on why, and the ask if there is one.
+- Asks are explicit: the decision or help needed, from whom, and by when. Never bury them below progress.
+- Progress is concrete: what shipped, what moved, against what was planned. Use numbers where they exist.
+- Every risk comes with what is being done about it. Include bad news; an all-green update loses trust.
+- Write in plain language for product, finance, and leadership readers. No engineering jargon, ticket keys, or internal shorthand unless the audience uses them. Sound like a person writing to colleagues, not a form being filled in: no labels like "Action required" or "What I need from each team".
+- Fit on one screen. If the user has a previous update, keep its structure so readers know where to look.
 
 ## Workflow context
-- Typically follows: Sprint completion, milestone, weekly cadence
-- Feeds into: Decision-making, resource allocation, stakeholder alignment
-- Related: `sprint-retro` (team-internal reflection), `go-to-market` (launch updates)
+- `stakeholder-update` reports progress outward; `sprint-retro` is the team's own reflection; `go-to-market` plans a launch.
 
 ## Output
-Fill `assets/stakeholder-update.md`.
+Fill `assets/stakeholder-update.md`, dropping empty sections.
 
 ## Output contract
 ```yaml

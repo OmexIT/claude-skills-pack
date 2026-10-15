@@ -8,12 +8,11 @@
 - **Downtime tolerance**: Zero-downtime / Maintenance window / Acceptable degradation
 
 ## Pre-migration checklist
-- [ ] Backup taken and verified
-- [ ] Rollback procedure tested
+- [ ] Backup taken and a restore rehearsed
+- [ ] Rollback procedure tested for every stage before the point of no return
 - [ ] All consumers identified and notified
 - [ ] Monitoring and alerts configured
-- [ ] Batch size and checkpoint strategy confirmed
-- [ ] Performance impact estimated and accepted
+- [ ] Batch size, checkpoint, and throttle measured on realistic volume
 - [ ] Staging migration completed successfully
 
 ## Migration stages
@@ -41,15 +40,15 @@
 **Goal**: Remove old schema/endpoints
 - Changes:
 - Prerequisites: All consumers migrated, validation passing for X days
-- Rollback: Re-add old columns/endpoints from backup
+- Point of no return: yes. Needs explicit confirmation and a restore story (backup restore, retained copy, or forward fix)
 - Validation: No references to old paths remain
 
 ## Rollback plan
 | Stage | Trigger | Rollback action | Data impact | Estimated time |
 | --- | --- | --- | --- | --- |
 | Expand | ... | Drop new additions | None | ... |
-| Migrate | ... | Stop migration, revert flag | None (old data untouched) | ... |
-| Contract | ... | Re-add from backup | Potential loss of new-format data | ... |
+| Migrate | ... | Pause, switch reads back to old path | None (old data still primary) | ... |
+| Contract | ... | Restore from backup or forward fix | Writes since the backup need replay | ... |
 
 ## Validation checks
 | Check | When | How | Pass criteria |

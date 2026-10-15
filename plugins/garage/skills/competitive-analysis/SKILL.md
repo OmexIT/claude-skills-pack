@@ -5,55 +5,23 @@ description: "Use when the user asks for a competitive analysis, competitor revi
 
 # Competitive analysis
 
-## What I'll do
-Produce a structured competitive landscape analysis that identifies key players, compares capabilities, and surfaces differentiation opportunities.
+Map who else solves the customer's problem, compare on what drives buying decisions, and say plainly where we should defend, catch up, concede, or stand apart.
 
-## Inputs I'll use (ask only if missing)
-- Your product/feature (what you're comparing)
-- Known competitors (or ask me to identify them)
-- Focus area: full product, specific feature, pricing, or market segment
-- Your current positioning and target customer
+Ask only what is missing: our product or feature, our target customer, the focus (whole product, one feature, pricing, a segment), and known competitors.
 
-## How I'll think about this
-1. **Map the landscape first**: Identify direct competitors (same solution, same customer), indirect competitors (different solution, same problem), and potential future competitors (adjacent products expanding).
-2. **Compare on dimensions that matter to customers**: Not feature checklists - capabilities that drive buying decisions. Price, time-to-value, integration ecosystem, support quality, and reliability often matter more than features.
-3. **Assess honestly**: Your product has weaknesses. Competitors have strengths. An honest analysis is actionable; a biased one is useless.
-4. **Find the gaps**: Where are customers underserved by all competitors? That's where differentiation opportunities live.
-5. **Consider trajectory, not just current state**: A competitor with worse features but faster shipping velocity, better funding, or a stronger platform play is more threatening than their current product suggests.
-6. **Jobs-to-be-done lens**: Competitors aren't just products with similar features - they're anything the customer uses to solve the same problem, including spreadsheets, manual processes, or doing nothing.
-
-## Anti-patterns to flag
-- Feature checkbox comparison without context (features aren't equally important)
-- Ignoring indirect competitors and substitutes
-- Only analyzing current state without considering trajectory
-- Assuming your strengths are what customers care about
-- "We have no real competitors" (every product competes with the status quo)
-
-## Quality bar
-- Landscape includes direct, indirect, and substitute competitors
-- Comparison dimensions reflect actual customer buying criteria
-- Assessment is honest about your product's weaknesses
-- Differentiation opportunities are specific and actionable
-- Each competitor profile includes: target customer, key strengths, key weaknesses, trajectory
-- Strategic implications are clear (what to build, what to avoid, where to invest)
+## Rules
+- Facts come from sources: competitor sites, pricing pages, public docs, reviews, filings, or the user's own notes. Cite each with a date. Never invent prices, features, or customer counts; mark anything unconfirmed as unconfirmed. If you cannot browse, say the analysis rests on the user's input and your general knowledge, and flag what to check.
+- Cover direct rivals, other ways customers solve the same problem (spreadsheets, manual work, agencies, doing nothing), and adjacent players likely to move in.
+- Compare on what customers weigh when they buy (price, time to first value, fit with tools they use, reliability, support), not a raw feature checklist. Having a feature is not the same as doing it well.
+- Be honest about our weaknesses and their strengths. Look at direction, not only today: who is shipping fast, raising money, or bundling.
+- Write in plain language for product, sales, and finance readers; avoid technical jargon.
 
 ## Workflow context
-- Typically follows: Market research, customer feedback
-- Feeds into: `prd` (informed requirements), `opportunity-assessment`, `go-to-market`
-- Related: `experiment-design` (validating differentiation)
+- `competitive-analysis` maps the market; `opportunity-assessment` decides whether a given idea is worth doing; `go-to-market` turns positioning into a launch.
+- Feeds `prd`, `opportunity-assessment`, and `go-to-market`.
 
 ## Output
 Fill `assets/competitive-analysis.md`.
-
-## Learning & Memory
-
-After completing a competitive analysis, persist the following to project memory for future skill invocations:
-
-- **Competitor landscape**: Key players identified, their positioning, and trajectory observations to avoid re-research
-- **Differentiation patterns**: What dimensions proved most meaningful for differentiation in this market or domain
-- **Market positioning insights**: Customer buying criteria, underserved segments, and competitive gaps discovered
-
-Store in: `claudedocs/memory/competitive-analysis.md`
 
 ## Output contract
 ```yaml

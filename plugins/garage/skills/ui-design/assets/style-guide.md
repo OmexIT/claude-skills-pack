@@ -81,6 +81,8 @@ Font stack: `<primary>, <fallback>, sans-serif`
 | Use semantic color tokens | Use raw hex values |
 | Use spacing from the scale | Use arbitrary pixel values |
 | Design all states (loading, empty, error) | Only design the happy path |
-| Use minimum 44px touch targets on mobile | Make tiny tap targets |
+| Meet platform touch targets (44pt iOS, 48dp Android) | Make tiny tap targets |
 | Use real content in designs | Use Lorem Ipsum everywhere |
 | Test contrast ratios | Assume colors are accessible |
+| Pair every status color with text or an icon | Signal state by color alone |
+| Define a reduced-motion version of each animation | Animate without a motion opt-out |

@@ -7,37 +7,36 @@ description: "Use only when the user explicitly asks for release notes, a change
 
 ## Inputs
 - Version number or date range
-- List of merged PRs or commit range (or a summary of what shipped)
+- Merged PRs or commit range (or a summary of what shipped)
 - Audience: external users, internal stakeholders, or both
 
-## How I'll think about this
-1. **Audience-first writing**: External users care about what changed for them. Internal teams care about what might break, what to monitor, and what to tell support. Write different sections for different readers.
-2. **Outcomes over implementation**: "You can now export reports as PDF" not "Added PDFExportService with async rendering pipeline." Users don't care how - they care what and why.
-3. **Breaking changes need migration paths**: Every breaking change must include: what broke, who's affected, what to do about it, and a timeline. Never just say "Breaking: API v2 removed."
-4. **Be honest about known issues**: Shipping with known issues is fine. Shipping without telling anyone is not.
-5. **Group by impact**: Highlights (big features) → Improvements (enhancements) → Fixes (bugs) → Breaking changes. Most readers stop after highlights.
+## Rules
+1. **Source of truth is what merged.** Build the list from the actual merged PRs or `git log` for the
+   range; never include unmerged or reverted work, and never invent items. Ask when the range is
+   unclear.
+2. **Audience-first.** External readers get outcomes in plain language ("You can now export reports
+   as PDF"), no internal service names or jargon. Internal readers additionally get operations
+   notes.
+3. **Order by impact**: highlights, improvements, fixes, then breaking changes called out
+   separately so nobody misses them.
+4. **Breaking changes** state what changed, who is affected, what to do, and by when.
+5. **Known issues** are listed with workarounds; shipping with them is fine, hiding them is not.
+6. **Internal operations** for risky changes: migrations, flags already in use, what to monitor, and
+   how to roll back.
+7. Follow the repo's existing changelog format (for example `CHANGELOG.md` conventions) when one
+   exists.
 
 ## Anti-patterns to flag
-- Jargon-heavy notes that only engineers understand
-- "Various bug fixes and improvements" (uninformative)
+- "Various bug fixes and improvements"
 - Breaking changes buried in a list without migration guidance
-- Missing rollback/rollforward instructions for operators
-- No mention of monitoring or alerts for high-risk changes
-
-## Quality bar
-- A non-technical user can understand the highlights section
-- Breaking changes include specific migration instructions
-- Internal operations section has rollback plan and monitoring guidance
-- Known issues are listed with workarounds (if any)
-- Links to PRs, dashboards, and runbooks are included for internal audience
-
-## Workflow context
-- Typically follows: `code-review:code-review` (official plugin), `test-plan`
-- Feeds into: `stakeholder-update`, customer communications
-- Related: `experiment-design` (staged rollout notes), `incident-response` (if rollout causes issues)
+- Internal identifiers or customer names in external notes
 
 ## Output
-Fill `assets/release-notes.md`.
+Fill `assets/release-notes.md`; drop empty sections.
+
+## Workflow context
+- Summarizes what shipped; `stakeholder-update` reports progress and status to people, not the change list.
+- Follows `finalize` or a merged release; uses `test-plan` for verified scope.
 
 ## Output contract
 ```yaml

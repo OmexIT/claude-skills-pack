@@ -27,8 +27,8 @@ environment:
   auth:
     type:       "jwt"                  # jwt | basic | apikey | none
     login_path: "/api/v1/auth/login"
-    username:   "test@example.com"
-    password:   "testpass123"
+    username:   "${TEST_USER}"          # from the environment, never committed
+    password:   "${TEST_PASS}"
 
 test_cases:
 
@@ -139,18 +139,18 @@ test_cases:
           - action:    goto
             url:       "/<route>"
           - action:    fill
-            selector:  "[data-testid='amount']"
+            selector:  "label:Amount"
             value:     "1000"
           - action:    select
-            selector:  "[data-testid='currency']"
+            selector:  "label:Currency"
             value:     "KES"
           - action:    click
-            selector:  "[data-testid='submit-btn']"
+            selector:  "role:button:Submit"
           - action:    assert_visible
-            selector:  "[data-testid='success-message']"
+            selector:  "role:status"
             timeout_ms: 5000
           - action:    assert_text
-            selector:  "[data-testid='success-message']"
+            selector:  "role:status"
             contains:  "submitted successfully"
           - action:    screenshot
             name:      "tc001-success"
@@ -161,9 +161,9 @@ test_cases:
           - action:    goto
             url:       "/<route>"
           - action:    click
-            selector:  "[data-testid='submit-btn']"
+            selector:  "role:button:Submit"
           - action:    assert_visible
-            selector:  "[data-testid='amount-error']"
+            selector:  "text:Amount is required"
           - action:    screenshot
             name:      "tc001-validation"
 

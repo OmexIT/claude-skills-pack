@@ -5,75 +5,64 @@ description: "Use when the user is designing infrastructure or deployment: Docke
 
 # Infrastructure design
 
-## What I'll do
-Design the container, orchestration, IaC, and deployment architecture for a service or feature. Produce actionable configs, not just diagrams.
+Design container, orchestration, IaC, and deployment setup for a service, and produce working
+configs, not just diagrams.
 
-## Inputs I'll use (ask only if missing)
-- Service(s) to deploy (or handoff artifact from `design-doc`)
-- Target environment (local dev, staging, production)
-- Scale requirements (expected traffic, data volume)
-- Existing infra (current Docker/K8s/Terraform setup)
-- CI/CD platform (GitHub Actions, GitLab CI, Jenkins)
-- Cloud provider constraints (AWS, GCP, Azure, on-prem)
+## Inputs (ask only if missing)
+- Service(s) to deploy (or the `design-doc` handoff), target environments, expected load
+- Existing infra: read the repo first (Dockerfiles, compose files, manifests or Helm charts,
+  Terraform, CI workflows). Extend what exists; do not introduce Kubernetes, Terraform, or a new CI
+  system where the repo uses something else unless the user asks.
+- Cloud provider and platform constraints
 
-## How I'll think about this
+## Decision rules
 
-### Docker
-1. **Multi-stage builds**: Build stage (compile, test) → Runtime stage (minimal base image). Never ship build tools in production images.
-2. **Layer optimization**: Order Dockerfile instructions from least-changing (OS packages) to most-changing (application code). Maximize cache hits.
-3. **Security**: Non-root user. No secrets in image layers. Scan with Trivy/Grype. Pin base image versions (not `latest`).
-4. **Compose for local dev**: All services (app, DB, cache, search) in one `docker-compose.yml`. Health checks for dependency ordering. Named volumes for data persistence.
+### Containers
+- Multi-stage builds; the runtime image carries no build tools. Order layers from least to most
+  changing.
+- Run as non-root, no secrets in layers or build args, pin base images by version (digest for
+  production), scan with the scanner the pipeline already uses.
+- Local dev: one compose file with health checks for dependency ordering.
 
 ### Kubernetes
-5. **Resource design**: Deployment for stateless services. StatefulSet for databases. Job/CronJob for batch. Never bare Pods.
-6. **Scaling**: HPA with CPU + custom metrics. PodDisruptionBudget for availability during rollouts. Resource requests AND limits on every container.
-7. **Networking**: Service for internal communication. Ingress for external. NetworkPolicy to restrict pod-to-pod traffic. No `hostNetwork: true`.
-8. **Configuration**: ConfigMap for non-sensitive config. Secret for credentials (encrypted at rest). `@ConfigurationProperties` maps to environment variables from ConfigMap.
-9. **Health**: Liveness probe (restart if stuck). Readiness probe (remove from LB if unhealthy). Startup probe for slow-starting apps. Different endpoints for each.
-10. **RBAC**: Least-privilege ServiceAccounts. No `cluster-admin` for application pods. Namespace isolation.
+- Deployment for stateless services, Job/CronJob for batch. Databases on a managed service unless
+  the team already operates them in-cluster (then StatefulSet with tested backup and restore).
+- Requests on every container, memory limits always; CPU limits per the cluster's policy (they cause
+  throttling on latency-sensitive services).
+- Replicas: fixed count when load is steady; HPA when load varies and a metric tracks it. A
+  PodDisruptionBudget once there are two or more replicas.
+- Probes: readiness gates traffic; liveness only for a hang the process cannot detect itself, and
+  never pointed at a dependency check (it restarts healthy pods during a DB outage). Startup probe
+  for slow starts.
+- Config in ConfigMaps, credentials in Secrets or the platform's secret manager (encrypted at rest).
+  Spring services bind them through `@ConfigurationProperties`.
+- Least-privilege ServiceAccounts, no `hostNetwork`, NetworkPolicy where the cluster enforces it.
 
 ### Terraform
-11. **Module structure**: One module per logical resource group. Shared modules in `modules/`. Environment configs in `environments/{dev,staging,prod}/`.
-12. **State management**: Remote state backend (S3/GCS with locking). Never local state in production. State per environment, not shared.
-13. **Workspaces vs directories**: Prefer directory-per-environment over workspaces for production. Workspaces acceptable for ephemeral environments.
-14. **Drift detection**: `terraform plan` in CI on every PR. Alert on drift between state and reality. Never `terraform apply` without plan review.
+- Remote state with locking, separate state per environment, never committed.
+- Directory per long-lived environment; workspaces only for ephemeral ones.
+- `terraform plan` in CI on every PR; `apply` only from a reviewed plan, never `-auto-approve` in
+  production. `destroy`, `state rm`, imports, and resource replacement need explicit confirmation
+  and a recovery story (backup, snapshot, or recreate path).
 
-### CI/CD
-15. **Pipeline design**: Lint → Unit Test → Build → Integration Test → Security Scan → Deploy Staging → Smoke Test → Deploy Prod.
-16. **Deployment strategy**: Blue-green for zero-downtime. Canary for gradual rollout with metrics-based promotion. Rolling update for simple services.
-17. **Rollback**: Every deployment must have a one-command rollback. Tag the previous known-good deployment. Automated rollback on health check failure.
+### CI/CD and rollout
+- Pipeline: lint, unit test, build, integration test, security scan, deploy to staging, smoke test,
+  deploy to production.
+- Strategy from risk: rolling for most services; canary with metric-based promotion when a bad
+  release is costly and traffic is enough to judge; blue-green when instant cutback matters and
+  double capacity is affordable.
+- Rollback is one documented command to the previous known-good artifact. It is safe only when DB
+  migrations are backward compatible (expand, migrate, contract; see `db-migration`).
 
 ## Anti-patterns to flag
-- WARN Privileged containers or running as root
-- WARN No resource limits on K8s pods (OOM kills, noisy neighbors)
-- WARN Terraform state stored in git or local filesystem
-- WARN Hardcoded replicas instead of HPA
-- WARN `latest` tag on Docker images (non-reproducible deploys)
-- WARN Secrets in environment variables without encryption at rest
-- WARN Single point of failure (single replica, no PDB)
-- WARN No health checks or probes configured
-- WARN `terraform apply -auto-approve` in production
-
-## Quality bar
-- [ ] Docker images are multi-stage, non-root, and scanned
-- [ ] K8s resources have requests, limits, probes, and PDB
-- [ ] Terraform state is remote with locking
-- [ ] CI/CD pipeline includes security scanning stage
-- [ ] Rollback procedure is documented and tested
-- [ ] All secrets are managed through Secret/Vault (never in code)
-- [ ] Local dev environment works with `docker compose up`
+- Root or privileged containers; `latest` tags; secrets in images, repos, or plain env files
+- No probes, or a liveness probe that checks dependencies
+- Local or committed Terraform state; `apply -auto-approve` in production
+- A rollback path that cannot undo a schema change
 
 ## Workflow context
-- Typically follows: `design-doc`, `spec-to-impl` (DEVOPS agent)
-- Feeds into: `monitoring-plan`, `runbook`, `security-review`
-- Related: `migration-plan` (deployment changes), `performance-review` (resource sizing)
-
-## Learning & Memory
-
-After infrastructure design completes, save:
-- Infrastructure patterns chosen (container strategies, orchestration configs, IaC module structures) and their operational outcomes
-- Deployment strategies that worked for this service profile (blue-green, canary, rolling) and the metrics that confirmed success
-- Scaling configurations (resource limits, HPA thresholds, replica counts) that matched actual traffic patterns
+- Follows `design-doc` or `spec-to-impl` (DEVOPS agent); `migration-plan` covers moving existing systems.
+- Feeds `monitoring-plan`, `runbook`, and `security-review`; `performance-review` for resource sizing.
 
 ## Output contract
 ```yaml

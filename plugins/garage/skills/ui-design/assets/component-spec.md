@@ -39,23 +39,24 @@ interface PLACEHOLDER_ComponentNameProps {
   loading   - PLACEHOLDER description (or: N/A)
   error     - PLACEHOLDER description (or: N/A)
 
-── DATA-TESTIDS ───────────────────────────────────────────────────────
+── LOCATORS (see references/ui-selector-conventions.md) ───────────────
 
-  [data-testid="PLACEHOLDER-root"]          ← component root element
-  [data-testid="PLACEHOLDER-PLACEHOLDER"]   ← PLACEHOLDER element
-  [data-testid="PLACEHOLDER-PLACEHOLDER"]   ← PLACEHOLDER element
+  PLACEHOLDER element  → getByRole('PLACEHOLDER', { name: 'PLACEHOLDER' })
+  PLACEHOLDER field    → getByLabel('PLACEHOLDER')
+  PLACEHOLDER region   → data-testid="PLACEHOLDER" (fallback, reason: PLACEHOLDER)
 
-── TAILWIND CLASSES (key) ─────────────────────────────────────────────
+── STYLING (key tokens / classes) ─────────────────────────────────────
 
-  root:      "PLACEHOLDER tailwind classes"
-  PLACEHOLDER_child: "PLACEHOLDER tailwind classes"
+  root:      PLACEHOLDER (semantic tokens only)
+  PLACEHOLDER_child: PLACEHOLDER
 
 ── ACCESSIBILITY ──────────────────────────────────────────────────────
 
-  role:              PLACEHOLDER
-  aria-label:        PLACEHOLDER
-  aria-describedby:  PLACEHOLDER (or: N/A)
+  role / name:       PLACEHOLDER / PLACEHOLDER
+  description:       PLACEHOLDER (or: N/A)
   keyboard:          PLACEHOLDER (Tab, Enter, Escape behaviour)
+  non-color cue:     PLACEHOLDER (or: N/A)
+  reduced motion:    PLACEHOLDER (or: no animation)
 
 ── INTERACTIONS ───────────────────────────────────────────────────────
 

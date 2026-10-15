@@ -5,54 +5,24 @@ description: "Use when the user needs help deciding between options with trade-o
 
 # Decision matrix
 
-## What I'll do
-Structure a complex decision into a weighted evaluation framework that makes trade-offs explicit and produces a defensible recommendation.
+Make a hard choice explicit: criteria and weights first, evidence-backed scores second, and a recommendation that either follows the totals or explains why not. This makes the decision; `adr` records it afterwards.
 
-## Inputs I'll use (ask only if missing)
-- The decision to make (what are we choosing between?)
-- Options being considered (at least 2)
-- Criteria that matter (what makes one option better?)
-- Constraints (budget, timeline, team skills, compatibility)
-- Stakeholders (who's affected by this decision?)
+Ask only what is missing: the decision and its deadline, the options, the constraints, and who is affected. Gauge reversibility first: an easy-to-undo choice deserves a short comparison, not a full matrix.
 
-## How I'll think about this
-1. **Define criteria before evaluating options**: If you evaluate options first, you'll unconsciously weight criteria to justify your preference. List what matters, then score.
-2. **Weight criteria honestly**: Not all criteria are equally important. Performance mattering 2x more than developer experience is a legitimate choice - but make it explicit.
-3. **Score with evidence**: "Option A is better for performance" needs numbers or benchmarks. Opinions without evidence make the matrix theater, not analysis.
-4. **Include hidden costs**: Migration effort, learning curve, community/ecosystem health, vendor lock-in, and long-term maintenance cost. These often dominate technical choices.
-5. **Test the winner**: If the matrix picks an option that feels wrong, examine the criteria and weights. Either your gut has information the matrix doesn't, or your weights are off.
-6. **Document for posterity**: The matrix isn't just for making the decision - it's for explaining it 6 months later when someone asks "why did we choose this?"
-
-## Anti-patterns to flag
-- Criteria chosen to favor a predetermined conclusion
-- Equal weights on everything (signals you haven't prioritized)
-- Scoring without evidence ("this feels like a 4 out of 5")
-- Missing "do nothing" or "status quo" as an option
-- Ignoring switching costs and migration effort
-- Matrix has a clear winner but recommendation says "it depends"
-
-## Quality bar
-- At least 3 criteria with justified weights
-- At least 2 options (ideally 3-4, including status quo)
-- Scores are supported by evidence or reasoning
-- Total scores drive the recommendation (or deviation is explained)
-- Risks and trade-offs of the recommended option are acknowledged
-- Decision is documented in a format that's useful 6 months later
+## Rules
+- Fix criteria and weights before scoring any option, with a reason for each weight. Equal weights everywhere means priorities were not set.
+- Include the status quo or "do nothing" as an option unless it is truly impossible.
+- Score from evidence (benchmarks, docs, prices, code you read, team experience) and cite it. Mark guesses as guesses and lower confidence accordingly.
+- Count switching costs: migration effort, learning curve, lock-in, ongoing maintenance and operating cost. Include only the cost and risk rows that differ between options.
+- If the winner feels wrong, recheck criteria and weights and say what the matrix missed rather than quietly overriding it.
+- Recommendation names the trade-off accepted, the top risk with its mitigation, and the trigger that would reopen the decision.
 
 ## Workflow context
-- Typically follows: `design-doc` (alternatives), `opportunity-assessment`
-- Feeds into: `adr` (record the decision), `design-doc` (implement the choice)
-- Related: `competitive-analysis` (vendor/tool comparisons)
+- `decision-matrix` chooses between options; `adr` records an architecture decision once made; `opportunity-assessment` asks whether to do something at all.
+- Often follows `design-doc` alternatives; feeds `adr` and `design-doc`.
 
 ## Output
 Fill `assets/decision-matrix.md`.
-
-## Learning & Memory
-
-After decision matrix evaluation completes, save:
-- Decision frameworks that produced clear outcomes vs those that led to inconclusive results
-- Weighting approaches that reflected actual priorities (and cases where initial weights needed recalibration)
-- Criteria that mattered most in practice for this type of decision (technical, organizational, cost, risk)
 
 ## Output contract
 ```yaml

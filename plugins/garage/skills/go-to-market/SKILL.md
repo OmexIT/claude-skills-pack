@@ -5,57 +5,25 @@ description: "Use when the user is planning a product or feature launch: go to m
 
 # Go-to-market plan
 
-## What I'll do
-Produce a launch plan that coordinates messaging, channels, enablement, and measurement so the product reaches users effectively.
+Plan how a launch reaches the right people with the right message, who gets ready inside the company first, and how we will know it worked.
 
-## Inputs I'll use (ask only if missing)
-- What's launching (feature, product, major update)
-- Target audience (who needs to know?)
-- Launch type: big-bang, phased rollout, silent launch, beta
-- Success criteria (what does a successful launch look like?)
-- Constraints (timeline, budget, team availability)
+Ask only what is missing: what is launching, for whom, the launch style (everyone at once, in stages, a limited preview, or quietly), the date, success measures, and constraints (budget, people, legal or regulatory review).
 
-## How I'll think about this
-1. **Audience segmentation**: Different audiences need different messages through different channels. Internal teams (support, sales, engineering) need different enablement than external users.
-2. **Message hierarchy**: Lead with the user benefit, not the feature. "Find answers 3x faster" not "We added vector search." The feature is the mechanism; the benefit is the message.
-3. **Channel-message fit**: Blog posts for announcements, in-app for feature discovery, email for breaking changes, docs for how-to. Don't blast every message through every channel.
-4. **Enablement before launch**: Support team, sales team, and customer success must be trained before users encounter the new feature. They should never learn about a launch from a customer.
-5. **Measure what matters**: Awareness (did people notice?), adoption (did they try it?), activation (did they get value?), retention (did they keep using it?). Track the full funnel.
-6. **Plan for things going wrong**: Negative feedback, bugs at scale, misunderstood messaging, unexpected load. Have a response plan.
-
-## Anti-patterns to flag
-- Feature-focused messaging ("We built X") instead of benefit-focused ("You can now do Y")
-- Launching without support team enablement
-- No measurement plan (how will you know if the launch succeeded?)
-- Big-bang launch for high-risk features (use phased rollout)
-- No rollback plan for feature launches
-- Assuming launch day = finish line (adoption takes weeks/months)
-
-## Quality bar
-- Target audience is segmented with per-segment messaging
-- Internal enablement (support, sales) is scheduled before external launch
-- Success criteria are specific and measurable (not "positive reception")
-- Timeline includes pre-launch, launch day, and post-launch phases
-- Contingency plan exists for negative scenarios (bugs, backlash, low adoption)
-- Channel strategy matches audience habits
+## Rules
+- Scale the plan to the launch. A small improvement needs a short note to support and a line in the release notes; a new product needs the full plan.
+- Lead with what the customer can now do, not what we built: "Get paid out the same day", not "We added instant settlement".
+- Split audiences only where the message or channel really differs. Each channel earns its place: in-product for discovery, email for changes people must act on, help articles for how-to.
+- Support, sales, and account teams are briefed before customers see the launch, with an FAQ and a way to escalate problems.
+- Success is measured along the path: noticed, tried, got value, kept using. Set targets and dates, and watch support contacts and complaints alongside.
+- Plan the bad day: serious bug, confusing message, low uptake, negative reaction. Name who decides to pause or roll back and how customers are told.
+- Write in plain language for marketing, sales, support, and finance readers. No engineering jargon or internal shorthand; say who owns each item by name or team.
 
 ## Workflow context
-- Typically follows: `prd`, `experiment-design`, `release-notes`
-- Feeds into: `stakeholder-update`, post-launch measurement
-- Related: `competitive-analysis` (positioning), `docs-review` (user-facing documentation)
+- `go-to-market` plans the launch; `release-notes` lists what shipped; `stakeholder-update` reports progress to leadership.
+- Draws on `competitive-analysis` for positioning and `experiment-design` for staged launches; feeds `stakeholder-update`.
 
 ## Output
-Fill `assets/go-to-market.md`.
-
-## Learning & Memory
-
-After completing a go-to-market plan, persist the following to project memory for future skill invocations:
-
-- **Launch patterns**: What launch types (phased, big-bang, beta) worked for this product and audience
-- **Channel effectiveness**: Which channels drove the most awareness, adoption, and activation for this audience
-- **Messaging frameworks**: Benefit-focused messages and positioning angles that resonated with target segments
-
-Store in: `claudedocs/memory/go-to-market.md`
+Fill `assets/go-to-market.md`, keeping only the sections this launch needs.
 
 ## Output contract
 ```yaml

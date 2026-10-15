@@ -1,276 +1,119 @@
 # PRD: <feature name>
 
-**Status:** Draft | In Review | Approved | Superseded
-**Author:** <name>
-**Date:** <YYYY-MM-DD>
-**Last updated:** <YYYY-MM-DD>
+Status: Draft | Approved | Superseded
+Owner: <person or team>
+Version: 0.1
+Last updated: YYYY-MM-DD
 
----
+Sections marked "when relevant" are deleted when they do not apply. Never pad them.
 
-## 1. Summary
+## Change log
 
-One paragraph: what it is, who it's for, and the intended outcome.
-
-## 2. Problem
-
-### 2.1 User pain
-Describe the problem from the user's perspective. What are they struggling with today?
-
-### 2.2 Evidence
-What data supports this problem? (support tickets, analytics, user research, competitive pressure)
-
-| Signal | Source | Data |
-|---|---|---|
-| <signal> | <analytics / support / research> | <specific data point> |
-
-### 2.3 Why now
-What changed that makes this urgent? New data, competitive pressure, technical enablement, or regulatory deadline?
-
-## 3. Goals
-
-| Goal | Metric | Target | Timeline |
+| Version | Date | Change | Decision or evidence |
 |---|---|---|---|
-| G1: <goal> | <metric> | <target value> | <by when> |
-| G2: <goal> | <metric> | <target value> | <by when> |
+| 0.1 | YYYY-MM-DD | Initial scope | <link or source> |
 
-## 4. Non-goals
+## Problem and evidence
 
-Explicitly state what this feature will NOT do. Each non-goal prevents scope creep.
+Who is blocked, what are they trying to do, and what happens today? Include the smallest useful
+evidence: user report, operational data, policy, contract, or observed workflow.
 
-- NG1: <what we won't build and why>
-- NG2: <what we won't build and why>
+## Why now
 
-## 5. Users and personas
+The trigger and the cost of waiting. If there is no credible reason, say so and recommend not
+prioritizing it.
 
-### Primary persona
-- **Who:** <role, context>
-- **Goal:** <what they're trying to accomplish>
-- **Current behavior:** <how they do it today>
-- **Pain level:** <high / medium / low>
+## Goals and success measures
 
-### Secondary persona(s)
-- **Who:** <role, context>
-- **Relationship to primary:** <how they interact>
-
-## 6. User stories
-
-| ID | As a... | I want to... | So that... | Priority |
+| Goal | Measure | Baseline | Target | Window and owner |
 |---|---|---|---|---|
-| US-001 | <persona> | <action> | <outcome> | P0 / P1 / P2 |
-| US-002 | <persona> | <action> | <outcome> | P0 / P1 / P2 |
+| G-01 | <observable outcome> | <current, or how it will be established> | <target> | <window, owner> |
 
-## 7. Scope
+Add a guardrail row only when a goal could be met by harming something else.
 
-### In scope
-- <feature / capability>
+## Non-goals
 
-### Out of scope
-- <explicitly excluded capability and why>
+- NG-01: <explicitly excluded capability or persona>
 
-### Future considerations
-- <things we may do later but NOT in this iteration>
+## Negative constraints (when relevant)
 
-## 8. Functional requirements
+- NC-01: Do not change <owned module, contract, copy, CI, or external system>.
+- NC-02: This component must not become the system of record for <external fact>.
 
-Each requirement includes acceptance criteria, edge cases, and per-feature NFRs.
+## Ownership and source of truth (when relevant)
 
-### FR-001: <requirement title>
-
-**Description:** <what the system must do>
-**User story:** US-001
-**Priority:** P0
-
-**Acceptance criteria:**
-```gherkin
-Given <precondition>
-When <action>
-Then <expected result>
-
-Given <precondition>
-When <action>
-Then <expected result>
-```
-
-**Edge cases and error states:**
-| Scenario | Expected behavior |
-|---|---|
-| <edge case> | <what should happen> |
-| <error condition> | <error message / recovery path> |
-
-**Non-functional requirements (this feature):**
-- **Performance:** <latency target, e.g., "< 200ms p95">
-- **Security:** <auth/authz requirements, data sensitivity>
-- **Accessibility:** <WCAG level, specific needs>
-
----
-
-### FR-002: <requirement title>
-
-**Description:** <what the system must do>
-**User story:** US-002
-**Priority:** P0
-
-**Acceptance criteria:**
-```gherkin
-Given <precondition>
-When <action>
-Then <expected result>
-```
-
-**Edge cases and error states:**
-| Scenario | Expected behavior |
-|---|---|
-| <edge case> | <what should happen> |
-
-**Non-functional requirements (this feature):**
-- **Performance:** <target>
-- **Security:** <requirements>
-
----
-
-*(Repeat for each functional requirement)*
-
-## 9. UI requirements
-
-### 9.1 Screens and states
-
-For each screen referenced in the requirements:
-
-| Screen | States | Key interactions |
-|---|---|---|
-| <screen name> | default, loading, empty, error, success | <primary user actions> |
-
-### 9.2 Component specifications
-
-For each significant UI component:
-
-| Component | Props / inputs | States | Interactions | Accessibility |
-|---|---|---|---|---|
-| <component> | <key props> | <visual states> | <click, hover, keyboard> | <aria-label, role, focus> |
-
-### 9.3 Responsive behavior
-- Mobile (<768px): <behavior>
-- Tablet (768-1024px): <behavior>
-- Desktop (>1024px): <behavior>
-
-## 10. Data model (sketch)
-
-Key entities and relationships - enough for the design-doc and data-design skills to build on.
-
-| Entity | Key fields | Relationships | Storage |
+| Concern | Owner or system of record | This feature may | This feature must not |
 |---|---|---|---|
-| <entity> | <id, name, status, ...> | <belongs to X, has many Y> | <Postgres / Mongo / Elastic> |
+| <fact or process> | <service, provider, legal source> | <read/write boundary> | <forbidden ownership> |
 
-> This is a sketch, not a schema. The `data-design` skill will produce the full schema.
+## User flow
 
-## 11. Non-functional requirements (global)
+The shortest happy path in numbered steps. Add a failure or recovery flow only when it changes
+requirements.
 
-Requirements that apply across the entire feature.
+## Requirements
 
-| Category | Requirement | Target | Measurement |
+### FR-001: <requirement title> [P0]
+
+Requirement: <observable behavior, not an implementation mechanism>.
+
+Acceptance criteria:
+
+- Given <context>, when <action>, then <observable result>.
+- Given <invalid or failed condition>, when <action>, then <safe result and recovery>.
+
+Edge cases:
+
+- <boundary, duplicate, timeout, empty, or concurrency case>
+- <second materially different case>
+
+Source of truth or dependency: <owner and contract, when relevant>.
+
+Repeat only for independently testable requirements. Keep priorities honest; P1 and later can be
+deferred instead of padded into the first release. A superseded requirement keeps its ID and
+says what replaced it.
+
+## Non-functional requirements (when relevant)
+
+Only categories this feature changes.
+
+| ID | Category | Testable requirement | Verification |
 |---|---|---|---|
-| **Performance** | Page load time | < 2s (p95) | Lighthouse / RUM |
-| **Performance** | API response time | < 200ms (p95) | Server metrics |
-| **Reliability** | Availability | 99.9% | Uptime monitoring |
-| **Security** | Authentication | JWT + refresh token | Auth service |
-| **Security** | Authorization | Role-based per endpoint | Integration tests |
-| **Privacy** | PII handling | No PII in logs | Log audit |
-| **Accessibility** | WCAG compliance | Level AA | Axe / manual audit |
-| **Localization** | Language support | <languages> | i18n coverage |
-| **Compatibility** | Browser support | <browsers> | E2E tests |
+| NFR-001 | Reliability, security, privacy, accessibility, performance, or compliance | <specific bound or invariant> | <test, review, or evidence> |
 
-## 12. Success metrics
+## Data and integration changes (when relevant)
 
-### Primary metric
-- **Metric:** <what to measure>
-- **Baseline:** <current value>
-- **Target:** <target value>
-- **Timeline:** <by when>
+- Public API or event contract, including compatibility.
+- Persistence and migration impact, including restore or rollback.
+- Money movement and idempotency behavior.
+- External provider outcome and unknown-state handling.
+- Data classification, retention, tenant, and audit requirements.
 
-### Secondary metrics
-- <metric>: <baseline> → <target>
+## UX states (user-facing work only)
 
-### Guardrails (must not regress)
-- <metric>: must stay above <threshold>
+Loading, empty, validation, failure, stale, permission denied, success, responsive behavior,
+keyboard behavior, and reduced motion, as relevant.
 
-## 13. Dependencies
+## Rollout and operations (when relevant)
 
-### 13.1 Dependency matrix
+Only what the change needs: deployment order, mixed-version safety, migration or backfill,
+monitoring, support notes, recovery, and removal of temporary rollout machinery. No feature flag
+unless there is a present rollout or risk-control need and a named removal owner.
 
-| Dependency | Type | Owner | Status | Risk if delayed |
+## Open questions
+
+| ID | Question | Owner | Due | Blocks |
 |---|---|---|---|---|
-| <service / team / vendor> | blocking / non-blocking | <owner> | ready / in-progress / not-started | <impact> |
+| OQ-001 | <unresolved decision> | <owner> | YYYY-MM-DD | <requirement or no> |
 
-### 13.2 Integration points
+## Definition of ready
 
-| Integration | Trigger | Data sent | Data received | Auth | Failure behavior |
-|---|---|---|---|---|---|
-| <service / API> | <when called> | <payload> | <response> | <method> | <retry / fallback / error> |
-
-## 14. Rollout plan
-
-### Feature flags
-- Flag name: `<feature_flag_name>`
-- Default: off
-- Rollout: <% ramp plan>
-
-### Staged rollout
-| Stage | Audience | Duration | Success criteria | Rollback trigger |
-|---|---|---|---|---|
-| 1. Internal | Team only | 1 week | No P0 bugs | Any P0 bug |
-| 2. Beta | 5% of users | 1 week | <metric> within 10% of target | <metric> drops below <threshold> |
-| 3. GA | 100% | - | <metric> hits target | - |
-
-### Rollback plan
-- How to roll back: <flag off / revert deploy / database rollback>
-- Data migration rollback: <strategy if applicable>
-
-## 15. Analytics and instrumentation
-
-### Events
-
-| Event name | Trigger | Properties | Purpose |
-|---|---|---|---|
-| `<noun>.<verb>` | <when fired> | `{prop1, prop2}` | <what decision it informs> |
-
-### Dashboards
-- <dashboard name>: <what it shows, who uses it>
-
-### Alerts
-- <alert name>: <condition> → <notification channel>
-
-## 16. Risks and mitigations
-
-| Risk | Likelihood | Impact | Mitigation |
-|---|---|---|---|
-| <risk> | High / Med / Low | High / Med / Low | <mitigation strategy> |
-
-## 17. Open questions
-
-| # | Question | Owner | Due date | Resolution |
-|---|---|---|---|---|
-| Q1 | <question> | <who decides> | <date> | <pending / resolved: answer> |
-
-## 18. Definition of Ready checklist
-
-Before this PRD moves to implementation, confirm:
-
-- [ ] Problem validated with evidence (not just opinion)
-- [ ] At least one measurable success metric with baseline and target
-- [ ] All P0 functional requirements have acceptance criteria (Given/When/Then)
-- [ ] All P0 requirements have edge cases and error states documented
-- [ ] Non-functional requirements specified per feature (performance, security, a11y)
-- [ ] UI screens listed with states (default, loading, empty, error)
-- [ ] Dependencies identified with owners and status
-- [ ] Rollout plan includes feature flag, staged rollout, and rollback
-- [ ] Instrumentation plan covers key events and dashboards
-- [ ] Open questions have owners and due dates
-- [ ] Non-goals section is substantive (not empty)
-- [ ] Reviewed by: engineering, design, and at least one stakeholder
-
-## Appendix
-
-- Mockups / wireframe links
-- Research documents
-- Competitive analysis references
-- Related ADRs
+- [ ] Problem, user, evidence, and why-now are credible.
+- [ ] Smallest useful scope is explicit; non-goals are present, negative constraints where needed.
+- [ ] Ownership and systems of record are unambiguous.
+- [ ] Every non-trivial P0 requirement has testable acceptance criteria and two materially different edge cases.
+- [ ] Relevant failure, timeout, duplicate, recovery, and accessibility behavior is defined.
+- [ ] Destructive, security, privacy, financial, regulatory, and external-provider risks have an
+      owner and a verification path.
+- [ ] Open questions that block implementation are resolved.
+- [ ] Success measures have a baseline or a plan to establish one.

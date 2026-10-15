@@ -1,148 +1,85 @@
 #!/usr/bin/env bash
-# api-test-runner.sh - template for verify-impl API layer
-# Usage: BASE_URL=http://localhost:8080 ./api-test-runner.sh
+# api-test-runner.sh - curl template for the verify-impl API layer when no test plan exists.
+# Copy it, replace the REPLACE_* values, and run from the project root:
+#   BASE_URL=http://localhost:8080 TEST_USER=... TEST_PASS=... ./api-test-runner.sh
+# Credentials come only from the environment; never commit them.
 
 set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://localhost:8080}"
+LOGIN_PATH="${LOGIN_PATH:-/api/v1/auth/login}"
+: "${TEST_USER:?set TEST_USER}"
+: "${TEST_PASS:?set TEST_PASS}"
+
 PASS=0
 FAIL=0
-RESULTS=()
+FAILED=()
 
-# ── Helpers ─────────────────────────────────────────────────────────────────
+pass() { echo "  PASS $1"; PASS=$((PASS + 1)); }
+fail() { echo "  FAIL $1"; FAILED+=("$1"); FAIL=$((FAIL + 1)); }
 
 assert_status() {
   local label="$1" expected="$2" actual="$3"
-  if [ "$actual" = "$expected" ]; then
-    echo "  PASS $label → $actual"
-    RESULTS+=("PASS|$label|$actual")
-    ((PASS++))
-  else
-    echo "  FAIL $label → expected=$expected actual=$actual"
-    RESULTS+=("FAIL|$label|expected=$expected actual=$actual")
-    ((FAIL++))
-  fi
+  if [ "$actual" = "$expected" ]; then pass "$label -> $actual"; else fail "$label -> expected $expected, got $actual"; fi
 }
 
 assert_json_field() {
-  local label="$1" field="$2" expected="$3" json="$4"
-  local actual
-  actual=$(echo "$json" | jq -r "$field" 2>/dev/null || echo "PARSE_ERROR")
-  if [ "$actual" = "$expected" ]; then
-    echo "  PASS $label → $field = $actual"
-    RESULTS+=("PASS|$label|$field=$actual")
-    ((PASS++))
-  else
-    echo "  FAIL $label → $field expected=$expected actual=$actual"
-    RESULTS+=("FAIL|$label|$field expected=$expected actual=$actual")
-    ((FAIL++))
-  fi
+  local label="$1" field="$2" expected="$3" json="$4" actual
+  actual=$(printf '%s' "$json" | jq -r "$field" 2>/dev/null || echo "PARSE_ERROR")
+  if [ "$actual" = "$expected" ]; then pass "$label -> $field = $actual"; else fail "$label -> $field expected $expected, got $actual"; fi
 }
 
-http_get() {
-  curl -s -w "\n%{http_code}" \
-    -H "Authorization: Bearer $TOKEN" \
-    -H "Accept: application/json" \
-    "$BASE_URL$1"
+# Sets BODY and STATUS from a curl call that appended the status code as the last line.
+request() {
+  local raw
+  raw=$(curl -s -w "\n%{http_code}" "$@")
+  BODY=$(printf '%s\n' "$raw" | sed '$d')
+  STATUS=$(printf '%s\n' "$raw" | tail -n 1)
 }
 
-http_post() {
-  local path="$1" body="$2"
-  curl -s -w "\n%{http_code}" \
-    -X POST \
-    -H "Authorization: Bearer $TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "$body" \
-    "$BASE_URL$path"
+auth_get() { request -H "Authorization: Bearer $TOKEN" -H "Accept: application/json" "$BASE_URL$1"; }
+auth_post() {
+  request -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$2" "$BASE_URL$1"
 }
 
-parse_response() {
-  local raw="$1"
-  BODY=$(echo "$raw" | head -n -1)
-  STATUS=$(echo "$raw" | tail -n 1)
-}
-
-# ── 1. Auth ──────────────────────────────────────────────────────────────────
-
-echo ""
-echo "━━━ AUTH ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-RAW=$(curl -s -w "\n%{http_code}" \
-  -X POST "$BASE_URL/api/v1/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{"username":"test@example.com","password":"testpass123"}')
-parse_response "$RAW"
-
+echo "== Auth"
+request -X POST "$BASE_URL$LOGIN_PATH" -H "Content-Type: application/json" \
+  -d "$(jq -n --arg u "$TEST_USER" --arg p "$TEST_PASS" '{username: $u, password: $p}')"
 assert_status "Login" "200" "$STATUS"
-TOKEN=$(echo "$BODY" | jq -r '.data.accessToken // empty')
-
+TOKEN=$(printf '%s' "$BODY" | jq -r '.data.accessToken // .token // empty')
 if [ -z "$TOKEN" ]; then
-  echo "FAIL FATAL: No token obtained. Cannot continue."
+  echo "FAIL no token obtained; cannot continue" >&2
   exit 1
 fi
-echo "  Token obtained: ${TOKEN:0:20}..."
 
-# ── 2. CRUD Happy Path ───────────────────────────────────────────────────────
-
-echo ""
-echo "━━━ CREATE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-RAW=$(http_post "/api/v1/REPLACE_RESOURCE" '{
-  "field1": "value1",
-  "amount": 1000
-}')
-parse_response "$RAW"
-
+echo "== Create"
+auth_post "/api/v1/REPLACE_RESOURCE" '{"field1": "value1", "amount": "1000.00"}'
 assert_status "Create resource" "201" "$STATUS"
-RESOURCE_ID=$(echo "$BODY" | jq -r '.data.id // empty')
-echo "  🆔 Resource ID: $RESOURCE_ID"
+RESOURCE_ID=$(printf '%s' "$BODY" | jq -r '.data.id // .id // empty')
+echo "  resource id: $RESOURCE_ID"
 
-echo ""
-echo "━━━ READ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-RAW=$(http_get "/api/v1/REPLACE_RESOURCE/$RESOURCE_ID")
-parse_response "$RAW"
+echo "== Read"
+auth_get "/api/v1/REPLACE_RESOURCE/$RESOURCE_ID"
 assert_status "Get by ID" "200" "$STATUS"
-assert_json_field "Amount persisted" ".data.amount" "1000" "$BODY"
+assert_json_field "Amount persisted" ".data.amount" "1000.00" "$BODY"
 
-# ── 3. Validation / Error Cases ──────────────────────────────────────────────
+echo "== Validation"
+auth_post "/api/v1/REPLACE_RESOURCE" '{}'
+assert_status "Empty payload" "400" "$STATUS"
+assert_json_field "Problem Details status" ".status" "400" "$BODY"
 
-echo ""
-echo "━━━ VALIDATION ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-RAW=$(http_post "/api/v1/REPLACE_RESOURCE" '{}')
-parse_response "$RAW"
-assert_status "Empty payload → 400" "400" "$STATUS"
+echo "== Auth enforcement"
+request "$BASE_URL/api/v1/REPLACE_RESOURCE"
+assert_status "No token" "401" "$STATUS"
+request -H "Authorization: Bearer invalid" "$BASE_URL/api/v1/REPLACE_RESOURCE"
+assert_status "Bad token" "401" "$STATUS"
 
-# ── 4. Auth Enforcement ──────────────────────────────────────────────────────
-
-echo ""
-echo "━━━ AUTH ENFORCEMENT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-STATUS_NO_TOKEN=$(curl -s -o /dev/null -w "%{http_code}" \
-  "$BASE_URL/api/v1/REPLACE_RESOURCE")
-assert_status "No token → 401" "401" "$STATUS_NO_TOKEN"
-
-STATUS_BAD_TOKEN=$(curl -s -o /dev/null -w "%{http_code}" \
-  -H "Authorization: Bearer invalidtoken" \
-  "$BASE_URL/api/v1/REPLACE_RESOURCE")
-assert_status "Bad token → 401" "401" "$STATUS_BAD_TOKEN"
-
-# ── Summary ──────────────────────────────────────────────────────────────────
-
-echo ""
-echo "━━━ API TEST SUMMARY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  PASS Passed: $PASS"
-echo "  FAIL Failed: $FAIL"
-
-# Write captured variables to e2e/.captures.json for consumption by DB and UI layers
+# Captures keyed by test case ID, read by the DB and UI layers.
 mkdir -p e2e
-echo "{ \"captures\": $(echo "${CAPTURES:-{}}" | jq .) }" > e2e/.captures.json
-echo "  Captures written to e2e/.captures.json"
-echo ""
+jq -n --arg id "$RESOURCE_ID" '{"MANUAL": {resource_id: $id}}' > e2e/.captures.json
+
+echo "== Summary: $PASS passed, $FAIL failed"
 if [ "$FAIL" -gt 0 ]; then
-  echo "  Failed checks:"
-  for r in "${RESULTS[@]}"; do
-    IFS='|' read -r status label detail <<< "$r"
-    [ "$status" = "FAIL" ] && echo "    FAIL $label - $detail"
-  done
+  printf '  FAIL %s\n' "${FAILED[@]}"
   exit 1
-else
-  echo "  All API checks passed"
-  exit 0
 fi

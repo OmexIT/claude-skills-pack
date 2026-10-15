@@ -1,46 +1,22 @@
-# Sprint Retrospective: <sprint name / dates>
+# Retro: <sprint name or dates>
 
-## Previous action items review
-| Action item | Owner | Status | Notes |
-| --- | --- | --- | --- |
-| ... | ... | Done / In progress / Not started | ... |
+## Last retro's action items
+| Action | Owner | Done? | If not, why |
+|---|---|---|---|
 
-## Sprint summary
-- **Planned**: What we committed to
-- **Delivered**: What we shipped
-- **Carried over**: What moved to next sprint and why
-- **Surprises**: Unplanned work that came in
+## The sprint in brief
+Planned vs delivered, what carried over and why, and unplanned work that came in.
 
 ## What went well
-- ...
-- ...
-- ...
+- <observation>: <what made it work>
 
-## What didn't go well
-- ...
-- ...
-- ...
+## What got in the way
+- <observation>
 
-## Patterns identified
-| Pattern | Frequency | Impact | Category |
-| --- | --- | --- | --- |
-| ... | First time / Recurring | High/Med/Low | Process / Technical / Communication |
+## Themes
+| Theme | First time or recurring | Impact | Likely cause |
+|---|---|---|---|
 
-## Discussion themes
-### Theme 1: <topic>
-- Observations:
-- Root cause:
-- Proposed improvement:
-
-### Theme 2: <topic>
-_(repeat)_
-
-## Action items (max 3)
-| Action | Owner | Due | How we'll verify |
-| --- | --- | --- | --- |
-| ... | ... | ... | ... |
-
-## Team morale check
-- **Energy level**: High / Medium / Low
-- **Confidence in next sprint**: High / Medium / Low
-- **Anything else the team wants to flag**: ...
+## Action items (at most three)
+| Action | Owner | Due | How we will know it worked |
+|---|---|---|---|

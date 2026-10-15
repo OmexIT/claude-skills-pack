@@ -1,99 +1,61 @@
-# Title
+# Design: <title>
 
-## TL;DR
-- What are we building?
-- Why now?
-- How will we know it worked?
+Status: Draft | In review | Accepted
+Owner: <name> | PRD: <link> | Last updated: YYYY-MM-DD
 
-## Problem statement
-- Who is the user?
-- What pain point are we solving?
-- Current behavior / baseline
+Delete any section marked "when relevant" that does not apply.
 
-## Goals
-- G1:
-- G2:
-- G3:
-
-## Non-goals
-- NG1:
-- NG2:
+## Summary
+What we are building, why now, and how we will know it worked (1-3 measurable outcomes).
 
 ## Requirements
-### Functional
-- R1:
-- R2:
+- Functional: R1, R2 (or link the PRD requirement IDs)
+- Non-functional: only the bounds this design must meet (latency, availability, cost, compliance)
+- Non-goals:
+- Constraints and assumptions:
 
-### Non-functional
-- Reliability/SLO:
-- Latency:
-- Cost:
-- Security/privacy:
-- Compatibility/migrations:
-
-## Constraints and assumptions
-- …
-
-## Proposed solution
-### High-level architecture
-- Components:
-- Data flow:
-- Sequence (optional):
+## Proposed design
+### Components and data flow
+What runs where, who calls whom, and what is synchronous vs asynchronous. Add a diagram when it
+explains more than prose.
 
 ### Data model
-- Entities/tables/documents:
-- Keys/indexes:
-- Migrations/backfills (if any):
+Entities, owner of each fact, keys and indexes, access patterns, migration or backfill needs.
 
-### APIs / interfaces
-- Endpoints or function signatures
-- Request/response shapes
-- Error handling contract
+### APIs and events (when relevant)
+Operations, request and response shapes, error contract, compatibility with existing consumers.
 
-### UX / behavior notes
-- Happy path
-- Error states
-- Edge cases
-
-## Rollout plan
-- Feature flags / staged rollout
-- Backwards compatibility
-- Migration plan
-- Rollback plan
-
-## Observability
-- Logs (what + where)
-- Metrics (what to graph/alert on)
-- Traces (critical spans)
-
-## Security & privacy considerations
-- AuthN/AuthZ
-- Data classification (PII?)
-- Abuse cases
+### Failure handling
+| Dependency or step | Failure semantics | System behavior | Recovery |
+|---|---|---|---|
+| <call, queue, job> | <timeout, duplicate, partial, unknown outcome> | <what we do> | <retry, reconcile, compensate, alert> |
 
 ## Alternatives considered
-### Alternative A
-- Pros:
-- Cons:
-- Why not chosen:
+| Option | Pros | Cons | Why not chosen |
+|---|---|---|---|
+| <extend existing> | | | |
+| <option B> | | | |
 
-### Alternative B
-- Pros:
-- Cons:
-- Why not chosen:
+## Rollout and rollback
+Deployment order, mixed-version safety, migration steps, and how to roll back or restore. Flags or
+staged exposure only when the risk needs them, with a removal owner.
 
-## Risks and mitigations
-- Risk:
-  - Mitigation:
+## Security and privacy (when relevant)
+Authentication and authorization, data classification, abuse cases.
 
-## Test plan
-- Unit tests:
-- Integration tests:
-- E2E tests:
-- Load/perf tests (if applicable):
+## Observability (when relevant)
+The signals that tell us this works or is failing in production, and who acts on them.
+
+## Test strategy
+Business behaviors and failure modes to prove, and at which level each is cheapest to prove.
+
+## Risks
+| Risk | Mitigation | Owner |
+|---|---|---|
 
 ## Open questions
-- …
+| Question | Owner | Blocks |
+|---|---|---|
 
-## Appendix
-- Links, diagrams, sample payloads
+## Review checklist
+- [ ] <5-10 items a reviewer can verify quickly>

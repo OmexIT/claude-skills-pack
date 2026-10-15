@@ -1,34 +1,21 @@
 ---
 name: repo-conventions
-description: "Use when working in a repository whose conventions are recorded in this skill's references, or when the user wants those architecture, API style, or testing conventions documented."
+description: "Use when the user wants a repository's architecture, API style, or testing conventions written down or updated, or asks which conventions to follow in a repository."
 ---
 
 # Repo conventions
 
-Update the files in `references/` to match this repository's standards.
+The repository's own instructions always win. This skill finds them, and helps write them down when they are missing.
 
-When working in this repo, follow these rules unless the user explicitly says otherwise:
-- Prefer existing patterns over introducing new abstractions.
-- Match naming, folder structure, and error-handling conventions already in use.
-- When unsure, propose 1-2 options and ask which matches the team's preference.
-- Check for existing utilities before creating new ones - duplication is a common source of inconsistency.
+## Where conventions come from, in order
+1. The repo's `AGENTS.md` and `CLAUDE.md` (root and nested) and the docs they point to. If they exist, follow them and do not load this skill's references.
+2. The code: existing naming, folder layout, error handling, test style, and utilities. Match it, and reuse existing helpers before writing new ones.
+3. When neither settles a question, propose one or two options grounded in the code and ask which the team prefers.
 
-## How to customize these references
-Each reference file covers a specific area. Fill them in with your team's actual conventions:
-- `references/architecture.md` - System structure, module boundaries, dependency rules
-- `references/api-style.md` - Endpoint naming, request/response conventions, error format
-- `references/testing.md` - Test organization, naming, coverage expectations, fixtures
+## The references are blank templates
+`references/architecture.md`, `references/api-style.md`, and `references/testing.md` ship unfilled. Each begins with a `PLACEHOLDER` line; while that line is present, treat the file as absent and never present its prompts as rules. A fork of this pack that fills a file in removes that line. These files apply to every repository using the install and are replaced on plugin update, so one repository's conventions belong in that repository.
 
-If your team has additional convention areas (e.g., database migrations, feature flags, logging), create additional reference files and list them here.
-
-## Quality bar for conventions
-Good convention docs are:
-- Specific enough to resolve ambiguity ("use camelCase for JS, snake_case for Python" not "be consistent")
-- Short enough to actually read (aim for 1-2 pages per reference)
-- Maintained when conventions change (stale conventions are worse than no conventions)
-- Accompanied by examples from the actual codebase
-
-## References
-- `references/architecture.md`
-- `references/api-style.md`
-- `references/testing.md`
+## Writing conventions down (when asked)
+1. Derive each rule from the code and cite a file as the example. Mark anything you inferred but could not confirm.
+2. Use the reference templates as an outline only. Write the result into the repo's `AGENTS.md`, `CLAUDE.md`, or a doc they link to; show the text first and edit an existing instruction file only with the user's approval.
+3. Each rule must settle a real disagreement ("errors return RFC 9457 Problem Details", not "be consistent"). Keep each area to a page or two, and drop rules the code already contradicts.

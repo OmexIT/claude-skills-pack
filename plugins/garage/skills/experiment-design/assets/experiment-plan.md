@@ -1,59 +1,33 @@
-# Experiment Plan: <feature>
+# Experiment plan: <change>
 
-## Executive summary
-- Change:
-- Hypothesis:
-- Decision:
+Owner: <name> | Planned start: YYYY-MM-DD
 
 ## Hypothesis
-- If we ___, then ___ will ___ because ___.
+If we <change>, then <primary metric> moves by about <effect>, because <reason>.
 
 ## Metrics
-### Primary metric (one)
-- Metric:
-- Definition:
-- Data source:
+| Role | Metric | Exact definition | Source | Threshold |
+|---|---|---|---|---|
+| Primary | | | | <smallest effect worth acting on> |
+| Guardrail | | | | <stop if worse than> |
+| Secondary (optional) | | | | |
 
-### Secondary metrics (2–3)
-- …
+## Population and assignment
+- Included / excluded:
+- Randomization unit and split:
+- Pre-named segments:
 
-### Guardrails
-- Reliability (error rate, latency):
-- Negative product impact (churn, spam/abuse):
-- Support volume:
+## Size and duration
+- Baseline rate, minimum effect, required sample per group:
+- Planned duration (at least one weekly cycle) and stop conditions:
 
-## Population
-- Inclusion:
-- Exclusion:
-- Segments to analyze:
+## Decision rule
+- Ship if:
+- Iterate if:
+- Revert if (including any guardrail breach):
 
-## Exposure / assignment
-- Randomization unit (user/account/session):
-- Bucketing method:
-- Feature flag configuration:
+## Instrumentation
+- Events and properties needed, and where they are verified before launch:
 
-## Duration & decision rule
-- Minimum duration:
-- When we stop:
-- What result counts as “ship” vs “iterate” vs “revert”:
-
-## Instrumentation plan
-- Events to log:
-- Properties:
-- Dashboards:
-- Alerts:
-
-## Implementation notes (engineering)
-- Data dependencies:
-- Backwards compatibility:
-- Rollback plan:
-
-## Risks & mitigations
-- Risk:
-  - Mitigation:
-
-## Launch checklist
-- [ ] Events validated in staging
-- [ ] Dashboards live
-- [ ] On-call aware of rollout
-- [ ] Rollback documented
+## Risks and rollback (when relevant)
+- <risk>: <mitigation>; how exposure is turned off.

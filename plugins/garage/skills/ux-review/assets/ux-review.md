@@ -1,66 +1,40 @@
 # UX Review: <feature / screen>
 
 ## Overview
-- **What was reviewed**: Screen, feature, or flow
-- **Target user**: Primary persona and their goal
-- **Platform**: Desktop / Mobile / Both
-- **Review method**: Heuristic evaluation, cognitive walkthrough, accessibility audit
+- **Reviewed**: screens, flow, or build (URL, commit, or design paths)
+- **Target user and goal**:
+- **Platform and context**: desktop / mobile / both; assistive technology considered
+- **Method and coverage**: walkthrough, heuristics, accessibility; what was verified live and what
+  could not be
 
 ## Summary
-- **Overall assessment**: Good / Needs work / Significant issues
-- **Top 3 issues**: (quick summary)
-- **Top 3 strengths**: (what's working well)
-
-## Heuristic findings
-
-### Visibility of system status
-| Finding | Severity | Recommendation |
-| --- | --- | --- |
-| ... | High/Med/Low | ... |
-
-### User control and freedom
-| Finding | Severity | Recommendation |
-| --- | --- | --- |
-
-### Consistency and standards
-| Finding | Severity | Recommendation |
-| --- | --- | --- |
-
-### Error prevention and recovery
-| Finding | Severity | Recommendation |
-| --- | --- | --- |
-
-### Recognition over recall
-| Finding | Severity | Recommendation |
-| --- | --- | --- |
-
-## Accessibility audit
-
-### Critical (WCAG A - must fix)
-1. ...
-
-### Important (WCAG AA - should fix)
-1. ...
-
-### Enhancement (WCAG AAA - nice to have)
-1. ...
+- **Overall**: Good / Needs work / Significant issues
+- **Top issues**:
+- **Strengths**:
 
 ## Cognitive walkthrough
-| Step | User knows what to do? | User notices action? | User understands feedback? | Recovery possible? |
+| Step | Knows what to do? | Notices the control? | Understands feedback? | Can recover? |
 | --- | --- | --- | --- | --- |
 | ... | Yes/No | Yes/No | Yes/No | Yes/No |
 
-## Strengths (what's working well)
-- ...
+## Heuristic findings
+| Heuristic | Finding | Evidence | Who is affected | Severity | Fix |
+| --- | --- | --- | --- | --- | --- |
+| Visibility of status | ... | screenshot / snapshot / steps | ... | High/Med/Low | ... |
+
+## Accessibility findings
+| WCAG criterion (level) | Finding | Evidence | Fix |
+| --- | --- | --- | --- |
+| 1.4.1 Use of Color (A) | ... | ... | ... |
 
 ## Prioritized recommendations
-### Must-fix (blocks usability or accessibility)
+### Must fix (blocks the task or fails WCAG A/AA)
 1. ...
 
-### Should-fix (degrades experience)
+### Should fix (degrades the experience)
 1. ...
 
-### Nice-to-have (polish)
+### Nice to have
 1. ...
 
 ## Open questions

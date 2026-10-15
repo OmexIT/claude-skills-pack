@@ -1,57 +1,31 @@
 ---
 name: ticket-breakdown
-description: "Use when the user wants a PRD or design doc broken into epics and tickets: work breakdown, engineering plan, Jira tickets, or Linear issues."
+description: "Use when the user wants a PRD or design doc broken into tracker-ready epics and tickets for a team to pick up: work breakdown, Jira tickets, or Linear issues, rather than implemented now."
 ---
 
 # Ticket breakdown
 
-## Goal
-Turn a spec into implementable work items that can be assigned, tracked, and shipped safely.
+Turn a spec into work items people can be assigned, track, and ship safely. This produces tickets for a tracker; implementing the spec now, with agent tasks and waves, is `spec-to-impl`.
 
-## What I'll do
-- Identify the critical path
-- Split work into thin, shippable slices
-- Add acceptance criteria and test notes per ticket
-- Call out dependencies and risks
-- Provide a suggested rollout sequence
+## Steps
+1. Read the spec and the code it touches. List assumptions you had to make; ask before guessing on anything that changes the shape of the work.
+2. Find the critical path and the riskiest unknowns. Unknowns get a time-boxed spike ticket with a question to answer, not an estimate.
+3. Slice vertically: each ticket delivers a thin end-to-end behavior (API, UI, and test together) that can merge on its own. Avoid "all backend, then all frontend".
+4. Sequence so risky and blocking work lands first and every merged ticket leaves main releasable.
+5. Include the work people forget only when the spec needs it: migrations and backfills, removal of temporary rollout code, alerts, docs.
+6. Match the tracker's conventions if the user names one (title format, labels, estimate scale).
 
-## How I'll think about this
-1. **Slice vertically, not horizontally**: Each ticket should deliver a thin end-to-end slice of value (API + UI + test), not a horizontal layer ("build all the APIs, then all the UI").
-2. **Size for 1-3 days**: If a ticket takes longer than 3 days, it should be split. Large tickets hide risk and block code review.
-3. **Identify unknowns early**: Create spike/investigation tickets for areas with high uncertainty. Don't estimate what you don't understand - explore first.
-4. **Sequence for risk reduction**: Ship the riskiest or most uncertain work first. Get feedback early, not after building everything.
-5. **Include the boring stuff**: Migration tickets, feature flag cleanup, monitoring setup, documentation - these are real work that needs tracking.
-6. **Definition of ready**: Each ticket should have enough context that any team member could pick it up without a 30-minute conversation.
-
-## Anti-patterns to flag
-- Mega-tickets that bundle 5+ days of unrelated work
-- Missing acceptance criteria ("implement feature X" with no definition of done)
-- Horizontal slicing ("backend sprint" then "frontend sprint")
-- Forgetting cleanup tickets (remove feature flags, delete old code paths)
-- No spike tickets for genuinely unknown technical areas
-
-## Quality bar
-- Every ticket has: clear title, acceptance criteria, test notes, and size estimate
-- No ticket exceeds 3 days of estimated work
-- Dependencies between tickets are explicit
-- Critical path is identified and sequenced
-- Spike tickets exist for areas with high uncertainty
-- Rollout sequence accounts for feature flags and staged release
+## Rules
+- Each ticket: outcome-focused title, acceptance criteria tied to spec IDs where they exist, test notes, explicit dependencies, and a size. Split anything over about three days.
+- A ticket is ready when someone outside the discussion could pick it up without a meeting.
+- No ticket for speculative work the spec does not ask for (abstractions, flags, readiness checks).
 
 ## Workflow context
-- Typically follows: `prd`, `design-doc`
-- Feeds into: `test-plan`, `code-review:code-review` (official plugin)
-- Related: `experiment-design` (rollout sequencing)
+- `ticket-breakdown` writes tickets for a team; `spec-to-impl` plans and builds the code now.
+- Follows `prd` or `design-doc`; feeds `test-plan` and the team's tracker.
 
 ## Output
-Use `assets/ticket-breakdown.md`.
-
-## Learning & Memory
-
-After ticket breakdown completes, save:
-- Estimation patterns that held up (ticket sizes vs actual delivery time) to calibrate future estimates
-- Dependency structures that caused sequencing problems or unlocked parallel work streams
-- Scope patterns that consistently needed splitting further or were over-decomposed for the team's workflow
+Fill `assets/ticket-breakdown.md`.
 
 ## Output contract
 ```yaml

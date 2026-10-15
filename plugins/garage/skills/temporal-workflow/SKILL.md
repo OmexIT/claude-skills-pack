@@ -3,347 +3,77 @@ name: temporal-workflow
 description: "Use when the work involves Temporal in Java: workflows, activities, SAGA compensation, long-running or durable orchestration, config-driven state machines, retries, signals, queries, versioning, child workflows, or continue-as-new."
 ---
 
-# Temporal Workflow: Java SDK Implementation Skill
-
-Generates production-ready Temporal workflows with SAGA compensation, config-driven state machines, Spring Boot integration, and full test harness. Encodes patterns proven in production payment platforms.
-
----
-
-## Operating Guardrails
-
-This skill generates production code for durable, money-adjacent orchestrations. Do not invoke it as a blind scaffold.
-
-1. Clarify intent, failure modes, compensation chain, idempotency keys, and state machine shape before any code. Workflow mistakes are expensive to fix after deploy.
-2. Produce a multi-step plan naming each activity, each compensation, each signal/query, and the retry profile per activity. Review the plan before touching code.
-3. Prefer an isolated branch or worktree so workflow generation does not collide with other parallel work.
-4. Write the `TestWorkflowEnvironment` test first, including compensation order on failure, then implement.
-5. Use this skill to scaffold the `@WorkflowInterface`, `@WorkflowImpl`, activities, and Spring wiring once the behavior is pinned by tests.
-6. Verify before claiming done: run `./gradlew test` or `./mvnw test` and capture output showing compensation order.
-7. Before merging, be explicit about what reviewers must check. Temporal workflows are hard to review blindly.
-
-**Non-negotiable**: planning and TDD are mandatory here. Workflow determinism bugs, missing compensation, and non-idempotent activities are the top three failure modes.
-
----
-
-## 0. Input Handling
-
-Arguments are the text that follows the skill name in the user's request: file paths, names, and flags.
-
-Accepts:
-- Workflow name + short description: `temporal-workflow PaymentSaga "collect card, authorize, charge, notify"`
-- Spec file path: `temporal-workflow docs/payment-saga-spec.md`
-- Interactive: no args → ask for workflow name, steps, compensation needs
-
-**Step 1 - Parse and confirm scope:**
-```
-WORKFLOW SCOPE
-  Name:          <WorkflowInterfaceName>
-  Package:       <com.company.module.workflow>
-  Forward steps: <n>   (each becomes an activity)
-  Compensation:  <n>   (matching reverse activities)
-  Retry profile: DEFAULT | LIMITED | AGGRESSIVE
-  Signals:       <list>
-  Queries:       <list>
-  Child flows:   <list or "none">
-  Long-running?  yes/no  (if yes → ContinueAsNew strategy)
-```
-
-**Step 2 - Detect stack:**
-```bash
-grep -rE "io\.temporal\.|temporal-sdk|temporal-spring-boot" build.gradle* pom.xml 2>/dev/null
-grep -rE "workerFactory|WorkflowServiceStubs" src/ 2>/dev/null | head -10
-```
-
-If Temporal isn't already wired up → generate worker factory + service stub config first. Otherwise reuse existing wiring.
-
----
-
-## 1. Core Patterns
-
-### 1.1 Workflow vs Activity Separation (non-negotiable)
-
-**Workflows are deterministic.** No `Instant.now()`, no random, no direct I/O, no shared mutable state. Only:
-- Call activities via `Workflow.newActivityStub(...)`
-- Use `Workflow.sleep`, `Workflow.currentTimeMillis`, `Workflow.newRandom`
-- Read workflow state and issue control flow
-
-**Activities are idempotent.** Every activity must be safe to retry. Use an idempotency key in the input (usually `workflowId + step`). Database writes use `INSERT ... ON CONFLICT DO NOTHING` or upsert semantics.
-
-### 1.2 SAGA Compensation Chain
-
-Register compensation BEFORE executing the forward step. If the forward step throws, the compensation chain unwinds in reverse order.
-
-```java
-@WorkflowImpl(taskQueues = "payment-saga")
-public class PaymentSagaWorkflowImpl implements PaymentSagaWorkflow {
-
-    private final PaymentActivities activities = Workflow.newActivityStub(
-        PaymentActivities.class,
-        ActivityOptions.newBuilder()
-            .setStartToCloseTimeout(Duration.ofSeconds(30))
-            .setRetryOptions(RetryProfiles.DEFAULT)
-            .build()
-    );
-
-    private final Saga saga = new Saga(new Saga.Options.Builder().setParallelCompensation(false).build());
-
-    @Override
-    public PaymentResult execute(PaymentCommand cmd) {
-        var correlationId = cmd.correlationId();
-
-        try {
-            saga.addCompensation(activities::releaseHold, correlationId);
-            var hold = activities.placeHold(cmd);
-
-            saga.addCompensation(activities::reverseAuthorization, correlationId);
-            var auth = activities.authorize(hold);
-
-            saga.addCompensation(activities::refundCapture, correlationId);
-            var capture = activities.capture(auth);
-
-            activities.notifyCustomer(cmd.customerId(), capture.receipt());
-            return new PaymentResult(capture.id(), capture.amount());
-
-        } catch (ActivityFailure | ApplicationFailure e) {
-            saga.compensate();
-            throw Workflow.wrap(e);
-        }
-    }
-}
-```
-
-### 1.3 Config-Driven State Machines
-
-Behavior lives in YAML, not `if/switch`. Workflow reads transition tables at startup.
-
-```yaml
-# src/main/resources/config/payment-saga.yaml
-states:
-  PENDING:
-    on:
-      AUTHORIZE: { next: AUTHORIZED, activity: authorize }
-      CANCEL:    { next: CANCELLED, activity: cancelPending }
-  AUTHORIZED:
-    on:
-      CAPTURE:   { next: CAPTURED,  activity: capture }
-      VOID:      { next: VOIDED,    activity: voidAuth }
-  CAPTURED:
-    terminal: true
-  CANCELLED:
-    terminal: true
-  VOIDED:
-    terminal: true
-transitions:
-  retry_policy: DEFAULT
-  idempotency_key_pattern: "{workflowId}:{event}"
-```
-
-`@ConfigurationProperties(prefix = "payment.saga")` loads this into a `StateMachineConfig` bean - injected into the workflow via its activities (workflows cannot directly access Spring beans).
-
-### 1.4 Three Retry Profiles
-
-```java
-public final class RetryProfiles {
-    public static final RetryOptions DEFAULT = RetryOptions.newBuilder()
-        .setInitialInterval(Duration.ofSeconds(1))
-        .setBackoffCoefficient(2.0)
-        .setMaximumInterval(Duration.ofMinutes(1))
-        .setMaximumAttempts(5)
-        .build();
-
-    public static final RetryOptions LIMITED = RetryOptions.newBuilder()
-        .setInitialInterval(Duration.ofSeconds(2))
-        .setBackoffCoefficient(1.5)
-        .setMaximumAttempts(2)
-        .setDoNotRetry("io.temporal.failure.ApplicationFailure")
-        .build();
-
-    public static final RetryOptions AGGRESSIVE = RetryOptions.newBuilder()
-        .setInitialInterval(Duration.ofMillis(250))
-        .setBackoffCoefficient(2.0)
-        .setMaximumInterval(Duration.ofSeconds(10))
-        .setMaximumAttempts(20)
-        .build();
-
-    private RetryProfiles() {}
-}
-```
-
-Choose per activity: external-API writes → `LIMITED`, internal idempotent writes → `DEFAULT`, read-only lookups → `AGGRESSIVE`.
-
-### 1.5 Signals and Queries
-
-```java
-@WorkflowInterface
-public interface PaymentSagaWorkflow {
-    @WorkflowMethod PaymentResult execute(PaymentCommand cmd);
-    @SignalMethod  void cancel(String reason);
-    @SignalMethod  void updateAmount(BigDecimal newAmount);
-    @QueryMethod   PaymentState currentState();
-    @QueryMethod   List<String> completedSteps();
-}
-```
-
-Signals mutate state and unblock `Workflow.await(...)`. Queries are read-only - never mutate state, never call activities.
-
-### 1.6 Long-Running: ContinueAsNew
-
-If a workflow accumulates large history (>50k events or >50MB), continue-as-new to reset history while preserving identity:
-
-```java
-if (eventCount > 10_000) {
-    Workflow.continueAsNew(currentState);
-}
-```
-
----
-
-## 2. Spring Boot Integration
-
-### 2.1 Worker Factory + Bean Wiring
-
-```java
-@Configuration
-public class TemporalConfig {
-
-    @Bean
-    public WorkflowServiceStubs workflowServiceStubs(TemporalProperties props) {
-        return WorkflowServiceStubs.newServiceStubs(
-            WorkflowServiceStubsOptions.newBuilder()
-                .setTarget(props.target())
-                .build()
-        );
-    }
-
-    @Bean
-    public WorkflowClient workflowClient(WorkflowServiceStubs stubs, TemporalProperties props) {
-        return WorkflowClient.newInstance(stubs,
-            WorkflowClientOptions.newBuilder().setNamespace(props.namespace()).build());
-    }
-
-    @Bean(destroyMethod = "shutdown")
-    public WorkerFactory workerFactory(WorkflowClient client) {
-        return WorkerFactory.newInstance(client);
-    }
-
-    @Bean
-    public Worker paymentSagaWorker(WorkerFactory factory, PaymentActivitiesImpl activities) {
-        Worker worker = factory.newWorker("payment-saga",
-            WorkerOptions.newBuilder()
-                .setMaxConcurrentActivityExecutionSize(50)
-                .setMaxConcurrentWorkflowTaskExecutionSize(20)
-                .build());
-        worker.registerWorkflowImplementationTypes(PaymentSagaWorkflowImpl.class);
-        worker.registerActivitiesImplementations(activities);
-        return worker;
-    }
-
-    @EventListener(ApplicationReadyEvent.class)
-    public void startWorkers(WorkerFactory factory) { factory.start(); }
-}
-```
-
-### 2.2 Activity Implementation (Spring-managed)
-
-```java
-@Component
-public class PaymentActivitiesImpl implements PaymentActivities {
-
-    private final PaymentGatewayClient gateway;
-    private final IdempotencyStore idempotency;
-    private final LedgerService ledger;
-
-    public PaymentActivitiesImpl(PaymentGatewayClient gateway,
-                                  IdempotencyStore idempotency,
-                                  LedgerService ledger) {
-        this.gateway = gateway;
-        this.idempotency = idempotency;
-        this.ledger = ledger;
-    }
-
-    @Override
-    public HoldResult placeHold(PaymentCommand cmd) {
-        var key = cmd.correlationId() + ":placeHold";
-        return idempotency.executeOnce(key, () -> gateway.placeHold(cmd));
-    }
-
-    @Override
-    public void releaseHold(String correlationId) {
-        var key = correlationId + ":releaseHold";
-        idempotency.executeOnce(key, () -> gateway.releaseHold(correlationId));
-    }
-    // ... etc
-}
-```
-
----
-
-## 3. Test Harness
-
-Use `TestWorkflowEnvironment` - no real Temporal server required for unit tests.
-
-```java
-@ExtendWith(MockitoExtension.class)
-class PaymentSagaWorkflowTest {
-
-    private TestWorkflowEnvironment env;
-    private Worker worker;
-    private WorkflowClient client;
-
-    @Mock private PaymentActivities activities;
-
-    @BeforeEach
-    void setUp() {
-        env = TestWorkflowEnvironment.newInstance();
-        worker = env.newWorker("payment-saga");
-        worker.registerWorkflowImplementationTypes(PaymentSagaWorkflowImpl.class);
-        worker.registerActivitiesImplementations(activities);
-        client = env.getWorkflowClient();
-        env.start();
-    }
-
-    @AfterEach
-    void tearDown() { env.close(); }
-
-    @Test
-    void should_compensate_when_capture_fails() {
-        // Given
-        given(activities.placeHold(any())).willReturn(new HoldResult("hold-1"));
-        given(activities.authorize(any())).willReturn(new AuthResult("auth-1"));
-        given(activities.capture(any())).willThrow(new ApplicationFailure("DECLINED", "CARD_DECLINED", true));
-
-        var workflow = client.newWorkflowStub(PaymentSagaWorkflow.class,
-            WorkflowOptions.newBuilder().setTaskQueue("payment-saga").build());
-
-        // When / Then
-        assertThatThrownBy(() -> workflow.execute(new PaymentCommand("c-1", new BigDecimal("100.00"))))
-            .isInstanceOf(WorkflowException.class);
-
-        // Then - compensations ran in reverse
-        var inOrder = inOrder(activities);
-        inOrder.verify(activities).placeHold(any());
-        inOrder.verify(activities).authorize(any());
-        inOrder.verify(activities).capture(any());
-        inOrder.verify(activities).reverseAuthorization("c-1");
-        inOrder.verify(activities).releaseHold("c-1");
-    }
-}
-```
-
----
-
-## 4. Observability Wiring
-
-- Workflow start/complete: Micrometer counter `temporal.workflow.{name}.{status}.count`
-- Activity duration: Micrometer timer `temporal.activity.{name}.duration`
-- Span propagation: use `io.temporal:temporal-opentracing` bridge or the native Micrometer Tracing interceptor
-- MDC context: put `workflowId`, `runId`, `activityType` at the start of each activity
-
-Configure interceptors in `WorkerFactoryOptions` so every workflow and activity is traced automatically - do not add per-method instrumentation.
-
----
-
-## 5. Output Contract
+# Temporal workflow (Java SDK)
+
+Builds or changes Temporal workflows, activities, and their Spring wiring and tests. Determinism
+bugs, missing compensation, and non-idempotent activities are the top three failure modes; the
+steps below exist to prevent them.
+
+## Steps
+
+1. **Scope.** Accept a workflow name plus steps, a spec file, or ask. Confirm before code:
+   ```
+   Workflow:      <InterfaceName>, task queue <name>
+   Forward steps: <activities, in order>
+   Compensation:  <reverse activity per forward step, or "none">
+   Retry policy:  <per activity, from the rules below>
+   Signals/updates/queries: <list>
+   Child workflows: <list or none>
+   Long-running:  <yes -> continue-as-new checkpoint>
+   ```
+2. **Detect the stack** before using any API: Temporal Java SDK version, Spring Boot version, and
+   whether the repo uses `temporal-spring-boot-starter` (auto-discovered `@WorkflowImpl` /
+   `@ActivityImpl`) or manual `WorkerFactory` wiring.
+   ```bash
+   grep -rE "io\.temporal|temporal-sdk|temporal-spring-boot" build.gradle* pom.xml gradle/*.toml 2>/dev/null
+   grep -rlE "WorkerFactory|@WorkflowImpl|@ActivityImpl" src/ 2>/dev/null | head
+   ```
+   Reuse the existing wiring. Use exactly one style; never register the same workflow through both.
+3. **Read `references/temporal-patterns.md`** before writing workflow code (versioning, handlers,
+   continue-as-new, child vs activity, config-driven machines, failure-mode table).
+4. **Test first** with `TestWorkflowEnvironment`: forward path, compensation order on failure, and
+   any signal, timer, or unknown-outcome path the change adds. Read `references/java-scaffolds.md`
+   when scaffolding a saga, retry options, Spring wiring, or the test harness from scratch.
+5. **Implement**, then run `./gradlew test` or `./mvnw test` and show the output, including the
+   compensation-order test. For command-affecting changes to a deployed workflow, also run replay
+   tests against recorded histories.
+6. **Summarize for review**: determinism risks, versioning markers added, retry bounds, and which
+   compensations assume "nothing to undo" is a no-op.
+
+## Rules
+
+- **Determinism**: workflow code uses `Workflow.currentTimeMillis`, `Workflow.sleep`,
+  `Workflow.newRandom`, `Workflow.randomUUID`; no `Instant.now()`, `Thread.sleep`, I/O, Spring beans,
+  or mutable statics. Side effects belong in activities.
+- **Idempotent activities**: every mutating activity takes a stable key (for example
+  `workflowId + ":" + step`) and dedupes at the authoritative boundary (unique constraint, provider
+  idempotency key).
+- **SAGA**: register each compensation before its forward step; compensations run in reverse and
+  must treat "nothing to undo" as success. An unknown financial result (timeout after dispatch) is
+  reconciled before any compensation. Catch the failure types the call actually raises
+  (`ActivityFailure`, `ChildWorkflowFailure`), compensate, and rethrow; never catch `Throwable` or
+  swallow cancellation. Run compensation on cancellation inside a detached cancellation scope.
+- **Retries are bounded by operation semantics and provider limits**, not by service name:
+  - External writes: few attempts, backoff that respects the provider's rate limits, durable
+    idempotency key, business rejections listed as non-retryable error types.
+  - Internal idempotent writes: bounded by the workflow's business deadline.
+  - Reads: retry transient failures only, with a cap that cannot amplify an incident.
+  - Long-running activities: start-to-close plus heartbeat timeout, and heartbeat progress.
+  Never rely on the workflow execution timeout as the only bound.
+- **Handlers**: queries read only. Validate signal and update payloads. Before the workflow method
+  returns or continues as new, wait for domain work and for running handlers:
+  `Workflow.await(() -> pendingWork.isEmpty())` then `Workflow.await(Workflow::isEveryHandlerFinished)`.
+- **Versioning**: `Workflow.getVersion` around any change to the commands an open history would
+  replay; pure refactors need no marker.
+- **Continue-as-new** when history grows with a loop, signals, or timers; carry only durable state
+  and finish handlers first.
+- **Config-driven state machines** only when several real products or jurisdictions share a proven
+  shape; pass an immutable, versioned config snapshot in the workflow input. One stable flow is plain
+  code.
+- **Observability**: wire the SDK's metrics scope and tracing interceptor once on the client and
+  worker factory; put `workflowId` and `runId` in activity logs. No per-method instrumentation.
+
+## Output contract
 
 ```yaml
 produces:
@@ -367,33 +97,18 @@ produces:
   handoff: "Write claudedocs/handoff-temporal-workflow-<timestamp>.yaml - suggest: verify-impl, monitoring-plan"
 ```
 
----
+`TemporalConfig.java` only with manual wiring, the state machine YAML only for a config-driven
+machine.
 
-## 6. Failure Modes
+## Workflow context
 
-| Symptom | Diagnosis | Fix |
-|---|---|---|
-| Workflow replay fails after redeploy | Non-deterministic code path added | Move to activity; use `Workflow.getVersion()` for versioning |
-| Activity hangs forever | Missing StartToCloseTimeout | Set explicit timeout in `ActivityOptions` |
-| Compensation doesn't run | Exception caught and swallowed | Only catch `ActivityFailure`/`ApplicationFailure`; let others propagate |
-| Duplicate side-effects on retry | Activity not idempotent | Add idempotency key at entry; dedupe at DB layer |
-| Signal race with completion | Signal arrives after `@WorkflowMethod` returns | Drain signals before returning: `Workflow.await(() -> pendingSignals.isEmpty())` |
-| History grows unbounded | Long-running loop without continueAsNew | Add `Workflow.continueAsNew(...)` at checkpoint |
+- Ledger posting semantics and reconciliation live in `fintech-ledger`; this skill orchestrates the
+  calls and compensation around them.
 
----
+## Anti-patterns (never generate)
 
-## 7. Reference Files
-
-| File | When |
-|---|---|
-| `references/temporal-patterns.md` | Deep patterns: versioning, cron, child flows, dynamic dispatch |
-
-## Anti-patterns (never generate this)
-
-- Calling Spring beans directly from `@WorkflowMethod` - use activities
-- `Thread.sleep` inside a workflow - use `Workflow.sleep`
-- Random numbers or UUIDs from `java.util.UUID.randomUUID()` inside a workflow - use `Workflow.newRandom()` or `Workflow.randomUUID()`
-- Catching `Throwable` inside a workflow - you'll mask replay failures
-- Calling activity inside a query handler - queries must be pure reads
-- Mutating workflow state from a query handler - undefined behavior
-- Mixing retry and compensation logic inside a single activity - separate concerns
+- Activities called from a query handler, or state mutated in one.
+- Retry and compensation logic mixed inside a single activity.
+- Reversing a transfer because the initiating activity timed out, before reconciling.
+- A child workflow that only wraps one activity.
+- Unbounded `maximumAttempts` on an external write.

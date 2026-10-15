@@ -1,6 +1,6 @@
 # Stack Defaults & Auto-Detection
 
-Read this file when inferring tech stack for a spec. Confirm with the user before dispatching execution agents if detected stack differs from defaults.
+Read when the user names no stack and the repo does not settle it, or before mandating a library or API version. Detected versions and project instructions (AGENTS.md / CLAUDE.md) always win over this table; defaults apply to new projects or new modules only.
 
 ## Default Stack (Java / Web)
 
@@ -9,7 +9,7 @@ Read this file when inferring tech stack for a spec. Confirm with the user befor
 | Backend Language | Java 25 (LTS, preview features enabled) | Kotlin (JVM), Go |
 | Backend Framework | Spring Boot 4.x + Spring Modulith 2.x | - |
 | Persistence | Spring Data JDBC (preferred for aggregates) + jOOQ (complex queries) | Spring Data JPA (legacy) |
-| Mapping | MapStruct 1.6+ | - |
+| Mapping | Manual mapping; MapStruct 1.6+ when mapping volume justifies it | - |
 | Build | Gradle (Kotlin DSL) | Maven (some legacy projects) |
 | Frontend (Web) | React 19 + Next.js 15 + TypeScript 5 + Tailwind 4 + shadcn/ui + TanStack Query + Zustand | AngularJS 1.x (legacy only) |
 | Frontend (Mobile) | Flutter 3.x + Dart (Riverpod, GoRouter) | React Native + TypeScript, Android (Kotlin + Compose) |
@@ -42,21 +42,20 @@ Read this file when inferring tech stack for a spec. Confirm with the user befor
 | Trace Backend | Tempo (or Jaeger) | - |
 | Alerting | Grafana Alerting (or Prometheus Alertmanager) | - |
 
-## Architectural Principles (encode in every agent prompt)
+## Architectural Principles (house defaults; the repo's established conventions win)
 
 - **Clean Architecture**: domain has zero external dependencies; depend inward only
 - **Config-driven workflows**: behavior from YAML/properties, not code branches
-- **Double-entry ledger**: every money movement is balanced (see fintech-ledger skill)
-- **SAGA with explicit compensation**: register compensation before forward execution (see temporal-workflow skill)
-- **Idempotency**: every write operation has an idempotency key
-- **Event sourcing for audit**: state changes publish domain events
-- **MapStruct for mapping**: never manual DTO↔Entity conversion
+- **Double-entry ledger**: every money movement is balanced (see `fintech-ledger`)
+- **SAGA with explicit compensation**: register compensation before forward execution (see `temporal-workflow`)
+- **Idempotency**: writes whose retry could duplicate an effect carry an idempotency key
+- **Domain events across real boundaries**: publish events when another module or service reacts; keep in-module calls direct
 - **Testcontainers for integration tests**: real DB, real Redis, real broker
-- **Conventional commits**: `feat:`, `fix:`, `refactor:`, `chore:`
-- **No raw SQL in application code**: use repositories or jOOQ DSL
+- **SQL through the repo's data access layer** (repositories, jOOQ, or JdbcClient), never string-built queries
 - **Constructor injection only**: no field injection, no setter injection
-- **BigDecimal for money, Instant/OffsetDateTime for time**: never `double`/`Date`
-- **Multi-tenancy**: PostgreSQL RLS with `SET LOCAL app.tenant_id` per request
+- **BigDecimal / NUMERIC for money, Instant / OffsetDateTime / TIMESTAMPTZ for time**: never `double`/`float`/`Date`
+- **IDs**: TSID stored as `BIGINT` internally; UUIDv7 for public IDs; TSIDs never leave the service
+- **Multi-tenancy** (only when the product is multi-tenant): PostgreSQL RLS with `SET LOCAL app.tenant_id` per request
 
 ## Auto-Detection from Project Files
 

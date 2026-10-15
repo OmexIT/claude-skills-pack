@@ -1,114 +1,61 @@
 # Runbook: <service name>
 
-**Last verified**: <date>
-**Review cadence**: Monthly / Quarterly
-**Owner**: <team>
-**On-call channel**: <link>
+**Last verified**: <date>  **Owner**: <team>  **On-call channel**: <link>
 
 ## Service overview
-- **Purpose**: What this service does in one sentence
-- **Dependencies**: What it depends on (databases, APIs, queues)
-- **Dependents**: What depends on it
-- **SLOs**: Availability, latency, error rate targets
+- **Purpose**: one sentence
+- **Dependencies** / **Dependents**:
+- **SLOs**:
 
 ## Quick reference
-| Action | Command / Link |
+| Action | Command / link |
 | --- | --- |
-| Health check | `curl https://...` |
-| Logs | <link to log viewer> |
-| Metrics dashboard | <link> |
-| Deploy | <link or command> |
-| Rollback | <link or command> |
-| Feature flags | <link> |
-| On-call schedule | <link> |
+| Health check | |
+| Logs / dashboard | |
+| Deploy / rollback | |
+| On-call schedule | |
 
 ## Deployment
-
 ### Standard deploy
-1. Step:
-   - Command: `...`
-   - Verify: ...
-2. Step:
-   - Command: `...`
-   - Verify: ...
+1. Command: `...`
+   Verify: ...
 
 ### Rollback
-1. Step:
-   - Command: `...`
-   - Verify: ...
-- **When to rollback**: Error rate > X%, latency > Xms, or customer reports
-- **Escalate if**: Rollback doesn't resolve within X minutes
+1. Command: `...`
+   Verify: ...
+- **When to roll back**: <error rate, latency, or business signal>
+- **Schema changes**: rollback is safe only if the running migration is backward compatible; otherwise
+  <restore or forward-fix procedure>
+- **Escalate if**: not resolved within <minutes> -> <contact>
 
-### Hotfix deploy
-1. ...
-- **Approval required**: Yes / No
-- **Escalate to**: <name/team>
+## Alerts and symptoms
+### <Alert name or symptom>
+- **Likely causes**: ...
+- **Check**: `...` -> look for ...
+- **Fix**: `...` -> verify ...
+- **Escalate if**: <condition> -> <contact, method>
+
+_(one section per paging alert)_
 
 ## Scaling
+- **Symptoms**: ...
+- **Action**: `...` -> verify ...
+- **Limits**: minimum safe configuration, maximum before cost or downstream impact
 
-### Scale up (increased load)
-- **Symptoms**: High CPU, queue depth growing, latency increasing
-- **Action**: ...
-- **Verify**: ...
-- **Escalate if**: Scaling doesn't reduce latency within X minutes
-
-### Scale down (cost optimization)
-- **When**: Off-peak hours, reduced traffic
-- **Action**: ...
-- **Minimum safe configuration**: ...
-
-## Common issues
-
-### Issue: <symptom - e.g., "High error rate on /api/users">
-- **Likely cause**: ...
-- **Check**:
-  1. Command: `...`
-  2. Look for: ...
-- **Fix**:
-  1. ...
-  2. Verify: ...
-- **Escalate if**: Fix doesn't resolve within X minutes → Contact <team>
-
-### Issue: <symptom - e.g., "Database connection timeouts">
-_(repeat structure)_
-
-### Issue: <symptom - e.g., "Queue messages backing up">
-_(repeat structure)_
-
-## Database operations
-
-### Emergency queries
-- Check connection pool: `...`
-- Kill long-running queries: `...`
-- Check replication lag: `...`
-- **Warning**: Never run write queries in production without approval from <team>
-
-### Backup and restore
-- Backup location: ...
-- Restore procedure: ...
-- Estimated restore time: ...
+## Data operations
+- Read-only diagnostics: `...`
+- Write or destructive operations: blast radius, approver, backup taken first, undo or restore
+  procedure, estimated restore time
 
 ## Maintenance tasks
-
-### Task: <e.g., "Rotate API keys">
-- **Frequency**: Monthly / Quarterly / As needed
-- **Steps**: ...
-- **Verify**: ...
-
-### Task: <e.g., "Clean up old data">
+### <Task, e.g. rotate credentials>
 - **Frequency**: ...
-- **Steps**: ...
-- **Verify**: ...
+- **Steps**: ... -> verify ...
 
-## Escalation paths
-| Situation | Contact | Method | SLA |
+## Escalation
+| Situation | Contact | Method | Response expectation |
 | --- | --- | --- | --- |
-| Service won't start | Platform team | Slack #platform-oncall | 15 min |
-| Data integrity issue | Data team | Page via PagerDuty | Immediate |
-| Security concern | Security team | Slack #security-urgent | Immediate |
-| Unknown / everything tried | Engineering manager | Phone | 30 min |
+| | | | |
 
-## Appendix
-- Architecture diagram: <link>
-- Design doc: <link>
-- Incident history: <link>
+## Links
+- Architecture / design doc / incident history:
